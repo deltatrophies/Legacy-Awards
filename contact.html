@@ -1,0 +1,1661 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Contact Us - Legacy Awards</title>
+    <link rel="icon" type="image/png" href="./images/images.jpg" />
+    
+    <!-- Fixed Google Fonts URL -->
+   <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+<!-- Fixed Leaflet CSS and JS URLs -->
+<link rel="stylesheet"
+href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      :root {
+        --stone-light: #f3eee7;
+        --stone-mid: #ddd2c2;
+        --stone-warm: #b7a995;
+        --stone-deep: #766b5f;
+        --charcoal: #28251f;
+        --gold: #c9a84c;
+        --gold-bright: #e8c96a;
+        --gold-dark: #8a6e28;
+        --maroon: #5c1a1a;
+        --maroon-deep: #3a0e0e;
+        --ivory: #faf4e4;
+        --warm-white: #fbf8f4;
+        --white: #ffffff;
+        --bg: #f8f6f2;
+        --line: rgba(40, 37, 31, 0.08);
+        --shadow-sm: 0 4px 18px rgba(40, 37, 31, 0.06);
+        --shadow-md: 0 10px 34px rgba(40, 37, 31, 0.08);
+        --shadow-lg: 0 24px 60px rgba(40, 37, 31, 0.1);
+        --radius-sm: 14px;
+        --radius-md: 22px;
+        --radius-lg: 30px;
+        --maxw: 1280px;
+      }
+
+      body {
+        background: var(--bg);
+        color: var(--charcoal);
+        font-family: "DM Sans", sans-serif;
+        overflow-x: hidden;
+      }
+
+      img {
+        max-width: 100%;
+        display: block;
+      }
+
+      a {
+        text-decoration: none;
+      }
+
+      ul {
+        list-style: none;
+      }
+
+      .container {
+        width: min(var(--maxw), calc(100% - 48px));
+        margin: 0 auto;
+      }
+
+      @keyframes glossyShift {
+        0% {
+          background-position: 0% 50%;
+        }
+
+        100% {
+          background-position: 100% 50%;
+        }
+      }
+
+      /* NAV – match About page */
+      nav.site-nav {
+        position: sticky;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 300;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 56px;
+        height: 72px;
+        background: rgba(40, 37, 31, 0.96);
+        backdrop-filter: blur(10px);
+        border-bottom: 1px solid rgba(201, 168, 76, 0.28);
+      }
+
+      .logo {
+        font-family: "DM Serif Display", serif;
+        font-size: 21px;
+        letter-spacing: 0.03em;
+        background: linear-gradient(
+          135deg,
+          #f8e89a 0%,
+          #e8c96a 20%,
+          #fffbe0 35%,
+          #c9a84c 50%,
+          #fff5b0 65%,
+          #e8c96a 80%,
+          #8a6e28 90%,
+          #f8e89a 100%
+        );
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        background-size: 200% 200%;
+        animation: glossyShift 5s ease-in-out infinite alternate;
+        filter: drop-shadow(0 0 8px rgba(232, 201, 106, 0.45));
+      }
+
+      .logo span {
+        font-style: italic;
+      }
+
+      .nav-links {
+        display: flex;
+        gap: 34px;
+      }
+
+      .nav-links a {
+        font-size: 12px;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        font-weight: 500;
+        color: rgba(250, 244, 228, 0.58);
+        transition: color 0.2s;
+      }
+
+      .nav-links a:hover,
+      .nav-links a.active {
+        color: var(--gold);
+      }
+
+      .nav-btn {
+        padding: 10px 28px;
+        border: 1.5px solid var(--gold);
+        color: var(--gold);
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.15em;
+        text-transform: uppercase;
+        transition: all 0.25s;
+      }
+
+      .nav-btn:hover {
+        background: var(--gold);
+        color: var(--charcoal);
+      }
+
+      /* GENERIC SECTION */
+      .section {
+        padding: 92px 0;
+      }
+
+      .section-eyebrow {
+        font-size: 11px;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+        color: var(--gold-dark);
+        font-weight: 700;
+        margin-bottom: 18px;
+      }
+
+      .section-title {
+        font-family: "DM Serif Display", serif;
+        font-size: clamp(30px, 4vw, 52px);
+        line-height: 1.08;
+        color: var(--charcoal);
+        letter-spacing: -0.02em;
+        margin-bottom: 22px;
+      }
+
+      .section-title em {
+        color: var(--maroon);
+        font-style: italic;
+      }
+
+      .section-sub {
+        font-size: 15px;
+        color: var(--stone-deep);
+        line-height: 1.8;
+        margin-top: 14px;
+      }
+
+      .section-head-center {
+        width: min(820px, calc(100% - 48px));
+        margin: 0 auto 54px;
+        text-align: center;
+      }
+
+      /* HERO – different layout from About, but same language */
+      .contact-hero {
+        position: relative;
+        padding: 72px 0 0;
+        background:#ebe3d9;
+        
+      }
+
+      .contact-hero-inner {
+        width: min(var(--maxw), calc(100% - 48px));
+        margin: 0 auto;
+        padding: 56px 0 72px;
+        display: grid;
+        grid-template-columns: 1.1fr 0.9fr;
+        gap: 42px;
+        align-items: center;
+      }
+
+      .contact-hero-eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 11px;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+        color: var(--gold);
+        font-weight: 700;
+        margin-bottom: 18px;
+      }
+
+      .contact-hero-eyebrow::before {
+        content: "";
+        width: 28px;
+        height: 1px;
+        background: var(--gold);
+      }
+
+      .contact-hero-title {
+        font-family: "DM Serif Display", serif;
+        font-size: clamp(40px, 5.6vw, 68px);
+        line-height: 1.02;
+        margin-bottom: 16px;
+      }
+
+      .contact-hero-title em {
+        color: var(--gold-bright);
+        font-style: italic;
+      }
+
+      .contact-hero-sub {
+        font-size: 15px;
+        line-height: 1.9;
+        color: var(--maroon);
+        max-width: 520px;
+        margin-bottom: 26px;
+      }
+
+      .hero-meta-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      .meta-pill.dark {
+        background: rgba(0, 0, 0, 0.2);
+        border-color: rgba(201, 168, 76, 0.35);
+        color: rgba(250, 244, 228, 0.9);
+      }
+
+      .meta-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 14px;
+        border: 1px solid rgba(40, 37, 31, 0.08);
+        background: rgba(255, 255, 255, 0.72);
+        border-radius: 999px;
+        color: var(--stone-deep);
+        font-size: 12px;
+        font-weight: 600;
+        box-shadow: var(--shadow-sm);
+      }
+
+      .contact-hero-aside {
+        background: rgba(40, 37, 31, 0.6);
+        border-radius: 28px;
+        border: 1px solid rgba(201, 168, 76, 0.25);
+        padding: 22px 22px 18px;
+        box-shadow: var(--shadow-lg);
+        backdrop-filter: blur(10px);
+      }
+
+      .hero-aside-kicker {
+        font-size: 10px;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: rgba(255, 232, 154, 0.9);
+        font-weight: 700;
+        margin-bottom: 8px;
+      }
+
+      .hero-aside-title {
+        font-family: "DM Serif Display", serif;
+        font-size: 24px;
+        margin-bottom: 10px;
+      }
+
+      .hero-aside-text {
+        font-size: 13px;
+        line-height: 1.8;
+        color: rgba(250, 244, 228, 0.8);
+        margin-bottom: 16px;
+      }
+
+      .hero-aside-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .hero-aside-item {
+        background: rgba(20, 18, 14, 0.7);
+        border-radius: 18px;
+        border: 1px solid rgba(201, 168, 76, 0.24);
+        padding: 10px 12px;
+      }
+
+      .hero-aside-label {
+        font-size: 9px;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: rgba(232, 201, 106, 0.8);
+        margin-bottom: 3px;
+      }
+
+      .hero-aside-value {
+        font-size: 13px;
+        color: var(--ivory);
+      }
+
+      /* QUICK CONTACT STRIP – use card band style, not hero band */
+      .quick-contact-strip {
+        background: var(--white);
+        border-top: 1px solid rgba(40, 37, 31, 0.05);
+        border-bottom: 1px solid rgba(40, 37, 31, 0.05);
+        padding: 22px 0;
+      }
+
+      .quick-contact-grid {
+        width: min(var(--maxw), calc(100% - 48px));
+        margin: 0 auto;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+      }
+
+      .qc-card {
+        background: var(--warm-white);
+        border-radius: 22px;
+        border: 1px solid rgba(40, 37, 31, 0.06);
+        padding: 18px 18px 16px;
+        display: flex;
+        gap: 12px;
+        align-items: flex-start;
+        box-shadow: var(--shadow-sm);
+      }
+
+      .qc-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 999px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(201, 168, 76, 0.16);
+        font-size: 20px;
+      }
+
+      .qc-label {
+        font-size: 10px;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--gold-dark);
+        font-weight: 700;
+        margin-bottom: 4px;
+      }
+
+      .qc-value {
+        font-family: "DM Serif Display", serif;
+        font-size: 18px;
+        color: var(--charcoal);
+      }
+
+      .qc-sub {
+        font-size: 11px;
+        color: var(--stone-deep);
+        margin-top: 2px;
+      }
+
+      /* MAIN CONTACT LAYOUT – asymmetric card layout */
+      .contact-main {
+        width: min(var(--maxw), calc(100% - 48px));
+        margin: 0 auto;
+        display: grid;
+        grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+        gap: 26px;
+        align-items: start;
+      }
+
+      .contact-form-card {
+        background: var(--white);
+        border-radius: 30px;
+        border: 1px solid rgba(40, 37, 31, 0.06);
+        box-shadow: var(--shadow-sm);
+        padding: 38px 34px 38px;
+      }
+
+      .cf-eyebrow {
+        font-size: 10px;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+        color: var(--gold-dark);
+        font-weight: 700;
+        margin-bottom: 12px;
+      }
+
+      .cf-title {
+        font-family: "DM Serif Display", serif;
+        font-size: 34px;
+        line-height: 1.1;
+        margin-bottom: 8px;
+      }
+
+      .cf-title em {
+        color: var(--maroon);
+        font-style: italic;
+      }
+
+      .cf-sub {
+        font-size: 14px;
+        color: var(--stone-deep);
+        line-height: 1.8;
+        margin-bottom: 22px;
+      }
+
+      .bulk-banner {
+        background: #fff8e5;
+        border-radius: 18px;
+        border: 1px solid rgba(201, 168, 76, 0.5);
+        padding: 14px 14px 12px;
+        display: flex;
+        gap: 12px;
+        align-items: flex-start;
+        margin-bottom: 22px;
+      }
+
+      .bulk-icon {
+        font-size: 20px;
+      }
+
+      .bulk-head {
+        font-size: 11px;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--gold-dark);
+        font-weight: 700;
+        margin-bottom: 4px;
+      }
+
+      .bulk-text {
+        font-size: 13px;
+        color: var(--charcoal);
+        line-height: 1.6;
+      }
+
+      .form-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+      }
+
+      .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+
+      .form-group.full {
+        grid-column: 1 / -1;
+      }
+
+      .form-label {
+        font-size: 10px;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--stone-deep);
+        font-weight: 700;
+      }
+
+      .form-input,
+      .form-select,
+      .form-textarea {
+        padding: 12px 14px;
+        border-radius: 12px;
+        border: 1px solid var(--stone-mid);
+        background: var(--warm-white);
+        font-size: 13px;
+        font-family: "DM Sans", sans-serif;
+        color: var(--charcoal);
+        outline: none;
+        transition:
+          border-color 0.2s,
+          box-shadow 0.2s,
+          background 0.2s;
+      }
+
+      .form-select {
+        cursor: pointer;
+        -webkit-appearance: none;
+        appearance: none;
+      }
+
+      .form-input::placeholder,
+      .form-textarea::placeholder {
+        color: var(--stone-warm);
+      }
+
+      .form-input:focus,
+      .form-select:focus,
+      .form-textarea:focus {
+        border-color: var(--gold);
+        background: #fffdf5;
+        box-shadow: 0 0 0 1px rgba(201, 168, 76, 0.35);
+      }
+
+      .form-textarea {
+        resize: vertical;
+        min-height: 120px;
+      }
+
+      .form-file-zone {
+        border-radius: 16px;
+        border: 1px dashed var(--stone-warm);
+        background: var(--warm-white);
+        padding: 16px;
+        text-align: center;
+        position: relative;
+        cursor: pointer;
+        transition:
+          border-color 0.2s,
+          background 0.2s;
+      }
+
+      .form-file-zone:hover {
+        border-color: var(--gold);
+        background: #fffaf0;
+      }
+
+      .form-file-zone input[type="file"] {
+        position: absolute;
+        inset: 0;
+        opacity: 0;
+        cursor: pointer;
+      }
+
+      .form-file-text {
+        font-size: 13px;
+        color: var(--stone-deep);
+      }
+
+      .form-file-text em {
+        font-style: normal;
+        color: var(--gold-dark);
+        font-weight: 600;
+      }
+
+      .form-submit {
+        margin-top: 4px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 14px 26px;
+        border-radius: 999px;
+        border: none;
+        background: var(--maroon);
+        color: var(--ivory);
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        cursor: pointer;
+        transition:
+          background 0.25s,
+          transform 0.25s,
+          box-shadow 0.25s;
+        width: 100%;
+        box-shadow: var(--shadow-sm);
+      }
+
+      .form-submit:hover {
+        background: var(--maroon-deep);
+        transform: translateY(-1px);
+        box-shadow: var(--shadow-md);
+      }
+
+      .form-note {
+        margin-top: 8px;
+        font-size: 11px;
+        color: var(--stone-warm);
+        text-align: center;
+      }
+
+      /* INFO SIDE – vertical card stack */
+      .contact-info-stack {
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+      }
+
+      .info-card {
+        background: var(--white);
+        border-radius: 26px;
+        border: 1px solid rgba(40, 37, 31, 0.06);
+        box-shadow: var(--shadow-sm);
+        padding: 24px 20px 24px;
+      }
+
+      .info-card.dark {
+        background: linear-gradient(
+          135deg,
+          #3a0e0e 0%,
+          #28251f 56%,
+          #4d3522 100%
+        );
+        color: var(--ivory);
+        border-color: rgba(201, 168, 76, 0.3);
+      }
+
+      .info-kicker {
+        font-size: 10px;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--gold-dark);
+        font-weight: 700;
+        margin-bottom: 8px;
+      }
+
+      .info-card.dark .info-kicker {
+        color: rgba(255, 232, 154, 0.9);
+      }
+
+      .info-title {
+        font-family: "DM Serif Display", serif;
+        font-size: 22px;
+        margin-bottom: 6px;
+      }
+
+      .info-text {
+        font-size: 13px;
+        line-height: 1.9;
+        color: var(--stone-deep);
+      }
+
+      .info-card.dark .info-text {
+        color: rgba(250, 244, 228, 0.8);
+      }
+
+      .info-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        margin-top: 12px;
+      }
+
+      .info-row {
+        display: flex;
+        gap: 10px;
+        align-items: flex-start;
+      }
+
+      .info-icon-box {
+        width: 34px;
+        height: 34px;
+        border-radius: 999px;
+        background: rgba(201, 168, 76, 0.14);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 17px;
+        flex-shrink: 0;
+      }
+
+      .info-label {
+        font-size: 9px;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--stone-deep);
+        font-weight: 600;
+        margin-bottom: 2px;
+      }
+
+      .info-value {
+        font-size: 14px;
+        color: var(--charcoal);
+        font-weight: 500;
+      }
+
+      .info-sub {
+        font-size: 11px;
+        color: var(--stone-warm);
+      }
+
+      .info-card.dark .info-icon-box {
+        background: rgba(0, 0, 0, 0.3);
+        color: var(--gold-bright);
+      }
+
+      .info-card.dark .info-label {
+        color: rgba(201, 168, 76, 0.7);
+      }
+
+      .info-card.dark .info-value {
+        color: var(--ivory);
+      }
+
+      .info-card.dark .info-sub {
+        color: rgba(250, 244, 228, 0.6);
+      }
+
+      .hours-table {
+        margin-top: 10px;
+        border-top: 1px solid rgba(201, 168, 76, 0.22);
+        padding-top: 10px;
+      }
+
+      .hour-row {
+        display: flex;
+        justify-content: space-between;
+        font-size: 12px;
+        color: rgba(250, 244, 228, 0.8);
+        padding: 4px 0;
+        border-bottom: 1px solid rgba(201, 168, 76, 0.1);
+      }
+
+      .hour-row:last-child {
+        border-bottom: none;
+      }
+
+      .hour-time {
+        color: rgba(255, 232, 154, 0.95);
+        font-weight: 600;
+      }
+
+      .wa-btn {
+        margin-top: 14px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        width: 100%;
+        padding: 12px 18px;
+        border-radius: 999px;
+        background: #25d366;
+        border: none;
+        color: #fff;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        text-decoration: none;
+        transition:
+          background 0.2s,
+          transform 0.2s,
+          box-shadow 0.2s;
+      }
+
+      .wa-btn:hover {
+        background: #1ebe5d;
+        transform: translateY(-1px);
+        box-shadow: var(--shadow-md);
+      }
+
+      /* MAP + FAQ SECTION */
+      .map-section {
+        background: var(--white);
+        border-top: 1px solid rgba(40, 37, 31, 0.05);
+        border-bottom: 1px solid rgba(40, 37, 31, 0.05);
+        padding: 80px 0;
+      }
+
+      .map-inner {
+        width: min(var(--maxw), calc(100% - 48px));
+        margin: 0 auto;
+        display: grid;
+        grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+        gap: 24px;
+        align-items: start;
+      }
+
+      .map-card {
+        background: var(--warm-white);
+        border-radius: 26px;
+        border: 1px solid rgba(40, 37, 31, 0.06);
+        padding: 20px;
+        box-shadow: var(--shadow-sm);
+      }
+
+      .map-embed {
+        border-radius: 20px;
+        border: 1px solid rgba(40, 37, 31, 0.08);
+        width: 100%;
+        height: 320px;
+      }
+
+      .map-note {
+        font-size: 12px;
+        color: var(--stone-deep);
+        margin-top: 10px;
+      }
+
+      .faq-card {
+        background: var(--warm-white);
+        border-radius: 26px;
+        border: 1px solid rgba(40, 37, 31, 0.06);
+        padding: 22px 20px 18px;
+        box-shadow: var(--shadow-sm);
+      }
+
+      .faq-list {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
+
+      .faq-item {
+        padding: 10px 0;
+        border-bottom: 1px solid rgba(40, 37, 31, 0.06);
+      }
+
+      .faq-item:last-child {
+        border-bottom: none;
+      }
+
+      .faq-q {
+        font-family: "DM Serif Display", serif;
+        font-size: 17px;
+        color: var(--charcoal);
+        margin-bottom: 6px;
+      }
+
+      .faq-a {
+        font-size: 13px;
+        line-height: 1.8;
+        color: var(--stone-deep);
+      }
+
+      /* CTA */
+      .cta-section {
+        padding: 92px 0;
+      }
+
+      .cta-card {
+        width: min(var(--maxw), calc(100% - 48px));
+        margin: 0 auto;
+        padding: 52px 52px;
+        border-radius: 34px;
+        background:
+          radial-gradient(
+            circle at top left,
+            rgba(255, 255, 255, 0.1),
+            transparent 26%
+          ),
+          linear-gradient(135deg, #4c1313 0%, #5c1a1a 42%, #7b5a1f 100%);
+        color: var(--ivory);
+        box-shadow: var(--shadow-lg);
+        position: relative;
+        overflow: hidden;
+      }
+
+      .cta-card::before {
+        content: "";
+        position: absolute;
+        inset: 18px;
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        border-radius: 24px;
+        pointer-events: none;
+      }
+
+      .cta-inner {
+        position: relative;
+        z-index: 1;
+        max-width: 760px;
+      }
+
+      .cta-title {
+        font-family: "DM Serif Display", serif;
+        font-size: clamp(34px, 4vw, 52px);
+        line-height: 1.08;
+        margin-bottom: 16px;
+      }
+
+      .cta-title em {
+        color: #ffe9a2;
+        font-style: italic;
+      }
+
+      .cta-sub {
+        font-size: 15px;
+        line-height: 1.85;
+        color: rgba(250, 244, 228, 0.82);
+        margin-bottom: 26px;
+        max-width: 620px;
+      }
+
+      .btn-light {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 15px 28px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        transition: 0.25s;
+        background: var(--ivory);
+        color: var(--charcoal);
+      }
+
+      .btn-light:hover {
+        background: #fff8dc;
+        transform: translateY(-1px);
+      }
+
+      /* FOOTER */
+      footer {
+        background: var(--maroon-deep);
+        padding: 60px 56px 40px;
+        border-top: 1px solid rgba(201, 168, 76, 0.2);
+      }
+
+      .footer-top {
+        display: grid;
+        grid-template-columns: 2fr 1fr 1fr 1fr;
+        gap: 60px;
+        margin-bottom: 52px;
+      }
+
+      .footer-logo {
+        font-family: "DM Serif Display", serif;
+        font-size: 30px;
+        margin-bottom: 14px;
+        background: linear-gradient(
+          135deg,
+          #f8e89a 0%,
+          #e8c96a 20%,
+          #fffbe0 38%,
+          #c9a84c 52%,
+          #fff5b0 65%,
+          #e8c96a 80%,
+          #8a6e28 92%,
+          #f8e89a 100%
+        );
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        background-size: 200% 200%;
+        animation: glossyShift 5s ease-in-out infinite alternate;
+        filter: drop-shadow(0 0 10px rgba(232, 201, 106, 0.5));
+        display: block;
+      }
+
+      .footer-logo span {
+        font-style: italic;
+      }
+
+      .footer-about {
+        font-size: 13px;
+        line-height: 1.8;
+        color: rgba(201, 168, 76, 0.35);
+      }
+
+      .footer-col-head {
+        font-size: 9px;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+        color: var(--gold);
+        margin-bottom: 18px;
+        font-weight: 700;
+      }
+
+      .footer-link-list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .footer-link-list a {
+        font-size: 13px;
+        color: rgba(201, 168, 76, 0.3);
+        transition: color 0.2s;
+      }
+
+      .footer-link-list a:hover {
+        color: var(--gold);
+      }
+
+      .footer-bottom {
+        padding-top: 32px;
+        border-top: 1px solid rgba(201, 168, 76, 0.12);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 20px;
+      }
+
+      .footer-copy {
+        font-size: 11px;
+        color: rgba(201, 168, 76, 0.2);
+      }
+
+      .footer-tagline {
+        font-family: "DM Serif Display", serif;
+        font-size: 15px;
+        font-style: italic;
+        font-weight: 700;
+        background: linear-gradient(
+          135deg,
+          #f8e89a 0%,
+          #e8c96a 18%,
+          #fffbe0 32%,
+          #c9a84c 48%,
+          #fff5b0 62%,
+          #e8c96a 76%,
+          #8a6e28 88%,
+          #f8e89a 100%
+        );
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        background-size: 200% 200%;
+        animation: glossyShift 4s ease-in-out infinite alternate;
+        filter: drop-shadow(0 0 6px rgba(232, 201, 106, 0.45));
+        letter-spacing: 0.06em;
+      }
+
+      /* RESPONSIVE */
+      @media (max-width: 1100px) {
+        nav.site-nav {
+          padding: 0 24px;
+        }
+
+        .nav-links {
+          display: none;
+        }
+
+        .contact-hero-inner {
+          grid-template-columns: 1fr;
+        }
+
+        .quick-contact-grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+
+        .contact-main {
+          grid-template-columns: 1fr;
+        }
+
+        .map-inner {
+          grid-template-columns: 1fr;
+        }
+
+        .footer-top {
+          grid-template-columns: 1fr 1fr;
+          gap: 32px;
+        }
+
+        footer {
+          padding: 48px 24px 32px;
+        }
+      }
+
+      @media (max-width: 700px) {
+        .container,
+        .contact-hero-inner,
+        .quick-contact-grid,
+        .contact-main,
+        .map-inner,
+        .cta-card {
+          width: min(100%, calc(100% - 24px));
+        }
+
+        .contact-hero-title {
+          font-size: 40px;
+        }
+
+        .quick-contact-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .section {
+          padding: 72px 0;
+        }
+
+        .cta-card {
+          padding: 36px 18px;
+          border-radius: 24px;
+        }
+
+        .footer-top,
+        .footer-bottom {
+          grid-template-columns: 1fr;
+          display: grid;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <nav class="site-nav">
+      <a href="index.html" class="logo">Legacy<span>Awards</span></a>
+
+      <ul class="nav-links">
+        <li><a href="index.html">Home</a></li>
+        <li><a href="about.html">About Us</a></li>
+        <li><a href="products.html">Products</a></li>
+        <li><a href="custom.html">Customize</a></li>
+        <li><a href="blogs.html">Blogs</a></li>
+        <li><a href="contact.html" class="active">Contact Us</a></li>
+        <li><a href="login.html">Login</a></li>
+      </ul>
+
+      <a href="contact.html" class="nav-btn">Get a Quote</a>
+    </nav>
+
+    <!-- HERO -->
+    <section class="contact-hero">
+      <div class="contact-hero-inner">
+        <div>
+          <div class="contact-hero-eyebrow">Get in touch</div>
+          <h1 class="contact-hero-title">
+            Let's plan your next<br />
+            recognition <em>moment</em>.
+          </h1>
+          <p class="contact-hero-sub">
+            Share your bulk order, custom design idea, or a simple question. Our
+            team responds with design options, pricing, and timelines within 2
+            hours on business days.
+          </p>
+
+          <div class="hero-meta-row">
+            <div class="meta-pill dark">Average quote in 2 hours</div>
+            <div class="meta-pill dark">Pan-India delivery</div>
+            <div class="meta-pill dark">Custom design support</div>
+          </div>
+        </div>
+
+        <div class="contact-hero-aside">
+          <div class="hero-aside-kicker">Direct contact</div>
+          <div class="hero-aside-title">Talk to our team</div>
+          <div class="hero-aside-text">
+            Reach us instantly for timelines, materials, or pricing clarity. We
+            keep communication clear, structured, and responsive.
+          </div>
+          <div class="hero-aside-grid">
+            <div class="hero-aside-item">
+              <div class="hero-aside-label">Phone</div>
+              <div class="hero-aside-value">+91 98765 43210</div>
+            </div>
+            <div class="hero-aside-item">
+              <div class="hero-aside-label">WhatsApp</div>
+              <div class="hero-aside-value">+91 98765 43210</div>
+            </div>
+            <div class="hero-aside-item">
+              <div class="hero-aside-label">Email</div>
+              <div class="hero-aside-value">orders@legacyawards.in</div>
+            </div>
+            <div class="hero-aside-item">
+              <div class="hero-aside-label">Hours</div>
+              <div class="hero-aside-value">Mon–Sat, 9:00 AM – 6:00 PM</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- QUICK CONTACT STRIP -->
+    <section class="quick-contact-strip">
+      <div class="quick-contact-grid">
+        <div class="qc-card">
+          <div class="qc-icon">📞</div>
+          <div>
+            <div class="qc-label">Call us</div>
+            <div class="qc-value">+91 98765 43210</div>
+            <div class="qc-sub">Primary line for orders and queries</div>
+          </div>
+        </div>
+        <div class="qc-card">
+          <div class="qc-icon">✉️</div>
+          <div>
+            <div class="qc-label">Email</div>
+            <div class="qc-value">orders@legacyawards.in</div>
+            <div class="qc-sub">Detailed quotes and confirmations</div>
+          </div>
+        </div>
+        <div class="qc-card">
+          <div class="qc-icon">📍</div>
+          <div>
+            <div class="qc-label">Factory & showroom</div>
+            <div class="qc-value">B-14, Okhla Phase II</div>
+            <div class="qc-sub">Industrial Area, New Delhi – 110020</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- MAIN CONTACT (Form + Info) -->
+    <section class="section">
+      <div class="contact-main">
+        <!-- FORM -->
+        <div class="contact-form-card">
+          <div class="cf-eyebrow">Get a free quote</div>
+          <h2 class="cf-title">Tell us about your <em>order</em>.</h2>
+          <p class="cf-sub">
+            Fill in your details and requirements. Our team will share design
+            previews, suitable options, and an itemised quotation.
+          </p>
+
+          <div class="bulk-banner">
+            <div class="bulk-icon">📦</div>
+            <div>
+              <div class="bulk-head">Ordering 50+ trophies or plaques?</div>
+              <div class="bulk-text">
+                Select "Bulk Order" below to access priority pricing, dedicated
+                account support, and delivery commitments aligned with your
+                event date.
+              </div>
+            </div>
+          </div>
+
+          <form>
+            <div class="form-grid">
+              <div class="form-group">
+                <label class="form-label">Full name *</label>
+                <input
+                  type="text"
+                  class="form-input"
+                  placeholder="Rajesh Kumar"
+                  required
+                />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Email address *</label>
+                <input
+                  type="email"
+                  class="form-input"
+                  placeholder="rajesh@company.com"
+                  required
+                />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Phone number (optional)</label>
+                <input
+                  type="tel"
+                  class="form-input"
+                  placeholder="+91 98765 43210"
+                />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Organisation / School *</label>
+                <input
+                  type="text"
+                  class="form-input"
+                  placeholder="DPS Sonipat / Synergy Corp"
+                  required
+                />
+              </div>
+
+              <div class="form-group full">
+                <label class="form-label">Inquiry type *</label>
+                <select
+                  class="form-select"
+                  id="inquiryType"
+                  required
+                  onchange="toggleQuantity()"
+                >
+                  <option value="">Select inquiry type</option>
+                  <option value="bulk">Bulk Order</option>
+                  <option value="custom">Custom Design</option>
+                  <option value="pricing">Pricing / Quotation</option>
+                  <option value="general">General Question</option>
+                </select>
+              </div>
+
+              <div class="form-group" id="qtyGroup" style="display: none">
+                <label class="form-label">Approximate quantity *</label>
+                <input
+                  type="number"
+                  class="form-input"
+                  placeholder="e.g. 50"
+                  min="1"
+                />
+              </div>
+
+              <div class="form-group" id="eventGroup">
+                <label class="form-label">Event / occasion</label>
+                <input
+                  type="text"
+                  class="form-input"
+                  placeholder="e.g. Annual Sports Day"
+                />
+              </div>
+
+              <div class="form-group full">
+                <label class="form-label">Message / requirements</label>
+                <textarea
+                  class="form-textarea"
+                  placeholder="Describe award type, materials, engraving, brand colours, quantities, and timelines..."
+                ></textarea>
+              </div>
+
+              <div class="form-group full">
+                <label class="form-label"
+                  >Attach reference image (optional)</label
+                >
+                <label class="form-file-zone">
+                  <input type="file" accept="image/*,.pdf" />
+                  <div class="form-file-text">
+                    <em>Click to upload</em> or drag and drop<br />
+                    <small>PNG, JPG, or PDF up to 5MB</small>
+                  </div>
+                </label>
+              </div>
+
+              <div class="form-group full">
+                <button type="submit" class="form-submit">
+                  Send inquiry — get a quote
+                </button>
+                <p class="form-note">
+                  ⚡ Responses within 2 hours on business days. Your information
+                  stays confidential.
+                </p>
+              </div>
+            </div>
+          </form>
+        </div>
+
+        <!-- INFO STACK -->
+        <div class="contact-info-stack">
+          <div class="info-card">
+            <div class="info-kicker">Why reach out</div>
+            <div class="info-title">Clear support for every stage.</div>
+            <p class="info-text">
+              Whether you are planning an annual function, a corporate R&R
+              program, or a one-time felicitation, our team helps with formats,
+              materials, pricing brackets, and delivery plans.
+            </p>
+            <div class="info-list">
+              <div class="info-row">
+                <div class="info-icon-box">📝</div>
+                <div>
+                  <div class="info-label">Design guidance</div>
+                  <div class="info-value">
+                    Free layout and engraving previews
+                  </div>
+                  <div class="info-sub">
+                    We align the design language with your brand and event tone.
+                  </div>
+                </div>
+              </div>
+              <div class="info-row">
+                <div class="info-icon-box">⏱</div>
+                <div>
+                  <div class="info-label">Timelines</div>
+                  <div class="info-value">Realistic, event-first planning</div>
+                  <div class="info-sub">
+                    We work backwards from your date with clear milestones.
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="info-card dark">
+            <div class="info-kicker">Contact & hours</div>
+            <div class="info-title">Visit or call our team.</div>
+            <div class="info-list">
+              <div class="info-row">
+                <div class="info-icon-box">📍</div>
+                <div>
+                  <div class="info-label">Factory & showroom</div>
+                  <div class="info-value">B-14, Industrial Area</div>
+                  <div class="info-sub">Okhla Phase II, New Delhi – 110020</div>
+                </div>
+              </div>
+              <div class="info-row">
+                <div class="info-icon-box">📞</div>
+                <div>
+                  <div class="info-label">Phone</div>
+                  <div class="info-value">+91 98765 43210</div>
+                  <div class="info-sub">
+                    Primary line for all orders and queries
+                  </div>
+                </div>
+              </div>
+              <div class="info-row">
+                <div class="info-icon-box">✉️</div>
+                <div>
+                  <div class="info-label">Email</div>
+                  <div class="info-value">orders@legacyawards.in</div>
+                  <div class="info-sub">
+                    Preferred for quotations and approvals
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="hours-table">
+              <div class="hour-row">
+                <span>Monday – Saturday</span>
+                <span class="hour-time">9:00 AM – 6:00 PM</span>
+              </div>
+              <div class="hour-row">
+                <span>Sunday</span>
+                <span class="hour-time">Closed</span>
+              </div>
+            </div>
+
+            <!-- Fixed WhatsApp URL -->
+           <a href="https://wa.me/919876543210" target="_blank" class="wa-btn">
+              💬 Chat on WhatsApp
+            </a>
+          </div>
+
+          <div class="info-card">
+            <div class="info-kicker">Follow our work</div>
+            <div class="info-title">Social touchpoints.</div>
+            <p class="info-text">
+              See live projects, material finishes, and award concepts across
+              sectors on our social channels.
+            </p>
+            <div class="info-list">
+              <div class="info-row">
+                <div class="info-icon-box">Ig</div>
+                <div>
+                  <div class="info-label">Instagram</div>
+                  <div class="info-value">
+                    <a href="#" style="color: inherit; text-decoration: none"
+                      >@legacyawards</a
+                    >
+                  </div>
+                </div>
+              </div>
+              <div class="info-row">
+                <div class="info-icon-box">In</div>
+                <div>
+                  <div class="info-label">LinkedIn</div>
+                  <div class="info-value">
+                    <a href="#" style="color: inherit; text-decoration: none"
+                      >Legacy Awards India</a
+                    >
+                  </div>
+                </div>
+              </div>
+              <div class="info-row">
+                <div class="info-icon-box">Yt</div>
+                <div>
+                  <div class="info-label">YouTube</div>
+                  <div class="info-value">
+                    <a href="#" style="color: inherit; text-decoration: none"
+                      >Legacy Awards Studio</a
+                    >
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- MAP + FAQ -->
+    <section class="map-section">
+      <div class="section-head-center">
+        <div class="section-eyebrow">Visit & queries</div>
+        <h2 class="section-title">
+          Easy to <em>reach</em>, simple to understand.
+        </h2>
+        <p class="section-sub">
+          Find our studio on the map or browse a few quick answers before you
+          write in.
+        </p>
+      </div>
+
+      <div class="map-inner">
+        <div class="map-card">
+          <div id="map" class="map-embed"></div>
+          <div class="map-note">
+            Visits by appointment only. On-site parking available within the
+            industrial complex.
+          </div>
+        </div>
+
+        <div class="faq-card">
+          <div class="info-kicker">Frequently asked</div>
+          <div class="info-title">Common contact questions.</div>
+          <div class="faq-list">
+            <div class="faq-item">
+              <div class="faq-q">What is your minimum order quantity?</div>
+              <div class="faq-a">
+                We accept from 1 piece for premium items like crystal and
+                plaques. Standard trophy models usually start at 10 pieces, with
+                bulk pricing from 50+.
+              </div>
+            </div>
+            <div class="faq-item">
+              <div class="faq-q">Do you offer engraving or logo printing?</div>
+              <div class="faq-a">
+                Yes. We provide laser engraving, UV colour printing, and metal
+                sublimation with your logo, award title, and recipient names.
+              </div>
+            </div>
+            <div class="faq-item">
+              <div class="faq-q">How quickly can you deliver?</div>
+              <div class="faq-a">
+                Most orders dispatch in 5–7 working days after design approval.
+                Express 48-hour turnaround is available for select models.
+              </div>
+            </div>
+            <div class="faq-item">
+              <div class="faq-q">How do payments work?</div>
+              <div class="faq-a">
+                We support bank transfer, UPI, cards, and cheque for bulk
+                orders. A 50% advance starts production; corporate credit terms
+                are available after the first completed order.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="cta-section">
+      <div class="cta-card">
+        <div class="cta-inner">
+          <h2 class="cta-title">
+            Ready to plan a <em>smooth</em> awards experience?
+          </h2>
+          <p class="cta-sub">
+            Share your event date, quantities, and broad requirement. We will
+            suggest formats, materials, and a delivery plan that keeps your
+            recognition moment sharp and stress-free.
+          </p>
+          <a href="#top" class="btn-light">Submit your brief</a>
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      <div class="footer-top">
+        <div>
+          <div class="footer-logo">Legacy<span>Awards</span></div>
+          <p class="footer-about">
+            Premium trophy and award manufacturers trusted by schools,
+            corporates, and institutions across India.
+          </p>
+        </div>
+
+        <div>
+          <div class="footer-col-head">Products</div>
+          <ul class="footer-link-list">
+            <li><a href="products.html">Trophies</a></li>
+            <li><a href="products.html">Plaques</a></li>
+            <li><a href="products.html">Medals</a></li>
+            <li><a href="products.html">Crystal Awards</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <div class="footer-col-head">Services</div>
+          <ul class="footer-link-list">
+            <li><a href="custom.html">Custom Design</a></li>
+            <li><a href="products.html">Bulk Orders</a></li>
+            <li><a href="contact.html">Engraving</a></li>
+            <li><a href="contact.html">Express Delivery</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <div class="footer-col-head">Contact</div>
+          <ul class="footer-link-list">
+            <li><a href="tel:+919876543210">+91 98765 43210</a></li>
+            <li>
+              <a href="mailto:orders@legacyawards.in">orders@legacyawards.in</a>
+            </li>
+            <li><a href="#">WhatsApp Chat</a></li>
+            <li><a href="contact.html">Get Directions</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <div class="footer-copy">
+          © 2024 Legacy Awards. All rights reserved.
+        </div>
+        <div class="footer-tagline">Where Stone meets Gold meets Glory</div>
+      </div>
+    </footer>
+
+    <script>
+      const API_KEY = "9674b0ca033b4f2993529b9c0166f60b"; 
+
+      const addressText = "kendriya vidyalaya suranussi , Jalandhar , Punjab";
+
+      // Fixed Geoapify fetch URL
+      fetch(
+  `https://api.geoapify.com/v1/geocode/search?text=${encodeURIComponent(addressText)}&apiKey=${API_KEY}`
+)
+        .then((response) => response.json())
+        .then((result) => {
+          if (!result.features || !result.features.length) {
+            console.error("No location found for this address");
+            return;
+          }
+
+          const feature = result.features[0];
+          const { lat, lon } = feature.properties;
+
+          const map = L.map("map").setView([lat, lon], 16);
+
+          // Fixed Geoapify tile layer URL and attribution HTML
+          L.tileLayer(
+  `https://maps.geoapify.com/v1/tile/osm-bright/{z}/{x}/{y}.png?apiKey=${API_KEY}`,
+            {
+              attribution: 'Powered by <a href="https://www.geoapify.com/" target="_blank" rel="noopener">Geoapify</a> | © OpenStreetMap contributors',
+            }
+          ).addTo(map);
+
+          L.marker([lat, lon]).addTo(map).bindPopup(`${addressText}`).openPopup();
+        })
+        .catch((error) => console.log("Geoapify error", error));
+
+      function toggleQuantity() {
+        const typeSelect = document.getElementById("inquiryType");
+        const qtyGroup = document.getElementById("qtyGroup");
+        if (typeSelect.value === "bulk" || typeSelect.value === "custom") {
+          qtyGroup.style.display = "flex";
+        } else {
+          qtyGroup.style.display = "none";
+        }
+      }
+    </script>
+  </body>
+</html>

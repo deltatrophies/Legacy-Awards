@@ -1,0 +1,620 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" type="image/png" href="./images/images.jpg">
+  <title>Blogs — Legacy Awards</title>
+  <link href="[fonts.googleapis.com](https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600;700&display=swap)" rel="stylesheet" />
+
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --stone-light: #f3eee7;
+      --stone-mid: #ddd2c2;
+      --stone-warm: #b7a995;
+      --stone-deep: #766b5f;
+      --charcoal: #28251f;
+      --gold: #c9a84c;
+      --gold-bright: #e8c96a;
+      --gold-dark: #8a6e28;
+      --maroon: #5c1a1a;
+      --maroon-deep: #3a0e0e;
+      --ivory: #faf4e4;
+      --warm-white: #fbf8f4;
+      --white: #ffffff;
+      --bg: #f8f6f2;
+      --line: rgba(40, 37, 31, 0.08);
+      --shadow-sm: 0 4px 18px rgba(40, 37, 31, 0.06);
+      --shadow-md: 0 10px 34px rgba(40, 37, 31, 0.08);
+      --shadow-lg: 0 24px 60px rgba(40, 37, 31, 0.10);
+      --radius-sm: 14px;
+      --radius-md: 22px;
+      --radius-lg: 30px;
+      --maxw: 1280px;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--charcoal);
+      font-family: "DM Sans", sans-serif;
+      overflow-x: hidden;
+    }
+
+    @keyframes glossyShift {
+      0% { background-position: 0% 50%; }
+      100% { background-position: 100% 50%; }
+    }
+
+    img { max-width: 100%; display: block; }
+    a { text-decoration: none; color: inherit; }
+
+    /* NAV (aligned with About) */
+    nav.site-nav {
+      position: sticky;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 300;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 56px;
+      height: 72px;
+      background: rgba(40, 37, 31, 0.96);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid rgba(201, 168, 76, 0.28);
+    }
+    .logo {
+      font-family: "DM Serif Display", serif;
+      font-size: 21px;
+      letter-spacing: 0.03em;
+      background: linear-gradient(135deg,#f8e89a 0%,#e8c96a 20%,#fffbe0 35%,#c9a84c 50%,#fff5b0 65%,#e8c96a 80%,#8a6e28 90%,#f8e89a 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      background-size: 200% 200%;
+      animation: glossyShift 5s ease-in-out infinite alternate;
+      filter: drop-shadow(0 0 8px rgba(232, 201, 106, 0.45));
+    }
+    .logo span { font-style: italic; -webkit-text-fill-color: transparent; }
+    .nav-links { display: flex; gap: 34px; list-style: none; }
+    .nav-links a {
+      font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; font-weight: 500;
+      color: rgba(250,244,228,0.58); transition: color 0.2s;
+    }
+    .nav-links a:hover, .nav-links a.active { color: var(--gold); }
+    .nav-btn {
+      padding: 10px 28px; border: 1.5px solid var(--gold); color: var(--gold);
+      font-size: 11px; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; transition: all 0.25s;
+    }
+    .nav-btn:hover { background: var(--gold); color: var(--charcoal); }
+
+    /* PAGE HERO (bright, like About) */
+    .page-hero {
+      position: relative;
+      padding: 72px 0 0;
+      background:
+        radial-gradient(circle at top left, rgba(201,168,76,0.10), transparent 28%),
+        radial-gradient(circle at right center, rgba(92,26,26,0.06), transparent 24%),
+        linear-gradient(180deg, #f8f4ed 0%, #f7f4ef 44%, #f8f6f2 100%);
+      border-bottom: 1px solid rgba(40,37,31,0.06);
+    }
+    .hero-wrap {
+      width: min(var(--maxw), calc(100% - 48px));
+      margin: 0 auto;
+      padding: 56px 0 60px;
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 36px;
+      align-items: center;
+    }
+    .ph-copy .eyebrow {
+      display: inline-flex; align-items: center; gap: 10px; font-size: 11px;
+      letter-spacing: 0.22em; text-transform: uppercase; color: var(--gold-dark);
+      font-weight: 700; margin-bottom: 18px;
+    }
+    .ph-copy .eyebrow::before { content: ""; width: 28px; height: 1px; background: var(--gold); }
+    .ph-title {
+      font-family: "DM Serif Display", serif;
+      font-size: clamp(44px, 6vw, 78px);
+      line-height: 0.98; color: var(--charcoal); letter-spacing: -0.02em; margin-bottom: 16px;
+    }
+    .ph-title em { font-style: italic; color: var(--maroon); }
+    .ph-sub {
+      font-size: 16px; line-height: 1.85; color: var(--stone-deep); max-width: 560px;
+    }
+    .ph-visual {
+      background: var(--white);
+      border: 1px solid rgba(40,37,31,0.08);
+      border-radius: 28px;
+      box-shadow: var(--shadow-lg);
+      overflow: hidden;
+      height: 380px;
+      position: relative;
+    }
+    .ph-visual::after {
+      content: "";
+      position: absolute; inset: 0;
+      background: linear-gradient(to top, rgba(40,37,31,0.18), transparent 40%);
+    }
+    .ph-visual-img {
+      height: 100%;
+      background:
+        linear-gradient(135deg, rgba(92,26,26,0.08), rgba(201,168,76,0.06)),
+        url("./images/all.jpg") center/cover no-repeat;
+    }
+
+    /* TOPICS FILTER (pills) */
+    .topics-bar {
+      background: var(--white);
+      border-top: 1px solid rgba(40,37,31,0.06);
+      border-bottom: 1px solid rgba(40,37,31,0.06);
+    }
+    .topics-wrap {
+      width: min(var(--maxw), calc(100% - 48px));
+      margin: 0 auto;
+      padding: 18px 0;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+    .topic-pill {
+      padding: 10px 18px;
+      border: 1px solid rgba(40,37,31,0.10);
+      background: rgba(255,255,255,0.86);
+      border-radius: 999px;
+      color: var(--stone-deep);
+      font-size: 12px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
+      transition: 0.25s;
+    }
+    .topic-pill:hover { border-color: var(--gold); color: var(--gold-dark); transform: translateY(-1px); }
+    .topic-pill.active { background: var(--maroon); color: var(--ivory); border-color: var(--maroon); }
+
+    /* FEATURED ARTICLE (products-style wide card) */
+    .featured-wrap {
+      width: min(var(--maxw), calc(100% - 48px));
+      margin: 28px auto 12px;
+    }
+    .featured-card {
+      display: grid;
+      grid-template-columns: 1.05fr 0.95fr;
+      gap: 22px;
+      background: var(--white);
+      border: 1px solid rgba(40,37,31,0.08);
+      border-radius: 30px;
+      box-shadow: var(--shadow-md);
+      overflow: hidden;
+    }
+    .fc-visual {
+      position: relative;
+      min-height: 360px;
+      background:
+        linear-gradient(135deg, rgba(92,26,26,0.10), rgba(201,168,76,0.10)),
+        url("./images/corporate.jpg") center/cover no-repeat;
+    }
+    .fc-visual::before {
+      content: "";
+      position: absolute; inset: 18px;
+      border: 1px solid rgba(255,255,255,0.18);
+      border-radius: 20px;
+    }
+    .fc-content {
+      padding: 32px 30px 28px;
+      display: flex; flex-direction: column; justify-content: center;
+    }
+    .fc-badge {
+      display: inline-block;
+      padding: 6px 14px;
+      background: var(--maroon);
+      color: var(--ivory);
+      font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; font-weight: 800;
+      border-radius: 999px; width: fit-content; margin-bottom: 14px;
+    }
+    .fc-meta {
+      font-size: 12px; color: var(--stone-warm);
+      letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 10px; font-weight: 600;
+    }
+    .fc-title {
+      font-family: "DM Serif Display", serif;
+      font-size: 36px; line-height: 1.12; color: var(--charcoal); margin-bottom: 12px;
+    }
+    .fc-title em { color: var(--gold-dark); font-style: italic; }
+    .fc-excerpt { font-size: 15px; line-height: 1.9; color: var(--stone-deep); margin-bottom: 22px; }
+    .btn-read {
+      display: inline-flex; align-items: center; gap: 10px;
+      padding: 14px 26px; background: var(--charcoal); color: var(--ivory);
+      font-size: 12px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase;
+      border-radius: 999px; transition: 0.25s; width: fit-content;
+    }
+    .btn-read:hover { background: var(--maroon); transform: translateY(-1px); }
+
+    /* GRID HEADER */
+    .grid-head {
+      width: min(var(--maxw), calc(100% - 48px));
+      margin: 36px auto 10px;
+      display: flex; align-items: flex-end; justify-content: space-between;
+    }
+    .grid-title {
+      font-family: "DM Serif Display", serif; font-size: 40px; color: var(--charcoal);
+    }
+    .grid-title em { color: var(--maroon); font-style: italic; }
+
+    /* BLOG GRID — products-like cards */
+    .blogs-section {
+      width: min(var(--maxw), calc(100% - 48px));
+      margin: 0 auto 64px;
+    }
+    .blogs-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+    }
+    .blog-card {
+      background: var(--white);
+      border: 1px solid rgba(40,37,31,0.08);
+      border-radius: 24px;
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+      transition: transform 0.25s, box-shadow 0.25s;
+      cursor: pointer;
+      display: flex; flex-direction: column;
+    }
+    .blog-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-md); }
+    .bc-visual {
+      position: relative;
+      height: 200px;
+      background: linear-gradient(135deg, #1a1710, #3a2a1a);
+      display: flex; align-items: center; justify-content: center;
+      color: rgba(255,255,255,0.85); font-size: 54px;
+    }
+    .bc-visual::after {
+      content: ""; position: absolute; inset: 0;
+      background: linear-gradient(to top, rgba(0,0,0,0.18), transparent 40%);
+    }
+    .bc-content { padding: 18px 18px 16px; display: flex; flex-direction: column; flex: 1; }
+    .bc-tags { display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+    .bc-tag {
+      padding: 4px 10px; border: 1px solid rgba(40,37,31,0.10); border-radius: 999px;
+      font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; font-weight: 800;
+      color: var(--stone-deep); background: rgba(255,255,255,0.84);
+    }
+    .bc-title {
+      font-family: "DM Serif Display", serif;
+      font-size: 22px; line-height: 1.28; color: var(--charcoal); margin-bottom: 8px;
+    }
+    .bc-excerpt { font-size: 13px; line-height: 1.75; color: var(--stone-deep); margin-bottom: 14px; flex: 1; }
+    .bc-footer {
+      display: flex; justify-content: space-between; align-items: center;
+      padding-top: 12px; border-top: 1px solid rgba(40,37,31,0.06);
+    }
+    .bc-date { font-size: 11px; color: var(--stone-warm); letter-spacing: 0.1em; text-transform: uppercase; }
+    .bc-link {
+      font-size: 11px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase;
+      color: var(--gold-dark);
+    }
+    .bc-link:hover { color: var(--maroon); }
+
+    /* Newsletter (harmonized with About) */
+    .newsletter {
+      background: var(--charcoal);
+      padding: 64px 0;
+      margin-top: 24px;
+    }
+    .nl-inner {
+      width: min(var(--maxw), calc(100% - 48px));
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1.05fr 0.95fr;
+      gap: 48px; align-items: center;
+    }
+    .nl-eyebrow { font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--gold); margin-bottom: 12px; font-weight: 700; }
+    .nl-title { font-family: "DM Serif Display", serif; font-size: 40px; font-style: italic; color: var(--ivory); margin-bottom: 10px; }
+    .nl-sub { font-size: 14px; color: rgba(250,244,228,0.45); line-height: 1.75; }
+    .nl-form { display: flex; flex-direction: column; gap: 12px; }
+    .nl-input {
+      padding: 16px 22px; background: rgba(255,255,255,0.06);
+      border: 1.5px solid rgba(201,168,76,0.22); color: var(--ivory);
+      font-size: 13px; outline: none; transition: border-color 0.2s;
+    }
+    .nl-input:focus { border-color: var(--gold); }
+    .nl-input::placeholder { color: rgba(250,244,228,0.25); }
+    .nl-btn {
+      padding: 16px; background: var(--gold); color: var(--charcoal);
+      font-size: 12px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; border: none; cursor: pointer; transition: background 0.2s;
+    }
+    .nl-btn:hover { background: var(--gold-bright); }
+    .nl-note { font-size: 11px; color: rgba(250,244,228,0.26); }
+
+    /* FOOTER (as About) */
+    footer {
+      background: var(--maroon-deep);
+      padding: 60px 56px 40px;
+      border-top: 1px solid rgba(201, 168, 76, 0.2);
+    }
+    .footer-top {
+      display: grid; grid-template-columns: 2fr 1fr 1fr 1fr;
+      gap: 60px; margin-bottom: 52px;
+    }
+    .footer-logo {
+      font-family: "DM Serif Display", serif; font-size: 30px; margin-bottom: 14px;
+      background: linear-gradient(135deg,#f8e89a 0%,#e8c96a 20%,#fffbe0 38%,#c9a84c 52%,#fff5b0 65%,#e8c96a 80%,#8a6e28 92%,#f8e89a 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+      background-size: 200% 200%; animation: glossyShift 5s ease-in-out infinite alternate;
+      filter: drop-shadow(0 0 10px rgba(232, 201, 106, 0.5)); display: block;
+    }
+    .footer-logo span { font-style: italic; -webkit-text-fill-color: transparent; }
+    .footer-about { font-size: 13px; line-height: 1.8; color: rgba(201,168,76,0.35); }
+    .footer-col-head { font-size: 9px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--gold); margin-bottom: 18px; font-weight: 700; }
+    .footer-link-list { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+    .footer-link-list a { font-size: 13px; color: rgba(201,168,76,0.3); transition: color 0.2s; }
+    .footer-link-list a:hover { color: var(--gold); }
+    .footer-bottom {
+      padding-top: 32px; border-top: 1px solid rgba(201,168,76,0.12);
+      display: flex; justify-content: space-between; align-items: center; gap: 20px;
+    }
+    .footer-copy { font-size: 11px; color: rgba(201,168,76,0.2); }
+    .footer-tagline {
+      font-family: "DM Serif Display", serif; font-size: 15px; font-style: italic; font-weight: 700;
+      background: linear-gradient(135deg,#f8e89a 0%,#e8c96a 18%,#fffbe0 32%,#c9a84c 48%,#fff5b0 62%,#e8c96a 76%,#8a6e28 88%,#f8e89a 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+      background-size: 200% 200%; animation: glossyShift 4s ease-in-out infinite alternate;
+      filter: drop-shadow(0 0 6px rgba(232, 201, 106, 0.45)); letter-spacing: 0.06em;
+    }
+
+    /* RESPONSIVE */
+    @media (max-width: 1100px) {
+      .hero-wrap { grid-template-columns: 1fr; }
+      .nl-inner { grid-template-columns: 1fr; }
+      .blogs-grid { grid-template-columns: repeat(2, 1fr); }
+      .featured-card { grid-template-columns: 1fr; }
+      .ph-visual { height: 320px; }
+    }
+    @media (max-width: 900px) {
+      nav.site-nav { padding: 0 24px; }
+      .nav-links { display: none; }
+      footer { padding: 48px 24px 32px; }
+      .footer-top { grid-template-columns: 1fr 1fr; gap: 32px; }
+    }
+    @media (max-width: 600px) {
+      .hero-wrap, .featured-wrap, .grid-head, .blogs-section, .topics-wrap { width: min(100%, calc(100% - 24px)); }
+      .blogs-grid { grid-template-columns: 1fr; }
+      .ph-visual { height: 240px; }
+      .footer-top, .footer-bottom { grid-template-columns: 1fr; display: grid; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav class="site-nav">
+    <a href="index.html" class="logo">Legacy<span>Awards</span></a>
+    <ul class="nav-links">
+      <li><a href="index.html">Home</a></li>
+      <li><a href="about.html">About Us</a></li>
+      <li><a href="products.html">Products</a></li>
+      <li><a href="custom.html">Customize</a></li>
+      <li><a href="blogs.html" class="active">Blogs</a></li>
+      <li><a href="contact.html">Contact Us</a></li>
+      <li><a href="login.html">Login</a></li>
+    </ul>
+    <a href="contact.html" class="nav-btn">Get a Quote</a>
+  </nav>
+
+  <!-- HERO -->
+  <!-- <section class="page-hero">
+    <div class="hero-wrap">
+      <div class="ph-copy">
+        <div class="eyebrow">Insights & Ideas</div>
+        <h1 class="ph-title">The <em>Legacy</em> Journal</h1>
+        <p class="ph-sub">Stories, guides, and inspiration about the art of recognition — for organisers, HR leaders, and educators.</p>
+      </div>
+      <div class="ph-visual">
+        <div class="ph-visual-img"></div>
+      </div>
+    </div>
+  </section> -->
+
+  <!-- TOPICS -->
+  <div class="topics-bar">
+    <div class="topics-wrap">
+      <a href="#" class="topic-pill active">All Topics</a>
+      <a href="#" class="topic-pill">Corporate Recognition</a>
+      <a href="#" class="topic-pill">School & Academic</a>
+      <a href="#" class="topic-pill">Sports Events</a>
+      <a href="#" class="topic-pill">Award Design</a>
+      <a href="#" class="topic-pill">Bulk Ordering</a>
+      <a href="#" class="topic-pill">Engraving & Printing</a>
+      <a href="#" class="topic-pill">Crystal Awards</a>
+      <a href="#" class="topic-pill">Materials Guide</a>
+      <a href="#" class="topic-pill">Case Studies</a>
+    </div>
+  </div>
+
+  <!-- FEATURED -->
+  <div class="featured-wrap">
+    <div class="featured-card">
+      <div class="fc-visual"></div>
+      <div class="fc-content">
+        <span class="fc-badge">Featured Article</span>
+        <div class="fc-meta">June 2024 · 8 min read · Corporate</div>
+        <h2 class="fc-title">Why <em>Cheap Trophies</em> Cost More in the Long Run</h2>
+        <p class="fc-excerpt">That ₹200 import trophy looks fine in photos — until it starts peeling three months later. We break down the real cost of low-quality awards and why your recipients notice more than you think.</p>
+        <a href="#" class="btn-read">Read Article →</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- GRID HEADER -->
+  <div class="grid-head">
+    <h2 class="grid-title">Recent <em>Articles</em></h2>
+  </div>
+
+  <!-- BLOG GRID -->
+  <section class="blogs-section">
+    <div class="blogs-grid">
+
+      <!-- Card 1 -->
+      <article class="blog-card" onclick="window.location.href='#'">
+        <div class="bc-visual" style="background:
+          linear-gradient(135deg, rgba(26,23,16,0.08), rgba(92,26,26,0.10)),
+          url('./images/shopping (1).jpg') center/cover no-repeat;"></div>
+        <div class="bc-content">
+          <div class="bc-tags"><span class="bc-tag">Corporate</span><span class="bc-tag">HR</span></div>
+          <h3 class="bc-title">How to Choose the Right Award for Every Occasion</h3>
+          <p class="bc-excerpt">From employee of the month to CEO retirement — a practical guide to matching award type, material, and budget to the moment.</p>
+          <div class="bc-footer">
+            <span class="bc-date">May 28, 2024</span>
+            <span class="bc-link">Read →</span>
+          </div>
+        </div>
+      </article>
+
+      <!-- Card 2 -->
+      <article class="blog-card" onclick="window.location.href='#'">
+        <div class="bc-visual" style="background:
+          linear-gradient(135deg, rgba(138,110,40,0.18), rgba(58,42,26,0.14)),
+          url('./images/plaques.jpg') center/cover no-repeat;"></div>
+        <div class="bc-content">
+          <div class="bc-tags"><span class="bc-tag">Guide</span><span class="bc-tag">Engraving</span></div>
+          <h3 class="bc-title">The Complete Guide to Trophy Engraving in 2024</h3>
+          <p class="bc-excerpt">Laser engraving vs. UV printing vs. embossing — what each technique looks like, how durable they are, and which one suits your award.</p>
+          <div class="bc-footer">
+            <span class="bc-date">May 14, 2024</span>
+            <span class="bc-link">Read →</span>
+          </div>
+        </div>
+      </article>
+
+      <!-- Card 3 -->
+      <article class="blog-card" onclick="window.location.href='#'">
+        <div class="bc-visual" style="background:
+          linear-gradient(135deg, rgba(92,26,26,0.16), rgba(58,14,14,0.24)),
+          url('./images/memento.jpg') center/cover no-repeat;"></div>
+        <div class="bc-content">
+          <div class="bc-tags"><span class="bc-tag">Academic</span><span class="bc-tag">Schools</span></div>
+          <h3 class="bc-title">Annual Day Awards: 10 Ideas Beyond the Standard Trophy</h3>
+          <p class="bc-excerpt">Schools across India are reimagining their awards ceremonies. Here are 10 creative award formats that students actually remember.</p>
+          <div class="bc-footer">
+            <span class="bc-date">April 30, 2024</span>
+            <span class="bc-link">Read →</span>
+          </div>
+        </div>
+      </article>
+
+      <!-- Card 4 -->
+      <article class="blog-card" onclick="window.location.href='#'">
+        <div class="bc-visual" style="background:
+          linear-gradient(135deg, rgba(26,58,92,0.20), rgba(42,90,140,0.18)),
+          url('./images/shopping.jpg') center/cover no-repeat;"></div>
+        <div class="bc-content">
+          <div class="bc-tags"><span class="bc-tag">Sports</span><span class="bc-tag">Events</span></div>
+          <h3 class="bc-title">Ordering Medals for a Large Sports Event: A Step-by-Step Timeline</h3>
+          <p class="bc-excerpt">Managing 500+ medals for a sports meet is stressful. We share the exact timeline our repeat clients use to make the process seamless.</p>
+          <div class="bc-footer">
+            <span class="bc-date">April 12, 2024</span>
+            <span class="bc-link">Read →</span>
+          </div>
+        </div>
+      </article>
+
+      <!-- Card 5 -->
+      <article class="blog-card" onclick="window.location.href='#'">
+        <div class="bc-visual" style="background:
+          linear-gradient(135deg, rgba(200,216,232,0.35), rgba(160,184,208,0.28)),
+          url('./images/crystal 2.jpg') center/cover no-repeat;"></div>
+        <div class="bc-content">
+          <div class="bc-tags"><span class="bc-tag">Premium</span><span class="bc-tag">Crystal</span></div>
+          <h3 class="bc-title">Crystal Awards: Everything You Need to Know Before You Buy</h3>
+          <p class="bc-excerpt">Optical crystal, glass, and acrylic — they look similar in photos but feel completely different. We explain every difference that matters.</p>
+          <div class="bc-footer">
+            <span class="bc-date">March 22, 2024</span>
+            <span class="bc-link">Read →</span>
+          </div>
+        </div>
+      </article>
+
+      <!-- Card 6 -->
+      <article class="blog-card" onclick="window.location.href='#'">
+        <div class="bc-visual" style="background:
+          linear-gradient(135deg, rgba(46,42,34,0.14), rgba(23,20,16,0.18)),
+          url('./images/all.jpg') center/cover no-repeat;"></div>
+        <div class="bc-content">
+          <div class="bc-tags"><span class="bc-tag">Packaging</span><span class="bc-tag">Tips</span></div>
+          <h3 class="bc-title">Presentation Matters: How Award Packaging Affects Perceived Value</h3>
+          <p class="bc-excerpt">The unboxing moment is part of the award experience. Here's how to choose packaging that makes the recipient feel like it was made for them.</p>
+          <div class="bc-footer">
+            <span class="bc-date">March 8, 2024</span>
+            <span class="bc-link">Read →</span>
+          </div>
+        </div>
+      </article>
+
+    </div>
+  </section>
+
+  <!-- NEWSLETTER -->
+  <section class="newsletter">
+    <div class="nl-inner">
+      <div>
+        <div class="nl-eyebrow">Stay Informed</div>
+        <h2 class="nl-title">Award insights, delivered monthly.</h2>
+        <p class="nl-sub">Join 2,000+ event planners, HR managers, and school coordinators who get our monthly newsletter — practical tips, industry trends, and exclusive offers.</p>
+      </div>
+      <div>
+        <form class="nl-form" onsubmit="event.preventDefault();">
+          <input type="text" placeholder="Your Name" class="nl-input" />
+          <input type="email" placeholder="Your Email Address" class="nl-input" />
+          <button class="nl-btn">Subscribe to Newsletter</button>
+          <span class="nl-note">No spam. Unsubscribe anytime. We respect your privacy.</span>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="footer-top">
+      <div>
+        <div class="footer-logo">Legacy<span>Awards</span></div>
+        <p class="footer-about">Premium trophy and award manufacturers trusted by 600+ schools, corporates, and institutions across India since 2001.</p>
+      </div>
+      <div>
+        <div class="footer-col-head">Products</div>
+        <ul class="footer-link-list">
+          <li><a href="products.html">Trophies</a></li>
+          <li><a href="products.html">Plaques</a></li>
+          <li><a href="products.html">Medals</a></li>
+          <li><a href="products.html">Crystal Awards</a></li>
+        </ul>
+      </div>
+      <div>
+        <div class="footer-col-head">Services</div>
+        <ul class="footer-link-list">
+          <li><a href="custom.html">Custom Design</a></li>
+          <li><a href="products.html">Bulk Orders</a></li>
+          <li><a href="contact.html">Engraving</a></li>
+          <li><a href="contact.html">Express Delivery</a></li>
+        </ul>
+      </div>
+      <div>
+        <div class="footer-col-head">Contact</div>
+        <ul class="footer-link-list">
+          <li><a href="tel:+919876543210">+91 98765 43210</a></li>
+          <li><a href="mailto:orders@legacyawards.in">orders@legacyawards.in</a></li>
+          <li><a href="#">WhatsApp Chat</a></li>
+          <li><a href="contact.html">Get Directions</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <div class="footer-copy">© 2024 Legacy Awards. All rights reserved.</div>
+      <div class="footer-tagline">Where Stone meets Gold meets Glory</div>
+    </div>
+  </footer>
+
+</body>
+</html>
+ 
