@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="icon" type="image/png" href="./images/images.jpg">
+    <link rel="icon" type="image/png" href="./images/images.jpg" />
     <title>Legacy Trophies — Fusion Edition</title>
     <link
       href="https://fonts.googleapis.com/css2?family=Abril+Fatface&family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap"
@@ -57,7 +57,10 @@
         justify-content: space-between;
         padding: 0 56px;
         height: 72px;
-        background: var(--charcoal);
+        background: rgba(18, 18, 18, 0.95);
+        backdrop-filter: blur(12px);
+        border-bottom: 1px solid rgba(201, 168, 76, 0.3);
+        box-shadow: 0 6px 25px rgba(0, 0, 0, 0.25);
         border-bottom: 2px solid var(--gold-dark);
       }
       .nav-links {
@@ -100,6 +103,12 @@
         min-height: 100vh;
         padding-top: 72px;
         overflow: hidden;
+        background:
+        linear-gradient(
+            180deg,
+            #242424 0%,
+            #1a1a1a 100%
+        );
       }
 
       /* LEFT — stone/marble side */
@@ -397,9 +406,9 @@
       }
 
       .pillars_heading {
-         font-family: "DM Serif Display";
-         font-size: 30px;
-         padding-bottom: 40px;
+        font-family: "DM Serif Display";
+        font-size: 30px;
+        padding-bottom: 40px;
       }
 
       .pillar-cell {
@@ -408,7 +417,7 @@
         background: var(--warm-white);
         transition: background 0.25s;
       }
-            .pillar-cell:first-child {
+      .pillar-cell:first-child {
         border-right: none;
         border-bottom: none;
       }
