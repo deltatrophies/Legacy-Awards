@@ -1487,6 +1487,12 @@
             document.getElementById('breadcrumbName').textContent = p.name;
             document.title = `${p.name} — Legacy Awards`;
 
+
+            const mainImageSrc = visualImageMap[p.visual] || './images/shopping.jpg';
+document.getElementById('mainImage').src = mainImageSrc;
+document.getElementById('mainImage').alt = p.name;
+
+
             // Specs
             const specsHtml = Object.entries(p.specs || {}).map(([k, v]) => `
                 <div class="spec-item">
@@ -1500,18 +1506,20 @@
             document.getElementById('accDetails').innerHTML = p.details || '<p>Details coming soon.</p>';
 
             // Thumbnails (using same image, would be multiple in real scenario)
-            const thumbRow = document.getElementById('thumbRow');
-            const thumbs = [
-                { label: 'Front', src: './images/shopping.jpg' },
-                { label: 'Side',  src: './images/shopping.jpg' },
-                { label: 'Base',  src: './images/shopping.jpg' },
-                { label: 'Box',   src: './images/shopping.jpg' },
-            ];
-            thumbRow.innerHTML = thumbs.map((t, i) => `
-                <div class="thumb ${i === 0 ? 'active' : ''}" onclick="selectThumb(this, '${t.src}')">
-                    <img src="${t.src}" alt="${t.label}" />
-                </div>
-            `).join('');
+           const thumbRow = document.getElementById('thumbRow');
+const thumbs = [
+    { label: 'Front', src: mainImageSrc },
+    { label: 'Side',  src: mainImageSrc },
+    { label: 'Base',  src: mainImageSrc },
+    { label: 'Box',   src: mainImageSrc },
+];
+
+thumbRow.innerHTML = thumbs.map((t, i) => `
+    <div class="thumb ${i === 0 ? 'active' : ''}" onclick="selectThumb(this, '${t.src}')">
+        <img src="${t.src}" alt="${t.label}" />
+    </div>
+`).join('');
+
 
             // Related products (same category, excluding current)
             const related = (allProducts[cat] || allProducts.all)
@@ -1610,13 +1618,62 @@ document.getElementById('relatedGrid').innerHTML = related.map(rp => `
         }
 
         // ── ENQUIRE ──
+        function getCart() {
+            const rawValue = localStorage.getItem("legacyCart");
+            if (!rawValue) return [];
+            try {
+                const parsed = JSON.parse(rawValue);
+                return Array.isArray(parsed) ? parsed : [];
+            } catch (error) {
+                console.error("Invalid legacyCart JSON:", error, rawValue);
+                localStorage.removeItem("legacyCart");
+                return [];
+            }
+        }
+
+        function saveCart(cart) {
+            if (!Array.isArray(cart)) {
+                console.warn("saveCart called with invalid data:", cart);
+                localStorage.setItem("legacyCart", "[]");
+                return;
+            }
+            localStorage.setItem("legacyCart", JSON.stringify(cart));
+        }
+
         function handleEnquire() {
             const p = window._currentProduct;
-            const qty = document.getElementById('qtyInput').value;
+            const qty = Math.max(1, parseInt(document.getElementById('qtyInput').value || 1, 10));
+            const cat = window._currentCat || "all";
+
             if (!p) return;
-            const url = `contact.html?product=${encodeURIComponent(p.name)}&qty=${qty}&cat=${encodeURIComponent(window._currentCat || '')}`;
-            window.location.href = url;
+
+            const cart = getCart();
+            const existingIndex = cart.findIndex(item => item.name === p.name);
+
+            const itemToStore = {
+                id: p.id || "",
+                name: p.name,
+                tag: p.tag || "Premium Award",
+                desc: p.desc || "",
+                category: cat,
+                price: String(p.price || "0").trim(),
+                qty,
+                visual: p.visual || "",
+                badge: p.badge || "",
+                badgeText: p.badgeText || "",
+                specs: p.specs || {}
+            };
+
+            if (existingIndex > -1) {
+                cart[existingIndex].qty = Math.max(1, Number(cart[existingIndex].qty || 1) + qty);
+            } else {
+                cart.push(itemToStore);
+            }
+
+            saveCart(cart);
+            window.location.href = "cart.html";
         }
+
 
         // ── ACCORDION ──
         function toggleAcc(btn) {
