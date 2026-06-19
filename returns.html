@@ -1,0 +1,427 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Returns Policy — Legacy Awards</title>
+  <link rel="icon" type="image/png" href="./images/images.jpg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --stone-light: #f3eee7;
+      --stone-mid: #ddd2c2;
+      --stone-warm: #b7a995;
+      --stone-deep: #766b5f;
+      --charcoal: #28251f;
+      --gold: #c9a84c;
+      --gold-bright: #e8c96a;
+      --gold-dark: #8a6e28;
+      --maroon: #5c1a1a;
+      --maroon-deep: #3a0e0e;
+      --ivory: #faf4e4;
+      --warm-white: #fbf8f4;
+      --white: #ffffff;
+      --bg: #f8f6f2;
+      --line: rgba(40, 37, 31, 0.08);
+      --shadow-sm: 0 4px 18px rgba(40, 37, 31, 0.06);
+      --shadow-md: 0 10px 34px rgba(40, 37, 31, 0.08);
+      --shadow-lg: 0 24px 60px rgba(40, 37, 31, 0.10);
+      --radius-sm: 14px;
+      --radius-md: 22px;
+      --radius-lg: 30px;
+      --maxw: 1280px;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--charcoal);
+      font-family: "DM Sans", sans-serif;
+      overflow-x: hidden;
+    }
+
+    img { max-width: 100%; display: block; }
+    a { text-decoration: none; color: inherit; }
+    ul { list-style: none; }
+
+    .container {
+      width: min(var(--maxw), calc(100% - 48px));
+      margin: 0 auto;
+    }
+
+    @keyframes glossyShift {
+      0% { background-position: 0% 50%; }
+      100% { background-position: 100% 50%; }
+    }
+
+    nav.site-nav {
+      position: sticky;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 300;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 56px;
+      height: 72px;
+      background: rgba(40, 37, 31, 0.96);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid rgba(201, 168, 76, 0.28);
+    }
+
+    .logo {
+      font-family: "DM Serif Display", serif;
+      font-size: 21px;
+      letter-spacing: 0.03em;
+      background: linear-gradient(135deg, #f8e89a 0%, #e8c96a 20%, #fffbe0 35%, #c9a84c 50%, #fff5b0 65%, #e8c96a 80%, #8a6e28 90%, #f8e89a 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      background-size: 200% 200%;
+      animation: glossyShift 5s ease-in-out infinite alternate;
+      filter: drop-shadow(0 0 8px rgba(232, 201, 106, 0.45));
+    }
+
+    .logo span { font-style: italic; }
+
+    .nav-links {
+      display: flex;
+      gap: 34px;
+    }
+
+    .nav-links a {
+      font-size: 12px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      font-weight: 500;
+      color: rgba(250, 244, 228, 0.58);
+      transition: color 0.2s;
+    }
+
+    .nav-links a:hover,
+    .nav-links a.active { color: var(--gold); }
+
+    .nav-btn {
+      padding: 10px 28px;
+      border: 1.5px solid var(--gold);
+      color: var(--gold);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      transition: all 0.25s;
+    }
+
+    .nav-btn:hover {
+      background: var(--gold);
+      color: var(--charcoal);
+    }
+
+    .page-hero {
+      padding: 92px 0 36px;
+      background: radial-gradient(circle at top left, rgba(201,168,76,0.10), transparent 28%),
+                  radial-gradient(circle at right center, rgba(92,26,26,0.06), transparent 24%),
+                  linear-gradient(180deg, #f8f4ed 0%, #f7f4ef 44%, #f8f6f2 100%);
+      border-bottom: 1px solid rgba(40,37,31,0.06);
+    }
+
+    .page-hero .container {
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 36px;
+      align-items: center;
+    }
+
+    .hero-copy {
+      max-width: 680px;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 11px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--gold-dark);
+      font-weight: 700;
+      margin-bottom: 22px;
+    }
+
+    .eyebrow::before {
+      content: "";
+      width: 28px;
+      height: 1px;
+      background: var(--gold);
+    }
+
+    .hero-title {
+      font-family: "DM Serif Display", serif;
+      font-size: clamp(42px, 6vw, 72px);
+      line-height: 0.98;
+      color: var(--charcoal);
+      letter-spacing: -0.02em;
+      margin-bottom: 20px;
+    }
+
+    .hero-title em { font-style: italic; color: var(--maroon); }
+
+    .hero-sub {
+      font-size: 16px;
+      line-height: 1.85;
+      color: var(--stone-deep);
+      max-width: 560px;
+      margin-bottom: 30px;
+    }
+
+    .hero-actions {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      margin-bottom: 28px;
+    }
+
+    .btn-primary,
+    .btn-secondary {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 15px 28px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      transition: 0.25s;
+    }
+
+    .btn-primary {
+      background: var(--maroon);
+      color: var(--ivory);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .btn-secondary {
+      border: 1px solid rgba(40,37,31,0.1);
+      color: var(--stone-deep);
+      background: rgba(255,255,255,0.92);
+    }
+
+    .btn-secondary:hover {
+      border-color: var(--gold);
+      color: var(--charcoal);
+    }
+
+    .page-section {
+      padding: 54px 0 60px;
+    }
+
+    .section-head {
+      max-width: 720px;
+      margin-bottom: 32px;
+    }
+
+    .section-title {
+      font-family: "DM Serif Display", serif;
+      font-size: clamp(36px, 4vw, 56px);
+      line-height: 1.08;
+      color: var(--charcoal);
+      margin-bottom: 18px;
+    }
+
+    .section-sub {
+      font-size: 15px;
+      color: var(--stone-deep);
+      line-height: 1.85;
+    }
+
+    .policy-grid {
+      display: grid;
+      gap: 24px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .policy-card {
+      background: var(--white);
+      border: 1px solid rgba(40,37,31,0.06);
+      border-radius: 28px;
+      padding: 32px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .policy-card h2 {
+      font-family: "DM Serif Display", serif;
+      font-size: 24px;
+      margin-bottom: 14px;
+      color: var(--charcoal);
+    }
+
+    .policy-card p,
+    .policy-card ul {
+      font-size: 15px;
+      line-height: 1.9;
+      color: var(--stone-deep);
+    }
+
+    .policy-card ul {
+      margin-top: 14px;
+      padding-left: 18px;
+    }
+
+    .policy-card li {
+      margin-bottom: 10px;
+    }
+
+    footer {
+      padding: 36px 0 48px;
+      border-top: 1px solid rgba(40,37,31,0.06);
+      background: rgba(248,246,242,0.95);
+    }
+
+    .footer-inner {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 24px;
+    }
+
+    .footer-inner p {
+      color: var(--stone-deep);
+      font-size: 14px;
+    }
+
+    @media (max-width: 900px) {
+      nav.site-nav { padding: 0 24px; }
+      .nav-links { display: none; }
+      .page-hero .container { grid-template-columns: 1fr; }
+      .policy-grid { grid-template-columns: 1fr; }
+      .footer-inner { flex-direction: column; align-items: flex-start; }
+    }
+  </style>
+</head>
+<body>
+  <nav class="site-nav">
+    <a href="index.html" class="logo">Legacy<span>Awards</span></a>
+    <ul class="nav-links">
+      <li><a href="index.html">Home</a></li>
+      <li><a href="about.html">About Us</a></li>
+      <li><a href="products.html">Products</a></li>
+      <li><a href="custom.html">Customize</a></li>
+      <li><a href="blogs.html">Blogs</a></li>
+      <li><a href="contact.html">Contact Us</a></li>
+      <li><a href="login.html">Login</a></li>
+    </ul>
+    <a href="contact.html" class="nav-btn">Get a Quote</a>
+  </nav>
+
+  <section class="page-hero">
+    <div class="container">
+      <div class="hero-copy">
+        <div class="eyebrow">Returns Policy</div>
+        <h1 class="hero-title">Returns and order adjustments made simple.</h1>
+        <p class="hero-sub">Legacy Awards stands behind our craftsmanship. This page explains when returns or order revisions are accepted, and how we handle custom recognition items responsibly.</p>
+        <div class="hero-actions">
+          <a href="products.html" class="btn-primary">View Collections</a>
+          <a href="contact.html" class="btn-secondary">Contact Support</a>
+        </div>
+      </div>
+      <div class="hero-visual">
+        <div class="policy-card" style="min-height: 320px; display: grid; gap: 18px; padding: 36px; background: linear-gradient(135deg, rgba(201,168,76,0.12), rgba(248,246,242,0.95)); border-color: rgba(201,168,76,0.14);">
+          <h2>Clear returns for non-custom orders.</h2>
+          <p>Custom trophy orders, once approved and manufactured, are generally not returnable. We do offer revisions for artwork, engraving, and production setup before final approval.</p>
+          <div style="display: grid; gap: 12px;">
+            <div style="display: flex; gap: 10px; align-items: center;
+                padding: 14px 18px; border-radius: 18px; background: rgba(255,255,255,0.88); border: 1px solid rgba(40,37,31,0.08);">
+              <span style="font-size: 18px; color: var(--maroon);">✓</span>
+              <span style="color: var(--stone-deep);">Returns accepted for unopened stock items.</span>
+            </div>
+            <div style="display: flex; gap: 10px; align-items: center;
+                padding: 14px 18px; border-radius: 18px; background: rgba(255,255,255,0.88); border: 1px solid rgba(40,37,31,0.08);">
+              <span style="font-size: 18px; color: var(--maroon);">⚠️</span>
+              <span style="color: var(--stone-deep);">Custom orders can be revised before production starts.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="page-section" style="padding-top: 12px;">
+    <div class="container">
+      <div class="policy-card" style="background: rgba(255,255,255,0.96); border-color: rgba(92,26,26,0.12); box-shadow: var(--shadow-sm); padding: 28px; margin-bottom: 24px;">
+        <h2 style="font-size: 24px; margin-bottom: 14px;">Return process in three steps</h2>
+        <div style="display: grid; gap: 16px;">
+          <div style="padding: 20px; border-radius: 22px; border: 1px solid rgba(40,37,31,0.08);">
+            <strong>1. Request</strong>
+            <p style="margin-top: 8px; color: var(--stone-deep); font-size: 14px; line-height: 1.8;">Send order details, condition, and reason within 7 days.</p>
+          </div>
+          <div style="padding: 20px; border-radius: 22px; border: 1px solid rgba(40,37,31,0.08);">
+            <strong>2. Review</strong>
+            <p style="margin-top: 8px; color: var(--stone-deep); font-size: 14px; line-height: 1.8;">We inspect and confirm whether the item qualifies for return or revision.</p>
+          </div>
+          <div style="padding: 20px; border-radius: 22px; border: 1px solid rgba(40,37,31,0.08);">
+            <strong>3. Resolution</strong>
+            <p style="margin-top: 8px; color: var(--stone-deep); font-size: 14px; line-height: 1.8;">Refund, replacement, or repair details are shared once review is complete.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="page-section">
+    <div class="container">
+      <div class="section-head">
+        <h2 class="section-title">Our returns approach</h2>
+        <p class="section-sub">This policy gives clients confidence while also protecting the custom work your business produces.</p>
+      </div>
+      <div class="policy-grid">
+        <div class="policy-card">
+          <h2>Standard order returns</h2>
+          <ul>
+            <li>Stock items may be returned within 7 days if unopened and undamaged.</li>
+            <li>Return requests should include order ID and condition details.</li>
+            <li>Shipping cost for returns is handled by the customer unless the item arrived damaged.</li>
+            <li>Refunds are processed after inspection and may take 5–7 business days.</li>
+          </ul>
+        </div>
+        <div class="policy-card">
+          <h2>Custom order revisions</h2>
+          <ul>
+            <li>Design and engraving changes are managed during proof approval.</li>
+            <li>Once production begins, only material or finishing corrections are accepted.</li>
+            <li>We require clear confirmation for all custom requests before manufacturing.</li>
+          </ul>
+        </div>
+        <div class="policy-card">
+          <h2>Damaged or incorrect delivery</h2>
+          <p>If a shipped item arrives damaged or incorrect, notify us within 48 hours. We will arrange a replacement or repair with priority support.</p>
+        </div>
+        <div class="policy-card">
+          <h2>Order cancellation</h2>
+          <p>Cancellations are accepted before production begins. For fully custom pieces, cancellation requests after approval may incur partial charges.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="page-section" style="padding-top: 0;">
+    <div class="container">
+      <div class="policy-card" style="background: linear-gradient(135deg, rgba(92,26,26,0.08), rgba(248,246,242,0.92)); border-color: rgba(92,26,26,0.12);">
+        <h2>Need help?</h2>
+        <p>If you are unsure whether your order qualifies for return or revision, please contact our support team. We will clarify the next steps and help you keep your event schedule on track.</p>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="container footer-inner">
+      <p>Legacy Awards &copy; 2026. Helping clients manage custom recognition confidently.</p>
+      <a href="contact.html" class="nav-btn" style="padding: 12px 22px;">Contact Support</a>
+    </div>
+  </footer>
+</body>
+</html>
