@@ -1,0 +1,26 @@
+{
+  "name": "legacy-trophies",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "client",
+    "server"
+  ],
+  "scripts": {
+    "dev": "concurrently -k -n CLIENT,SERVER -c cyan,magenta \"npm:dev:client\" \"npm:dev:server\"",
+    "dev:client": "npm run dev --workspace client",
+    "dev:server": "npm run dev --workspace server",
+    "build": "npm run build --workspace client",
+    "start": "npm run start --workspace server",
+    "preview": "npm run preview --workspace client",
+    "seed": "npm run seed --workspace server",
+    "admin:create": "npm run admin:create --workspace server",
+    "smoke": "npm run smoke --workspace server",
+    "test": "npm run test --workspace server",
+    "test:watch": "npm run test:watch --workspace server"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}

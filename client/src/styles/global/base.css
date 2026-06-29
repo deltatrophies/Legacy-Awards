@@ -1,0 +1,28 @@
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+}
+
+img {
+  max-width: 100%;
+}
+
+.btn-maroon,
+.btn-stone,
+.btn-primary,
+.btn-secondary,
+.primary-command,
+.secondary-command,
+.cart-btn,
+.form-submit,
+.submit-quote {
+  -webkit-text-fill-color: currentColor;
+}
