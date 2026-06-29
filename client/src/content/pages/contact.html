@@ -1,0 +1,431 @@
+
+    <section class="contact-hero">
+      <div class="contact-hero-inner">
+        <div>
+          <div class="contact-hero-eyebrow">Get in touch</div>
+          <h1 class="contact-hero-title">
+            Let's plan your next<br />
+            recognition <em>moment</em>.
+          </h1>
+          <p class="contact-hero-sub">
+            Share your bulk order, custom design idea, or a simple question. Our
+            team responds with design options, pricing, and timelines within 2
+            hours on business days.
+          </p>
+
+          <div class="hero-meta-row">
+            <div class="meta-pill dark">Average quote in 2 hours</div>
+            <div class="meta-pill dark">Pan-India delivery</div>
+            <div class="meta-pill dark">Custom design support</div>
+          </div>
+        </div>
+
+        <div class="contact-hero-aside">
+          <div class="hero-aside-kicker">Direct contact</div>
+          <div class="hero-aside-title">Talk to our team</div>
+          <div class="hero-aside-text">
+            Reach us instantly for timelines, materials, or pricing clarity. We
+            keep communication clear, structured, and responsive.
+          </div>
+          <div class="hero-aside-grid">
+            <div class="hero-aside-item">
+              <div class="hero-aside-label">Phone</div>
+              <div class="hero-aside-value">Contact via enquiry form</div>
+            </div>
+            <div class="hero-aside-item">
+              <div class="hero-aside-label">WhatsApp</div>
+              <div class="hero-aside-value">Contact via enquiry form</div>
+            </div>
+            <div class="hero-aside-item">
+              <div class="hero-aside-label">Email</div>
+              <div class="hero-aside-value">orders@legacyawards.in</div>
+            </div>
+            <div class="hero-aside-item">
+              <div class="hero-aside-label">Hours</div>
+              <div class="hero-aside-value">Mon–Sat, 9:00 AM – 6:00 PM</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    
+    <section class="quick-contact-strip">
+      <div class="quick-contact-grid">
+        <div class="qc-card">
+          <div class="qc-icon">📞</div>
+          <div>
+            <div class="qc-label">Call us</div>
+            <div class="qc-value">Contact via enquiry form</div>
+            <div class="qc-sub">Primary line for orders and queries</div>
+          </div>
+        </div>
+        <div class="qc-card">
+          <div class="qc-icon">✉️</div>
+          <div>
+            <div class="qc-label">Email</div>
+            <div class="qc-value">orders@legacyawards.in</div>
+            <div class="qc-sub">Detailed quotes and confirmations</div>
+          </div>
+        </div>
+        <div class="qc-card">
+          <div class="qc-icon">📍</div>
+          <div>
+            <div class="qc-label">Factory & showroom</div>
+            <div class="qc-value">B-14, Okhla Phase II</div>
+            <div class="qc-sub">Industrial Area, New Delhi – 110020</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    
+    <section class="section">
+      <div class="contact-main">
+        
+        <div class="contact-form-card">
+          <div class="cf-eyebrow">Get a free quote</div>
+          <h2 class="cf-title">Tell us about your <em>order</em>.</h2>
+          <p class="cf-sub">
+            Fill in your details and requirements. Our team will share design
+            previews, suitable options, and an itemised quotation.
+          </p>
+
+          <div class="bulk-banner">
+            <div class="bulk-icon">📦</div>
+            <div>
+              <div class="bulk-head">Ordering 50+ trophies or plaques?</div>
+              <div class="bulk-text">
+                Select "Bulk Order" below to access priority pricing, dedicated
+                account support, and delivery commitments aligned with your
+                event date.
+              </div>
+            </div>
+          </div>
+
+          <form id="contactForm">
+            <div class="form-grid">
+              <div class="form-group">
+                <label class="form-label">Full name *</label>
+                <input
+                  type="text"
+                  name="name"
+                  class="form-input"
+                  placeholder="Rajesh Kumar"
+                  required
+                />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Email address *</label>
+                <input
+                  type="email"
+                  name="email"
+                  class="form-input"
+                  placeholder="rajesh@company.com"
+                  required
+                />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Phone number (optional)</label>
+                <input
+                  type="tel"
+                  name="phone"
+                  class="form-input"
+                  placeholder="+91 XXXXX XXXXX"
+                />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Organisation / School *</label>
+                <input
+                  type="text"
+                  name="organization"
+                  class="form-input"
+                  placeholder="DPS Sonipat / Synergy Corp"
+                  required
+                />
+              </div>
+
+              <div class="form-group full">
+                <label class="form-label">Inquiry type *</label>
+                <select
+                  class="form-select"
+                  id="inquiryType"
+                  name="type"
+                  required
+                  onchange="toggleQuantity()"
+                >
+                  <option value="">Select inquiry type</option>
+                  <option value="bulk">Bulk Order</option>
+                  <option value="custom">Custom Design</option>
+                  <option value="pricing">Pricing / Quotation</option>
+                  <option value="general">General Question</option>
+                </select>
+              </div>
+
+              <div class="form-group" id="qtyGroup" style="display: none">
+                <label class="form-label">Approximate quantity *</label>
+                <input
+                  type="number"
+                  name="quantity"
+                  class="form-input"
+                  placeholder="e.g. 50"
+                  min="1"
+                />
+              </div>
+
+              <div class="form-group" id="eventGroup">
+                <label class="form-label">Event / occasion</label>
+                <input
+                  type="text"
+                  name="event"
+                  class="form-input"
+                  placeholder="e.g. Annual Sports Day"
+                />
+              </div>
+
+              <div class="form-group full">
+                <label class="form-label">Message / requirements</label>
+                <textarea
+                  name="message"
+                  class="form-textarea"
+                  placeholder="Describe award type, materials, engraving, brand colours, quantities, and timelines..."
+                ></textarea>
+              </div>
+
+              <div class="form-group full">
+                <label class="form-label"
+                  >Attach reference image (optional)</label
+                >
+                <label class="form-file-zone">
+                  <input type="file" name="attachment" accept="image/*,.pdf" />
+                  <div class="form-file-text">
+                    <em>Click to upload</em> or drag and drop<br />
+                    <small>PNG, JPG, or PDF up to 5MB</small>
+                  </div>
+                </label>
+              </div>
+
+              <div class="form-group full">
+                <button type="submit" class="form-submit">
+                  Send inquiry — get a quote
+                </button>
+                <p class="form-note" id="contactStatus" aria-live="polite">
+                  ⚡ Responses within 2 hours on business days. Your information
+                  stays confidential.
+                </p>
+              </div>
+            </div>
+          </form>
+        </div>
+
+        
+        <div class="contact-info-stack">
+          <div class="info-card">
+            <div class="info-kicker">Why reach out</div>
+            <div class="info-title">Clear support for every stage.</div>
+            <p class="info-text">
+              Whether you are planning an annual function, a corporate R&R
+              program, or a one-time felicitation, our team helps with formats,
+              materials, pricing brackets, and delivery plans.
+            </p>
+            <div class="info-list">
+              <div class="info-row">
+                <div class="info-icon-box">📝</div>
+                <div>
+                  <div class="info-label">Design guidance</div>
+                  <div class="info-value">
+                    Free layout and engraving previews
+                  </div>
+                  <div class="info-sub">
+                    We align the design language with your brand and event tone.
+                  </div>
+                </div>
+              </div>
+              <div class="info-row">
+                <div class="info-icon-box">⏱</div>
+                <div>
+                  <div class="info-label">Timelines</div>
+                  <div class="info-value">Realistic, event-first planning</div>
+                  <div class="info-sub">
+                    We work backwards from your date with clear milestones.
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="info-card dark">
+            <div class="info-kicker">Contact & hours</div>
+            <div class="info-title">Visit or call our team.</div>
+            <div class="info-list">
+              <div class="info-row">
+                <div class="info-icon-box">📍</div>
+                <div>
+                  <div class="info-label">Factory & showroom</div>
+                  <div class="info-value">B-14, Industrial Area</div>
+                  <div class="info-sub">Okhla Phase II, New Delhi – 110020</div>
+                </div>
+              </div>
+              <div class="info-row">
+                <div class="info-icon-box">📞</div>
+                <div>
+                  <div class="info-label">Phone</div>
+                  <div class="info-value">Contact via enquiry form</div>
+                  <div class="info-sub">
+                    Primary line for all orders and queries
+                  </div>
+                </div>
+              </div>
+              <div class="info-row">
+                <div class="info-icon-box">✉️</div>
+                <div>
+                  <div class="info-label">Email</div>
+                  <div class="info-value">orders@legacyawards.in</div>
+                  <div class="info-sub">
+                    Preferred for quotations and approvals
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="hours-table">
+              <div class="hour-row">
+                <span>Monday – Saturday</span>
+                <span class="hour-time">9:00 AM – 6:00 PM</span>
+              </div>
+              <div class="hour-row">
+                <span>Sunday</span>
+                <span class="hour-time">Closed</span>
+              </div>
+            </div>
+
+            
+           <a href="/contact" class="wa-btn">
+              💬 Chat on WhatsApp
+            </a>
+          </div>
+
+          <div class="info-card">
+            <div class="info-kicker">Follow our work</div>
+            <div class="info-title">Social touchpoints.</div>
+            <p class="info-text">
+              See live projects, material finishes, and award concepts across
+              sectors on our social channels.
+            </p>
+            <div class="info-list">
+              <div class="info-row">
+                <div class="info-icon-box">Ig</div>
+                <div>
+                  <div class="info-label">Instagram</div>
+                  <div class="info-value">
+                    <a href="#" style="color: inherit; text-decoration: none"
+                      >@legacyawards</a
+                    >
+                  </div>
+                </div>
+              </div>
+              <div class="info-row">
+                <div class="info-icon-box">In</div>
+                <div>
+                  <div class="info-label">LinkedIn</div>
+                  <div class="info-value">
+                    <a href="#" style="color: inherit; text-decoration: none"
+                      >Legacy Awards India</a
+                    >
+                  </div>
+                </div>
+              </div>
+              <div class="info-row">
+                <div class="info-icon-box">Yt</div>
+                <div>
+                  <div class="info-label">YouTube</div>
+                  <div class="info-value">
+                    <a href="#" style="color: inherit; text-decoration: none"
+                      >Legacy Awards Studio</a
+                    >
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    
+    <section class="map-section">
+      <div class="section-head-center">
+        <div class="section-eyebrow">Visit & queries</div>
+        <h2 class="section-title">
+          Easy to <em>reach</em>, simple to understand.
+        </h2>
+        <p class="section-sub">
+          Find our studio on the map or browse a few quick answers before you
+          write in.
+        </p>
+      </div>
+
+      <div class="map-inner">
+        <div class="map-card">
+          <div id="map" class="map-embed"></div>
+          <div class="map-note">
+            Visits by appointment only. On-site parking available within the
+            industrial complex.
+          </div>
+        </div>
+
+        <div class="faq-card">
+          <div class="info-kicker">Frequently asked</div>
+          <div class="info-title">Common contact questions.</div>
+          <div class="faq-list">
+            <div class="faq-item">
+              <div class="faq-q">What is your minimum order quantity?</div>
+              <div class="faq-a">
+                We accept from 1 piece for premium items like crystal and
+                plaques. Standard trophy models usually start at 10 pieces, with
+                bulk pricing from 50+.
+              </div>
+            </div>
+            <div class="faq-item">
+              <div class="faq-q">Do you offer engraving or logo printing?</div>
+              <div class="faq-a">
+                Yes. We provide laser engraving, UV colour printing, and metal
+                sublimation with your logo, award title, and recipient names.
+              </div>
+            </div>
+            <div class="faq-item">
+              <div class="faq-q">How quickly can you deliver?</div>
+              <div class="faq-a">
+                Most orders dispatch in 5–7 working days after design approval.
+                Express 48-hour turnaround is available for select models.
+              </div>
+            </div>
+            <div class="faq-item">
+              <div class="faq-q">How do payments work?</div>
+              <div class="faq-a">
+                We support bank transfer, UPI, cards, and cheque for bulk
+                orders. A 50% advance starts production; corporate credit terms
+                are available after the first completed order.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    
+    <section class="cta-section">
+      <div class="cta-card">
+        <div class="cta-inner">
+          <h2 class="cta-title">
+            Ready to plan a <em>smooth</em> awards experience?
+          </h2>
+          <p class="cta-sub">
+            Share your event date, quantities, and broad requirement. We will
+            suggest formats, materials, and a delivery plan that keeps your
+            recognition moment sharp and stress-free.
+          </p>
+          <a href="#top" class="btn-light">Submit your brief</a>
+        </div>
+      </div>
+    </section>

@@ -1,0 +1,82 @@
+.page-skeleton {
+  background: #f6f2f0;
+  min-height: calc(100vh - 72px);
+  padding: 48px 100px 80px;
+}
+
+.skeleton-hero,
+.skeleton-grid span {
+  animation: skeletonPulse 1.2s ease-in-out infinite alternate;
+  background: linear-gradient(90deg, #ede8df, #ffffff, #ede8df);
+  background-size: 220% 100%;
+}
+
+.skeleton-hero {
+  border-radius: 24px;
+  display: grid;
+  gap: 18px;
+  margin-bottom: 24px;
+  min-height: 250px;
+  padding: 34px;
+}
+
+.skeleton-hero span,
+.skeleton-hero strong,
+.skeleton-hero p {
+  background: rgba(255,255,255,0.75);
+  border-radius: 999px;
+  display: block;
+}
+
+.skeleton-hero span {
+  height: 18px;
+  width: 170px;
+}
+
+.skeleton-hero strong {
+  height: 52px;
+  width: min(520px, 80%);
+}
+
+.skeleton-hero p {
+  height: 20px;
+  width: min(680px, 92%);
+}
+
+.skeleton-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 18px;
+}
+
+.skeleton-grid span {
+  border-radius: 18px;
+  min-height: 190px;
+}
+
+@keyframes skeletonPulse {
+  from {
+    background-position: 0% 50%;
+    opacity: 0.72;
+  }
+  to {
+    background-position: 100% 50%;
+    opacity: 1;
+  }
+}
+
+@media (max-width: 900px) {
+  .page-skeleton {
+    padding: 28px 24px 56px;
+  }
+
+  .skeleton-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 560px) {
+  .skeleton-grid {
+    grid-template-columns: 1fr;
+  }
+}

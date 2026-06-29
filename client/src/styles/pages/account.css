@@ -1,0 +1,502 @@
+.account-page {
+  min-height: 70vh;
+  padding: 54px clamp(18px, 5vw, 70px) 86px;
+  background:
+    radial-gradient(circle at top left, rgba(201, 168, 76, .13), transparent 32%),
+    linear-gradient(180deg, #faf7f1 0%, #f3ede4 100%);
+  color: #28251f;
+}
+
+.account-hero {
+  max-width: 780px;
+  margin-bottom: 28px;
+}
+
+.account-hero p,
+.account-label {
+  margin: 0;
+  color: #9b7427;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+}
+
+.account-hero h1 {
+  margin: 8px 0;
+  font: 400 clamp(38px, 5vw, 62px)/1 "DM Serif Display", Georgia, serif;
+  color: #5c1a1a;
+}
+
+.account-hero span {
+  color: #74695d;
+  line-height: 1.7;
+}
+
+.account-grid {
+  display: grid;
+  grid-template-columns: minmax(280px, .8fr) minmax(320px, 1.2fr);
+  gap: 18px;
+  align-items: stretch;
+}
+
+.account-card,
+.account-empty,
+.wishlist-card {
+  border: 1px solid rgba(92, 26, 26, .1);
+  border-radius: 24px;
+  background: rgba(255, 255, 255, .86);
+  box-shadow: 0 22px 60px rgba(40, 37, 31, .08);
+}
+
+.account-card {
+  padding: 24px;
+}
+
+.profile-card {
+  display: flex;
+  gap: 18px;
+  align-items: center;
+}
+
+.profile-avatar {
+  display: grid;
+  place-items: center;
+  width: 76px;
+  height: 76px;
+  flex: none;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #5c1a1a, #c9a84c);
+  color: #fff;
+  font-size: 32px;
+  font-weight: 900;
+  text-transform: uppercase;
+  overflow: hidden;
+}
+
+.profile-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.profile-card h2,
+.account-card h2,
+.account-empty h2,
+.wishlist-card h2 {
+  margin: 6px 0;
+  font: 400 30px/1.08 "DM Serif Display", Georgia, serif;
+  color: #28251f;
+}
+
+.profile-card p,
+.quick-card p,
+.account-empty p,
+.wishlist-card p {
+  margin: 0;
+  color: #74695d;
+  line-height: 1.6;
+}
+
+.details-card {
+  grid-row: span 2;
+}
+
+.detail-list {
+  display: grid;
+  gap: 1px;
+  overflow: hidden;
+  margin-top: 18px;
+  border: 1px solid #eadfce;
+  border-radius: 18px;
+  background: #eadfce;
+}
+
+.detail-list div,
+.order-items div {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 16px;
+  background: #fffaf0;
+}
+
+.detail-list span,
+.order-items span,
+.order-metrics span {
+  color: #85796d;
+  font-size: 13px;
+}
+
+.detail-list strong,
+.order-items strong,
+.order-metrics strong {
+  color: #28251f;
+}
+
+.quick-card {
+  display: grid;
+  align-content: start;
+}
+
+.update-profile-card {
+  grid-column: 1 / -1;
+}
+
+.update-profile-card > p {
+  margin: 4px 0 20px;
+  color: #74695d;
+  line-height: 1.6;
+}
+
+.profile-update-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.profile-update-form label {
+  display: grid;
+  gap: 8px;
+  color: #7d6b4a;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+.profile-photo-field,
+.profile-update-form > label:nth-of-type(3),
+.profile-update-form .account-form-error,
+.profile-update-form .account-form-success,
+.profile-update-form button {
+  grid-column: 1 / -1;
+}
+
+.profile-photo-field {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr) auto;
+  gap: 18px;
+  align-items: center;
+  padding: 18px;
+  border: 1px solid #eadfce;
+  border-radius: 20px;
+  background: #fffaf0;
+}
+
+.profile-photo-copy {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+
+.profile-photo-action {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  align-self: center;
+}
+
+.profile-photo-preview {
+  display: grid;
+  place-items: center;
+  width: 96px;
+  height: 96px;
+  overflow: hidden;
+  border: 1px solid rgba(201, 168, 76, .42);
+  border-radius: 50%;
+  background: linear-gradient(135deg, #5c1a1a, #c9a84c);
+  color: #fff;
+  font-size: 38px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.profile-photo-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.profile-update-form input {
+  width: 100%;
+  min-height: 48px;
+  border: 1px solid #d9cdbb;
+  border-radius: 14px;
+  background: #fffaf0;
+  color: #28251f;
+  padding: 0 14px;
+  font: 600 14px Inter, Arial, sans-serif;
+  letter-spacing: 0;
+  text-transform: none;
+  outline: none;
+  transition: border-color .18s ease, box-shadow .18s ease, background .18s ease;
+}
+
+.profile-update-form input[type="file"] {
+  min-height: auto;
+  padding: 12px;
+  background: #fff;
+}
+
+.profile-update-form input:focus {
+  border-color: #c9a84c;
+  box-shadow: 0 0 0 4px rgba(201, 168, 76, .14);
+  background: #fff;
+}
+
+.profile-update-form input:disabled {
+  color: #8b8175;
+  cursor: not-allowed;
+  opacity: .78;
+}
+
+.profile-update-form small {
+  color: #8b8175;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0;
+  line-height: 1.5;
+  text-transform: none;
+}
+
+.account-form-error,
+.account-form-success {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 14px;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.account-form-error {
+  background: rgba(161, 50, 50, .08);
+  color: #9f1d1d;
+}
+
+.account-form-success {
+  background: rgba(31, 107, 69, .09);
+  color: #1f6b45;
+}
+
+.profile-update-form button {
+  justify-self: start;
+  min-height: 48px;
+  padding: 0 24px;
+  border: 1px solid #5c1a1a;
+  border-radius: 999px;
+  background: #5c1a1a;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: transform .18s ease, box-shadow .18s ease, opacity .18s ease;
+}
+
+.profile-update-form button:hover:not(:disabled) {
+  box-shadow: 0 16px 32px rgba(92, 26, 26, .2);
+  transform: translateY(-1px);
+}
+
+.profile-update-form button:disabled {
+  cursor: not-allowed;
+  opacity: .7;
+}
+
+.profile-update-form button[data-uploading="true"],
+.profile-update-form button[type="submit"]:disabled {
+  cursor: wait;
+}
+
+.profile-update-form .photo-upload-btn {
+  margin-top: 0;
+  min-width: 190px;
+  background: transparent;
+  color: #5c1a1a;
+}
+
+.account-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.account-actions a,
+.account-empty a,
+.wishlist-actions a,
+.wishlist-actions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  padding: 10px 16px;
+  border: 1px solid #5c1a1a;
+  border-radius: 999px;
+  background: #5c1a1a;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-decoration: none;
+  text-transform: uppercase;
+}
+
+.account-actions a:nth-child(n+2),
+.wishlist-actions button {
+  background: transparent;
+  color: #5c1a1a;
+}
+
+.order-card {
+  max-width: 920px;
+}
+
+.order-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  align-items: flex-start;
+}
+
+.order-status {
+  padding: 9px 13px;
+  border-radius: 999px;
+  background: rgba(31, 107, 69, .1);
+  color: #1f6b45;
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.order-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin: 22px 0;
+}
+
+.order-metrics div {
+  display: grid;
+  gap: 5px;
+  padding: 18px;
+  border-radius: 18px;
+  background: #fffaf0;
+}
+
+.order-items {
+  display: grid;
+  gap: 1px;
+  overflow: hidden;
+  border: 1px solid #eadfce;
+  border-radius: 18px;
+  background: #eadfce;
+}
+
+.account-empty {
+  display: grid;
+  place-items: center;
+  max-width: 720px;
+  min-height: 330px;
+  padding: 38px;
+  text-align: center;
+}
+
+.account-empty div {
+  display: grid;
+  place-items: center;
+  width: 76px;
+  height: 76px;
+  margin-bottom: 10px;
+  border-radius: 50%;
+  background: #fff4d2;
+  color: #5c1a1a;
+  font-size: 34px;
+}
+
+.account-empty a {
+  margin-top: 18px;
+}
+
+.wishlist-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 18px;
+}
+
+.wishlist-card {
+  display: grid;
+  overflow: hidden;
+}
+
+.wishlist-card img {
+  width: 100%;
+  aspect-ratio: 4/3;
+  object-fit: cover;
+  background: #eee6d8;
+}
+
+.wishlist-card > div:not(.wishlist-actions) {
+  padding: 20px 20px 0;
+}
+
+.wishlist-card span {
+  color: #9b7427;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+}
+
+.wishlist-card strong {
+  display: block;
+  margin-top: 12px;
+  color: #5c1a1a;
+  font-size: 18px;
+}
+
+.wishlist-actions {
+  display: flex;
+  gap: 10px;
+  padding: 20px;
+}
+
+.wishlist-actions button {
+  cursor: pointer;
+}
+
+@media (max-width: 760px) {
+  .account-page {
+    padding: 36px 16px 68px;
+  }
+
+  .account-grid,
+  .order-metrics,
+  .profile-update-form {
+    grid-template-columns: 1fr;
+  }
+
+  .profile-card,
+  .profile-photo-field,
+  .order-head,
+  .detail-list div,
+  .order-items div {
+    display: grid;
+  }
+
+  .profile-photo-field {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    text-align: center;
+  }
+
+  .profile-photo-action {
+    justify-content: center;
+  }
+
+  .profile-update-form .photo-upload-btn {
+    width: 100%;
+  }
+}
