@@ -27,11 +27,11 @@
 .contact-quick-grid,
 .contact-workspace {
   margin-inline: auto;
-  max-width: 1180px;
+  max-width: 1280px;
 }
 
 .contact-hero {
-  min-height: 560px;
+  min-height: 450px;
   position: relative;
 }
 
@@ -59,9 +59,9 @@
   box-shadow: var(--contact-shadow);
   color: #fff8e8;
   overflow: hidden;
-  min-height: 560px;
-  padding: clamp(2rem, 5vw, 4.75rem);
-  padding-right: min(36vw, 27rem);
+  min-height: 450px;
+  padding: clamp(1.7rem, 4vw, 3.6rem);
+  padding-right: min(34vw, 25rem);
   position: relative;
 }
 
@@ -94,18 +94,18 @@
 .contact-hero h1 {
   color: inherit;
   font-family: Georgia, "Times New Roman", serif;
-  font-size: clamp(2.7rem, 7vw, 5.8rem);
+  font-size: clamp(2.45rem, 5.7vw, 5rem);
   font-weight: 500;
   letter-spacing: -0.055em;
   line-height: 0.95;
-  margin: 1rem 0 1.25rem;
-  max-width: 710px;
+  margin: 0.85rem 0 1rem;
+  max-width: 760px;
 }
 
 .contact-hero p {
   color: rgba(255, 248, 232, 0.78);
   font-size: clamp(1rem, 1.5vw, 1.18rem);
-  line-height: 1.8;
+  line-height: 1.7;
   margin: 0;
   max-width: 690px;
 }
@@ -114,7 +114,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 0.85rem;
-  margin-top: 2rem;
+  margin-top: 1.45rem;
 }
 
 .contact-primary-btn,
@@ -158,13 +158,13 @@
   background: rgba(255, 250, 240, 0.94);
   border: 1px solid rgba(242, 223, 181, 0.5);
   border-radius: 28px;
-  bottom: 2rem;
+  bottom: 1.5rem;
   box-shadow: 0 24px 70px rgba(18, 7, 5, 0.18);
-  min-height: 240px;
-  padding: 2rem;
+  min-height: 190px;
+  padding: 1.45rem;
   position: absolute;
-  right: 2rem;
-  width: min(320px, calc(100% - 4rem));
+  right: 1.5rem;
+  width: min(330px, calc(100% - 3rem));
   z-index: 2;
 }
 
@@ -182,7 +182,7 @@
   color: var(--contact-maroon);
   display: block;
   font-family: Georgia, "Times New Roman", serif;
-  font-size: 2.25rem;
+  font-size: 1.9rem;
   font-weight: 500;
   line-height: 1.05;
 }

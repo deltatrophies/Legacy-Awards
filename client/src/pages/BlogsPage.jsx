@@ -142,19 +142,32 @@ export default function BlogsPage() {
         ))}
       </section>
 
-      <section className="featured-blog" aria-label="Featured article">
-        <div className="featured-blog__image" style={{ backgroundImage: `url("${featuredArticle.image}")` }}>
-          <span>{featuredArticle.category}</span>
-        </div>
-        <div className="featured-blog__content">
-          <span className="blogs-eyebrow">Featured article</span>
-          <h2>{featuredArticle.title}</h2>
-          <p>{featuredArticle.excerpt}</p>
-          <div className="featured-blog__meta">
-            <span>{featuredArticle.date}</span>
-            <span>{featuredArticle.readTime}</span>
+      <section className="featured-blog-section" aria-labelledby="featured-blog-title">
+        <div className="featured-blog-head">
+          <div>
+            <span className="blogs-eyebrow">Editor's pick</span>
+            <h2 id="featured-blog-title">Start with this featured buying guide</h2>
           </div>
-          <Link className="blog-read-link" to="/contact">Discuss your requirement</Link>
+          <p>
+            A hand-picked article that helps you avoid common ordering mistakes before you choose
+            trophies, materials or engraving options.
+          </p>
+        </div>
+
+        <div className="featured-blog" aria-label="Featured article">
+          <div className="featured-blog__image" style={{ backgroundImage: `url("${featuredArticle.image}")` }}>
+            <span>{featuredArticle.category}</span>
+          </div>
+          <div className="featured-blog__content">
+            <span className="blogs-eyebrow">Featured article</span>
+            <h2>{featuredArticle.title}</h2>
+            <p>{featuredArticle.excerpt}</p>
+            <div className="featured-blog__meta">
+              <span>{featuredArticle.date}</span>
+              <span>{featuredArticle.readTime}</span>
+            </div>
+            <Link className="blog-read-link" to="/contact">Discuss your requirement</Link>
+          </div>
         </div>
       </section>
 
