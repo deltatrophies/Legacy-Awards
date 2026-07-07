@@ -29,7 +29,7 @@ export default function LoginPage() {
     event.preventDefault();
     setSubmitting(true); setError("");
     try {
-      if (isLogin) await login({ email: form.email, password: form.password });
+      if (isLogin) await login({ email: form.email, password: form.password }, { scope: "customer" });
       else {
         if (!passwordMeetsPolicy) {
           setError("Password must be 8+ characters and include uppercase, lowercase, and a number.");

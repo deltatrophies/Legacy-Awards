@@ -354,6 +354,45 @@
   max-width: 920px;
 }
 
+.order-history {
+  display: grid;
+  gap: 18px;
+}
+
+.order-section-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: flex-start;
+  margin-bottom: 18px;
+}
+
+.order-section-head button {
+  min-height: 42px;
+  padding: 0 16px;
+  border: 1px solid #5c1a1a;
+  border-radius: 999px;
+  background: transparent;
+  color: #5c1a1a;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.order-list {
+  display: grid;
+  gap: 14px;
+}
+
+.order-history-card {
+  padding: 18px;
+  border: 1px solid #eadfce;
+  border-radius: 18px;
+  background: #fffdf8;
+}
+
 .order-head {
   display: flex;
   justify-content: space-between;
@@ -361,14 +400,41 @@
   align-items: flex-start;
 }
 
+.order-status-wrap {
+  display: grid;
+  gap: 6px;
+  justify-items: end;
+  flex: none;
+}
+
+.order-status-wrap > span {
+  color: #85796d;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
 .order-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   padding: 9px 13px;
   border-radius: 999px;
   background: rgba(31, 107, 69, .1);
   color: #1f6b45;
   font-size: 12px;
   font-weight: 900;
+  letter-spacing: .04em;
   text-transform: uppercase;
+}
+
+.order-head small {
+  display: block;
+  margin-top: 6px;
+  color: #85796d;
+  font-size: 12px;
+  font-weight: 700;
 }
 
 .order-metrics {
@@ -481,9 +547,14 @@
   .profile-card,
   .profile-photo-field,
   .order-head,
+  .order-section-head,
   .detail-list div,
   .order-items div {
     display: grid;
+  }
+
+  .order-status-wrap {
+    justify-items: start;
   }
 
   .profile-photo-field {

@@ -1,50 +1,71 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { useLocation } from "react-router-dom";
 import { authApi } from "../services/apiClient.js";
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null);
+  const location = useLocation();
+  const [sessionUser, setSessionUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const isAdminRoute = location.pathname.startsWith("/admin");
 
   useEffect(() => {
     let active = true;
     authApi.restore()
-      .then((restoredUser) => { if (active) setUser(restoredUser); })
-      .catch(() => { if (active) setUser(null); })
+      .then((restoredUser) => { if (active) setSessionUser(restoredUser); })
+      .catch(() => { if (active) setSessionUser(null); })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, []);
 
+  const user = useMemo(() => {
+    if (!sessionUser) return null;
+    if (isAdminRoute) return sessionUser.role === "admin" ? sessionUser : null;
+    return sessionUser.role === "admin" ? null : sessionUser;
+  }, [isAdminRoute, sessionUser]);
+
   const value = useMemo(() => ({
     user,
+    sessionUser,
     loading,
     isAuthenticated: Boolean(user),
-    async login(credentials) {
+    async login(credentials, options = {}) {
+      const scope = options.scope || (isAdminRoute ? "admin" : "customer");
       const nextUser = await authApi.login(credentials);
-      setUser(nextUser);
+      if (scope === "admin" && nextUser.role !== "admin") {
+        await authApi.logout().catch(() => {});
+        setSessionUser(null);
+        throw new Error("This account is not allowed to access the admin panel.");
+      }
+      if (scope === "customer" && nextUser.role === "admin") {
+        await authApi.logout().catch(() => {});
+        setSessionUser(null);
+        throw new Error("Admin accounts must use the admin login page.");
+      }
+      setSessionUser(nextUser);
       return nextUser;
     },
     async register(input) {
       const nextUser = await authApi.register(input);
-      setUser(nextUser);
+      setSessionUser(nextUser);
       return nextUser;
     },
     async updateProfile(input) {
       const nextUser = await authApi.updateProfile(input);
-      setUser(nextUser);
+      setSessionUser(nextUser);
       return nextUser;
     },
     async updateAvatar(file) {
       const nextUser = await authApi.updateAvatar(file);
-      setUser(nextUser);
+      setSessionUser(nextUser);
       return nextUser;
     },
     async logout() {
       await authApi.logout();
-      setUser(null);
+      setSessionUser(null);
     },
-  }), [loading, user]);
+  }), [isAdminRoute, loading, sessionUser, user]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

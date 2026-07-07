@@ -104,7 +104,7 @@
         display: grid;
         grid-template-columns: 55% 45%;
         min-height: 100vh;
-        padding-top: 72px;
+        padding-top: 0;
         overflow: hidden;
         background:
         linear-gradient(
@@ -1386,7 +1386,7 @@
 
         .hero {
           grid-template-columns: 1fr;
-          padding-top: 118px;
+          padding-top: 0;
         }
 
         .hero-left {
@@ -1435,7 +1435,7 @@
         }
 
         .hero {
-          padding-top: 188px;
+          padding-top: 0;
         }
 
         .hero-left,

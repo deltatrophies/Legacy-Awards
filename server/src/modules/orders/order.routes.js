@@ -6,6 +6,8 @@ import * as controller from "./order.controller.js";
 import { updateOrderSchema } from "./order.schemas.js";
 
 export const orderRouter = Router();
+orderRouter.get("/mine", authenticate, asyncHandler(controller.listMine));
+
 orderRouter.use(authenticate, authorize("staff", "admin"));
 orderRouter.get("/", asyncHandler(controller.list));
 orderRouter.patch("/:id", validate(updateOrderSchema), asyncHandler(controller.update));

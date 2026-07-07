@@ -4,7 +4,7 @@ const productFields = {
   slug: z.string().trim().min(2).max(180).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
   sku: z.string().trim().min(2).max(40),
   name: z.string().trim().min(2).max(160),
-  category: z.enum(["trophies", "plaques", "medals", "crystal"]),
+  category: z.string().trim().min(2).max(80).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
   price: z.coerce.number().int().nonnegative(),
   tag: z.string().trim().max(100).optional().default(""),
   description: z.string().trim().min(10).max(2000),

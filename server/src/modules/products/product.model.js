@@ -10,7 +10,7 @@ const productSchema = new mongoose.Schema({
   slug: { type: String, required: true, unique: true, lowercase: true, trim: true, index: true },
   sku: { type: String, required: true, unique: true, uppercase: true, trim: true, index: true },
   name: { type: String, required: true, trim: true, maxlength: 160 },
-  category: { type: String, required: true, enum: ["trophies", "plaques", "medals", "crystal"], index: true },
+  category: { type: String, required: true, lowercase: true, trim: true, match: /^[a-z0-9]+(?:-[a-z0-9]+)*$/, index: true },
   price: { type: Number, required: true, min: 0 },
   tag: { type: String, trim: true, maxlength: 100 },
   description: { type: String, required: true, trim: true, maxlength: 2000 },

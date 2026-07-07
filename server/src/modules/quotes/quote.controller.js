@@ -29,6 +29,15 @@ export async function getPublic(req, res) {
   return sendData(res, serialize(quote));
 }
 
+export async function listMine(req, res) {
+  const { page, limit, skip } = paginationFrom(req.query);
+  const [quotes, total] = await Promise.all([
+    Quote.find({ user: req.auth.userId }).sort({ createdAt: -1 }).skip(skip).limit(limit),
+    Quote.countDocuments({ user: req.auth.userId }),
+  ]);
+  return sendData(res, quotes.map((quote) => serialize(quote)), 200, paginationMeta(total, page, limit));
+}
+
 export async function listAdmin(req, res) {
   const { page, limit, skip } = paginationFrom(req.query);
   const filter = req.query.status ? { status: req.query.status } : {};

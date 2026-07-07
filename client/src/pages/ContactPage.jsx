@@ -6,7 +6,7 @@ import {
   BUSINESS_WHATSAPP,
   createWhatsAppUrl,
 } from "../config/business.js";
-import { ApiError, submitInquiry } from "../services/apiClient.js";
+import { ApiError, settingsApi, submitInquiry } from "../services/apiClient.js";
 import "../styles/pages/contact.css";
 
 const initialForm = {
@@ -38,14 +38,32 @@ export default function ContactPage() {
   const [attachment, setAttachment] = useState(null);
   const [status, setStatus] = useState({ type: "", message: "" });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [business, setBusiness] = useState({
+    businessName: BUSINESS_NAME,
+    email: BUSINESS_EMAIL,
+    whatsapp: BUSINESS_WHATSAPP,
+    address: BUSINESS_ADDRESS,
+    timings: "",
+    mapUrl: "",
+  });
 
   useEffect(() => {
-    document.title = `Contact Us - ${BUSINESS_NAME}`;
+    document.title = `Contact Us - ${business.businessName}`;
+  }, [business.businessName]);
+
+  useEffect(() => {
+    let active = true;
+    settingsApi.get()
+      .then((settings) => {
+        if (active && settings) setBusiness((current) => ({ ...current, ...settings }));
+      })
+      .catch(() => {});
+    return () => { active = false; };
   }, []);
 
   const whatsappLink = useMemo(
-    () => createWhatsAppUrl("Hi Legacy Awards, I want to discuss an awards/trophies requirement."),
-    [],
+    () => createWhatsAppUrl(`Hi ${business.businessName}, I want to discuss an awards/trophies requirement.`, business.whatsapp),
+    [business.businessName, business.whatsapp],
   );
 
   const updateField = (event) => {
@@ -88,7 +106,7 @@ export default function ContactPage() {
     <main className="contact-page">
       <section className="contact-hero" aria-labelledby="contact-title">
         <div className="contact-hero__content">
-          <span className="contact-eyebrow">Contact {BUSINESS_NAME}</span>
+          <span className="contact-eyebrow">Contact {business.businessName}</span>
           <h1 id="contact-title">Let’s create awards that feel worthy of the moment.</h1>
           <p>
             Share your requirement once and our team will help with trophy options, customisation,
@@ -96,7 +114,7 @@ export default function ContactPage() {
           </p>
           <div className="contact-hero__actions">
             <a className="contact-primary-btn" href={whatsappLink}>Start on WhatsApp</a>
-            <a className="contact-secondary-btn" href={`mailto:${BUSINESS_EMAIL}`}>Email us</a>
+            <a className="contact-secondary-btn" href={`mailto:${business.email}`}>Email us</a>
           </div>
         </div>
 
@@ -112,7 +130,7 @@ export default function ContactPage() {
           <span className="contact-info-card__icon" aria-hidden="true">☎</span>
           <div>
             <h2>Call / WhatsApp</h2>
-            <p>{formatWhatsAppNumber(BUSINESS_WHATSAPP)}</p>
+            <p>{formatWhatsAppNumber(business.whatsapp)}</p>
             <a href={whatsappLink}>Open WhatsApp</a>
           </div>
         </article>
@@ -120,16 +138,16 @@ export default function ContactPage() {
           <span className="contact-info-card__icon" aria-hidden="true">✉</span>
           <div>
             <h2>Email</h2>
-            <p>{BUSINESS_EMAIL}</p>
-            <a href={`mailto:${BUSINESS_EMAIL}`}>Send an email</a>
+            <p>{business.email}</p>
+            <a href={`mailto:${business.email}`}>Send an email</a>
           </div>
         </article>
         <article className="contact-info-card">
           <span className="contact-info-card__icon" aria-hidden="true">⌖</span>
           <div>
             <h2>Visit</h2>
-            <p>{BUSINESS_ADDRESS}</p>
-            <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(BUSINESS_ADDRESS)}`} target="_blank" rel="noreferrer">
+            <p>{business.address}</p>
+            <a href={business.mapUrl || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(business.address)}`} target="_blank" rel="noreferrer">
               Open map
             </a>
           </div>

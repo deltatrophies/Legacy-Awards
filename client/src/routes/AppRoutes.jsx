@@ -19,6 +19,8 @@ const QuoteSuccessPage = lazy(() => import("../pages/QuoteSuccessPage.jsx"));
 const ProfilePage = lazy(() => import("../pages/ProfilePage.jsx"));
 const OrdersPage = lazy(() => import("../pages/OrdersPage.jsx"));
 const WishlistPage = lazy(() => import("../pages/WishlistPage.jsx"));
+const AdminLoginPage = lazy(() => import("../pages/AdminLoginPage.jsx"));
+const AdminPanelPage = lazy(() => import("../pages/AdminPanelPage.jsx"));
 
 function SitePage({ children }) {
   return <SiteLayout>{children}</SiteLayout>;
@@ -45,19 +47,11 @@ export default function AppRoutes() {
         <Route path="/account/profile" element={<SitePage><ProfilePage /></SitePage>} />
         <Route path="/account/orders" element={<SitePage><OrdersPage /></SitePage>} />
         <Route path="/account/wishlist" element={<SitePage><WishlistPage /></SitePage>} />
+        <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
+        <Route path="/admin/login" element={<AdminLoginPage />} />
+        <Route path="/admin/:section/:detailType/:detailId" element={<AdminPanelPage />} />
+        <Route path="/admin/:section" element={<AdminPanelPage />} />
 
-        <Route path="/index.html" element={<Navigate to="/" replace />} />
-        <Route path="/about.html" element={<Navigate to="/about" replace />} />
-        <Route path="/products.html" element={<Navigate to="/products" replace />} />
-        <Route path="/product-detail.html" element={<Navigate to="/product-detail" replace />} />
-        <Route path="/custom.html" element={<Navigate to="/custom" replace />} />
-        <Route path="/blogs.html" element={<Navigate to="/blogs" replace />} />
-        <Route path="/contact.html" element={<Navigate to="/contact" replace />} />
-        <Route path="/cart.html" element={<Navigate to="/cart" replace />} />
-        <Route path="/privacy.html" element={<Navigate to="/privacy" replace />} />
-        <Route path="/returns.html" element={<Navigate to="/returns" replace />} />
-        <Route path="/shipping.html" element={<Navigate to="/shipping" replace />} />
-        <Route path="/login.html" element={<Navigate to="/login" replace />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Suspense>

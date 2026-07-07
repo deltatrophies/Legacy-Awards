@@ -680,7 +680,7 @@ nav.top-nav .nav-btn:hover {
   }
 
   body > nav + .hero {
-    padding-top: 72px !important;
+    padding-top: 0 !important;
   }
 }
 

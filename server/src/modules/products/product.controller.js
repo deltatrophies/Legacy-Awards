@@ -25,7 +25,8 @@ const serialize = (product) => ({
 
 export async function list(req, res) {
   const { page, limit, skip } = paginationFrom(req.query);
-  const filter = { isActive: true };
+  const canSeeInactive = req.auth?.role === "admin" && req.query.includeInactive === "true";
+  const filter = canSeeInactive ? {} : { isActive: true };
   if (req.query.category && req.query.category !== "all") filter.category = req.query.category;
   if (req.query.search) filter.$text = { $search: String(req.query.search).slice(0, 100) };
   const sort = req.query.sort === "price-asc" ? { price: 1 } : req.query.sort === "price-desc" ? { price: -1 } : { createdAt: -1 };

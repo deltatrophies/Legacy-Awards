@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
 import RecentlyViewed from "../components/products/RecentlyViewed.jsx";
 import { formatPrice, getProductBySlug } from "../data/products.js";
-import { catalogApi } from "../services/apiClient.js";
+import { CATALOG_CHANGED_EVENT, CATALOG_CHANGED_STORAGE_KEY, catalogApi } from "../services/apiClient.js";
 import { readStorage, writeStorage } from "../utils/storage.js";
 import "../styles/pages/commerce.css";
 
@@ -13,11 +13,29 @@ export default function ProductDetailPage() {
   const [notFound, setNotFound] = useState(false);
   const [qty, setQty] = useState(product?.minOrder || 1);
 
+  const loadProduct = () => {
+    catalogApi.get(slug).then((item) => { setProduct(item); setQty(item.minOrder || 1); }).catch(() => {
+      if (!getProductBySlug(slug)) setNotFound(true);
+    });
+  };
+
   useEffect(() => {
     let active = true;
     setProduct(getProductBySlug(slug)); setNotFound(false);
     catalogApi.get(slug).then((item) => { if (active) { setProduct(item); setQty(item.minOrder || 1); } }).catch(() => { if (active && !getProductBySlug(slug)) setNotFound(true); });
     return () => { active = false; };
+  }, [slug]);
+
+  useEffect(() => {
+    const handleStorage = (event) => {
+      if (event.key === CATALOG_CHANGED_STORAGE_KEY) loadProduct();
+    };
+    window.addEventListener(CATALOG_CHANGED_EVENT, loadProduct);
+    window.addEventListener("storage", handleStorage);
+    return () => {
+      window.removeEventListener(CATALOG_CHANGED_EVENT, loadProduct);
+      window.removeEventListener("storage", handleStorage);
+    };
   }, [slug]);
 
   useEffect(() => {

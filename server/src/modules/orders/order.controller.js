@@ -13,6 +13,15 @@ export async function list(req, res) {
   return sendData(res, orders, 200, paginationMeta(total, page, limit));
 }
 
+export async function listMine(req, res) {
+  const { page, limit, skip } = paginationFrom(req.query);
+  const [orders, total] = await Promise.all([
+    Order.find({ user: req.auth.userId }).sort({ createdAt: -1 }).skip(skip).limit(limit).lean(),
+    Order.countDocuments({ user: req.auth.userId }),
+  ]);
+  return sendData(res, orders, 200, paginationMeta(total, page, limit));
+}
+
 export async function update(req, res) {
   const order = await Order.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
   if (!order) throw new AppError(404, "ORDER_NOT_FOUND", "Order was not found");
