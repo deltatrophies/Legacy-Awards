@@ -2,7 +2,7 @@ import { sendData } from "../../common/utils/response.js";
 import * as paymentService from "./payment.service.js";
 
 export async function create(req, res) {
-  const result = await paymentService.createPaymentOrder(req.body.quoteReference, req.get("x-quote-token"));
+  const result = await paymentService.createPaymentOrder(req.body.quoteReference, req.get("x-quote-token"), req.auth?.userId);
   return sendData(res, {
     keyId: result.keyId,
     gatewayOrderId: result.payment.razorpayOrderId,
@@ -12,7 +12,7 @@ export async function create(req, res) {
 }
 
 export async function verify(req, res) {
-  const result = await paymentService.verifyCheckout(req.body, req.get("x-quote-token"));
+  const result = await paymentService.verifyCheckout(req.body, req.get("x-quote-token"), req.auth?.userId);
   return sendData(res, {
     paymentStatus: result.payment.status,
     orderReference: result.order.reference,

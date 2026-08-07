@@ -35,6 +35,7 @@ const quoteSchema = new mongoose.Schema({
   status: { type: String, enum: ["submitted", "reviewing", "quoted", "accepted", "expired", "cancelled"], default: "submitted", index: true },
   expiresAt: { type: Date, required: true, index: true },
   internalNotes: { type: String, select: false },
+  customerNotes: { type: String, trim: true, default: "" },
 }, { timestamps: true, versionKey: false });
 
 export const Quote = mongoose.model("Quote", quoteSchema);

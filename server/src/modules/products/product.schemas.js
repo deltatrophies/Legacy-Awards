@@ -9,7 +9,7 @@ const productFields = {
   tag: z.string().trim().max(100).optional().default(""),
   description: z.string().trim().min(10).max(2000),
   badge: z.string().trim().max(60).optional().default(""),
-  images: z.array(z.object({ url: z.string().min(1), publicId: z.string().optional(), alt: z.string().max(160).optional() })).max(8).default([]),
+  images: z.array(z.object({ url: z.string().min(1), publicId: z.string().optional(), alt: z.string().max(160).optional() })).max(4).default([]),
   material: z.string().trim().max(100).optional().default(""),
   size: z.string().trim().max(100).optional().default(""),
   delivery: z.string().trim().max(100).optional().default(""),

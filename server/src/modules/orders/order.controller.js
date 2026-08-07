@@ -22,6 +22,22 @@ export async function listMine(req, res) {
   return sendData(res, orders, 200, paginationMeta(total, page, limit));
 }
 
+export async function getMine(req, res) {
+  const query = /^[a-f0-9]{24}$/i.test(req.params.id)
+    ? { _id: req.params.id, user: req.auth.userId }
+    : { reference: req.params.id, user: req.auth.userId };
+  const order = await Order.findOne(query).lean();
+  if (!order) throw new AppError(404, "ORDER_NOT_FOUND", "Order was not found");
+  return sendData(res, order);
+}
+
+export async function getOne(req, res) {
+  const query = /^[a-f0-9]{24}$/i.test(req.params.id) ? { _id: req.params.id } : { reference: req.params.id };
+  const order = await Order.findOne(query).lean();
+  if (!order) throw new AppError(404, "ORDER_NOT_FOUND", "Order was not found");
+  return sendData(res, order);
+}
+
 export async function update(req, res) {
   const order = await Order.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
   if (!order) throw new AppError(404, "ORDER_NOT_FOUND", "Order was not found");

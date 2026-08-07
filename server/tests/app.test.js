@@ -17,10 +17,10 @@ describe("HTTP application", () => {
     expect(response.body.requestId).toBeTruthy();
   });
 
-  it("blocks guest quote submission", async () => {
+  it("allows guest quote submission route to validate public payloads", async () => {
     const response = await request(app).post("/api/v1/quotes").send({});
-    expect(response.status).toBe(401);
-    expect(response.body.error.code).toBe("AUTH_REQUIRED");
+    expect(response.status).toBe(422);
+    expect(response.body.error.code).toBe("VALIDATION_ERROR");
   });
 
   it("blocks guest profile updates", async () => {

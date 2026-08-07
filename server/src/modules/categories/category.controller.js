@@ -52,3 +52,9 @@ export async function remove(req, res) {
   if (!category) throw new AppError(404, "CATEGORY_NOT_FOUND", "Category was not found");
   return res.status(204).send();
 }
+
+export async function restore(req, res) {
+  const category = await Category.findOneAndUpdate({ slug: req.params.slug }, { isActive: true }, { new: true, runValidators: true });
+  if (!category) throw new AppError(404, "CATEGORY_NOT_FOUND", "Category was not found");
+  return sendData(res, serialize(category));
+}

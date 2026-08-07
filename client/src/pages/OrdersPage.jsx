@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, Navigate, useLocation } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
 import { readStorage, writeStorage } from "../utils/storage.js";
 import { formatPrice } from "../data/products.js";
-import { ORDER_STATUS_CHANGED_EVENT, ORDER_STATUS_CHANGED_STORAGE_KEY, orderApi, quoteApi } from "../services/apiClient.js";
+import { ORDER_STATUS_CHANGED_EVENT, ORDER_STATUS_CHANGED_STORAGE_KEY, orderApi, paymentApi, quoteApi } from "../services/apiClient.js";
 import "../styles/pages/account.css";
 
 function AccountShell({ children }) {
@@ -24,23 +24,47 @@ function formatDate(value) {
   return new Intl.DateTimeFormat("en-IN", { dateStyle: "medium", timeStyle: "short" }).format(new Date(value));
 }
 
+const quoteStatusCopy = {
+  submitted: "Request received. Our team will review your items.",
+  reviewing: "We are checking pricing, artwork and timeline.",
+  quoted: "Final quote is ready. Accept it to unlock online payment.",
+  accepted: "Quote accepted. You can complete payment now.",
+  expired: "This quote has expired. Send a fresh request to continue.",
+  cancelled: "This quote was cancelled.",
+};
+
+function loadRazorpay() {
+  if (window.Razorpay) return Promise.resolve(true);
+  return new Promise((resolve) => {
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+}
+
 export default function OrdersPage() {
   const { user, loading } = useAuth();
-  const location = useLocation();
   const lastQuote = readStorage("lastQuote", null);
   const [quotes, setQuotes] = useState([]);
   const [orders, setOrders] = useState([]);
   const [fallbackQuote, setFallbackQuote] = useState(lastQuote);
   const [historyLoading, setHistoryLoading] = useState(true);
   const [historyError, setHistoryError] = useState("");
+  const [busyQuote, setBusyQuote] = useState("");
+  const [activeTab, setActiveTab] = useState("quotes");
+
+  useEffect(() => {
+    document.title = "My Orders - Legacy Awards";
+  }, []);
 
   const loadHistory = async () => {
-    if (!user) return;
     try {
       setHistoryError("");
       const [quoteResult, orderResult, publicQuoteResult] = await Promise.allSettled([
-        quoteApi.mine(),
-        orderApi.mine(),
+        user ? quoteApi.mine() : Promise.resolve([]),
+        user ? orderApi.mine() : Promise.resolve([]),
         lastQuote?.accessToken && (lastQuote.reference || lastQuote.id)
           ? quoteApi.public(lastQuote.reference || lastQuote.id, lastQuote.accessToken)
           : Promise.resolve(null),
@@ -68,7 +92,10 @@ export default function OrdersPage() {
   };
 
   useEffect(() => {
-    if (!user) return undefined;
+    if (!user && !lastQuote?.accessToken) {
+      setHistoryLoading(false);
+      return undefined;
+    }
     setHistoryLoading(true);
     loadHistory();
     const refreshOnFocus = () => loadHistory();
@@ -93,8 +120,67 @@ export default function OrdersPage() {
   }, [fallbackQuote, quotes]);
   const hasHistory = visibleQuotes.length || orders.length;
 
+  useEffect(() => {
+    if (!historyLoading && activeTab === "quotes" && !visibleQuotes.length && orders.length) setActiveTab("orders");
+  }, [activeTab, historyLoading, orders.length, visibleQuotes.length]);
+
+  const acceptQuote = async (quote) => {
+    setBusyQuote(quote.reference || quote.id);
+    setHistoryError("");
+    try {
+      const token = quote.accessToken || (lastQuote?.reference === quote.reference ? lastQuote.accessToken : "");
+      if (quote.id && !quote.accessToken) await quoteApi.acceptMine(quote.id);
+      else await quoteApi.accept(quote.reference, token);
+      await loadHistory();
+    } catch (requestError) {
+      setHistoryError(requestError.message || "Could not accept this quote.");
+    } finally {
+      setBusyQuote("");
+    }
+  };
+
+  const payQuote = async (quote) => {
+    setBusyQuote(quote.reference || quote.id);
+    setHistoryError("");
+    try {
+      const token = quote.accessToken || (lastQuote?.reference === quote.reference ? lastQuote.accessToken : "");
+      const gateway = await paymentApi.createOrder(quote.reference, token);
+      const ready = await loadRazorpay();
+      if (!ready) throw new Error("Payment checkout could not load. Please try again or contact us on WhatsApp.");
+      await new Promise((resolve, reject) => {
+        const checkout = new window.Razorpay({
+          key: gateway.keyId,
+          amount: gateway.amount * 100,
+          currency: gateway.currency,
+          name: "Legacy Awards",
+          description: quote.reference,
+          order_id: gateway.gatewayOrderId,
+          prefill: {
+            name: quote.customer?.name || "",
+            email: quote.customer?.email || "",
+            contact: quote.customer?.phone || "",
+          },
+          handler: async (response) => {
+            try {
+              await paymentApi.verify({ quoteReference: quote.reference, ...response }, token);
+              resolve();
+            } catch (error) {
+              reject(error);
+            }
+          },
+          modal: { ondismiss: () => reject(new Error("Payment was cancelled before completion.")) },
+        });
+        checkout.open();
+      });
+      await loadHistory();
+    } catch (requestError) {
+      setHistoryError(requestError.message || "Payment could not be completed.");
+    } finally {
+      setBusyQuote("");
+    }
+  };
+
   if (loading) return <AccountShell><div className="account-card">Loading orders...</div></AccountShell>;
-  if (!user) return <Navigate to="/login" replace state={{ from: location.pathname }} />;
 
   return (
     <AccountShell>
@@ -103,8 +189,31 @@ export default function OrdersPage() {
 
       {!historyLoading && hasHistory ? (
         <div className="order-history">
-          {visibleQuotes.length ? (
-            <section className="account-card order-card">
+          <div className="order-tabs" role="tablist" aria-label="Order history sections">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={activeTab === "quotes"}
+              className={activeTab === "quotes" ? "active" : ""}
+              onClick={() => setActiveTab("quotes")}
+            >
+              <span>Quote Requests</span>
+              <strong>{visibleQuotes.length}</strong>
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={activeTab === "orders"}
+              className={activeTab === "orders" ? "active" : ""}
+              onClick={() => setActiveTab("orders")}
+            >
+              <span>Paid Orders</span>
+              <strong>{orders.length}</strong>
+            </button>
+          </div>
+
+          {activeTab === "quotes" ? (
+            <section className="account-card order-card" role="tabpanel">
               <div className="order-section-head">
                 <div>
                   <span className="account-label">Quote requests</span>
@@ -112,14 +221,25 @@ export default function OrdersPage() {
                 </div>
                 <button type="button" onClick={loadHistory}>Refresh</button>
               </div>
-              <div className="order-list">
-                {visibleQuotes.map((quote) => <HistoryCard key={quote.id || quote.reference} record={quote} type="quote" />)}
-              </div>
+              {visibleQuotes.length ? (
+                <div className="order-list">
+                  {visibleQuotes.map((quote) => (
+                    <HistoryCard
+                      busy={busyQuote === (quote.reference || quote.id)}
+                      key={quote.id || quote.reference}
+                      onAccept={acceptQuote}
+                      onPay={payQuote}
+                      record={quote}
+                      type="quote"
+                    />
+                  ))}
+                </div>
+              ) : <TabEmpty title="No quote requests yet" text="Quote requests you submit from the cart will appear here." />}
             </section>
           ) : null}
 
-          {orders.length ? (
-            <section className="account-card order-card">
+          {activeTab === "orders" ? (
+            <section className="account-card order-card" role="tabpanel">
               <div className="order-section-head">
                 <div>
                   <span className="account-label">Paid orders</span>
@@ -127,9 +247,11 @@ export default function OrdersPage() {
                 </div>
                 <button type="button" onClick={loadHistory}>Refresh</button>
               </div>
-              <div className="order-list">
-                {orders.map((order) => <HistoryCard key={order._id || order.id || order.reference} record={order} type="order" />)}
-              </div>
+              {orders.length ? (
+                <div className="order-list">
+                  {orders.map((order) => <HistoryCard key={order._id || order.id || order.reference} record={order} type="order" />)}
+                </div>
+              ) : <TabEmpty title="No paid orders yet" text="Once a quote is paid, the confirmed order will move into this tab." />}
             </section>
           ) : null}
         </div>
@@ -147,11 +269,23 @@ export default function OrdersPage() {
   );
 }
 
-function HistoryCard({ record, type }) {
+function TabEmpty({ text, title }) {
+  return (
+    <div className="order-tab-empty">
+      <h3>{title}</h3>
+      <p>{text}</p>
+      <Link to="/products">Browse awards</Link>
+    </div>
+  );
+}
+
+function HistoryCard({ busy = false, onAccept, onPay, record, type }) {
   const items = record.items || [];
   const status = type === "quote" ? record.status : record.fulfillmentStatus;
   const label = type === "quote" ? "Quote request" : "Paid order";
   const statusLabel = type === "quote" ? "Quote status" : "Order status";
+  const canAccept = type === "quote" && status === "quoted";
+  const canPay = type === "quote" && status === "accepted";
 
   return (
     <article className="order-history-card">
@@ -171,6 +305,8 @@ function HistoryCard({ record, type }) {
         <div><span>{type === "quote" ? "Estimate" : "Total"}</span><strong>{formatPrice(record.total || 0)}</strong></div>
         <div><span>{type === "quote" ? "Preference" : "Payment"}</span><strong>{type === "quote" ? record.customer?.preference || "WhatsApp" : record.paymentStatus || "Pending"}</strong></div>
       </div>
+      {type === "quote" ? <p className="order-status-note">{quoteStatusCopy[status] || "We will keep this request updated here."}</p> : null}
+      {record.customerNotes ? <p className="order-status-note">{record.customerNotes}</p> : null}
       <div className="order-items">
         {items.slice(0, 4).map((item, index) => (
           <div key={item._id || item.productId || `${item.name}-${index}`}>
@@ -180,6 +316,8 @@ function HistoryCard({ record, type }) {
         ))}
       </div>
       <div className="account-actions">
+        {canAccept ? <button type="button" disabled={busy} onClick={() => onAccept(record)}>{busy ? "Accepting..." : "Accept quote"}</button> : null}
+        {canPay ? <button type="button" disabled={busy} onClick={() => onPay(record)}>{busy ? "Opening..." : "Pay now"}</button> : null}
         <Link to="/products">Order more</Link>
       </div>
     </article>

@@ -34,12 +34,12 @@ export function AuthProvider({ children }) {
       const scope = options.scope || (isAdminRoute ? "admin" : "customer");
       const nextUser = await authApi.login(credentials);
       if (scope === "admin" && nextUser.role !== "admin") {
-        await authApi.logout().catch(() => {});
+        await authApi.logout().catch(() => { });
         setSessionUser(null);
         throw new Error("This account is not allowed to access the admin panel.");
       }
       if (scope === "customer" && nextUser.role === "admin") {
-        await authApi.logout().catch(() => {});
+        await authApi.logout().catch(() => { });
         setSessionUser(null);
         throw new Error("Admin accounts must use the admin login page.");
       }

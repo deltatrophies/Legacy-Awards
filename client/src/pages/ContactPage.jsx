@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   BUSINESS_ADDRESS,
   BUSINESS_EMAIL,
@@ -38,6 +38,7 @@ export default function ContactPage() {
   const [attachment, setAttachment] = useState(null);
   const [status, setStatus] = useState({ type: "", message: "" });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const attachmentInputRef = useRef(null);
   const [business, setBusiness] = useState({
     businessName: BUSINESS_NAME,
     email: BUSINESS_EMAIL,
@@ -73,6 +74,7 @@ export default function ContactPage() {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+    const formElement = event.currentTarget;
     setStatus({ type: "", message: "" });
 
     const payload = new FormData();
@@ -91,11 +93,12 @@ export default function ContactPage() {
       });
       setForm(initialForm);
       setAttachment(null);
-      event.currentTarget.reset();
+      formElement.reset();
+      if (attachmentInputRef.current) attachmentInputRef.current.value = "";
     } catch (error) {
       const message = error instanceof ApiError
         ? error.message
-        : "We could not submit your enquiry right now. Please try again or contact us on WhatsApp.";
+        : error?.message || "We could not submit your enquiry right now. Please try again or contact us on WhatsApp.";
       setStatus({ type: "error", message });
     } finally {
       setIsSubmitting(false);
@@ -231,11 +234,12 @@ export default function ContactPage() {
             <label className="contact-upload">
               <span>Attach reference or logo</span>
               <input
-                accept=".jpg,.jpeg,.png,.webp,.pdf,.ai,.cdr,.svg"
+                accept=".jpg,.jpeg,.png,.webp,.pdf,.svg"
+                ref={attachmentInputRef}
                 onChange={(event) => setAttachment(event.target.files?.[0] || null)}
                 type="file"
               />
-              <small>{attachment ? attachment.name : "Optional — JPG, PNG, PDF, AI, CDR or SVG"}</small>
+              <small>{attachment ? attachment.name : "Optional - JPG, PNG, WebP, PDF or SVG"}</small>
             </label>
 
             {status.message ? (

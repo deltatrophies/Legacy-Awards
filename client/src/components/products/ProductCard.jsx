@@ -9,21 +9,27 @@ function HeartIcon({ filled }) {
   );
 }
 
+function CartIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M3 4h2l2.1 10.2a2 2 0 0 0 2 1.6h7.8a2 2 0 0 0 1.9-1.4L21 7H6" />
+      <circle cx="9" cy="20" r="1" />
+      <circle cx="18" cy="20" r="1" />
+    </svg>
+  );
+}
+
 export default function ProductCard({ product, wishlisted, compared, onWishlist, onCompare }) {
   const badgeClass = `product-badge badge-${product.badge.toLowerCase().replaceAll(" ", "-")}`;
-
   return (
     <article className="catalog-card">
-      <div className="catalog-card-top">
-        <span className={badgeClass}>{product.badge}</span>
-        <button className={`icon-action wishlist-action ${wishlisted ? "active" : ""}`} type="button" onClick={() => onWishlist(product.id)} aria-label={`${wishlisted ? "Remove" : "Add"} ${product.name} ${wishlisted ? "from" : "to"} wishlist`} title="Wishlist">
-          <HeartIcon filled={wishlisted} />
-        </button>
-      </div>
-
       <Link className="catalog-image" to={`/products/${product.id}`} aria-label={`View ${product.name}`}>
+        <span className={badgeClass}>{product.badge}</span>
         <img src={product.image} alt={product.name} loading="lazy" />
       </Link>
+      <button className={`icon-action wishlist-action ${wishlisted ? "active" : ""}`} type="button" onClick={() => onWishlist(product.id)} aria-label={`${wishlisted ? "Remove" : "Add"} ${product.name} ${wishlisted ? "from" : "to"} wishlist`} title={wishlisted ? "Remove from Wishlist" : "Add to Wishlist"}>
+        <HeartIcon filled={wishlisted} />
+      </button>
 
       <div className="catalog-body">
         <div className="catalog-kicker">
@@ -46,7 +52,9 @@ export default function ProductCard({ product, wishlisted, compared, onWishlist,
             <span className="price-label">Starting from</span>
             <strong>{formatPrice(product.price)}</strong>
           </div>
-          <Link className="text-link" to={`/products/${product.id}`}>View details</Link>
+          <Link className="catalog-cart-icon" to={`/products/${product.id}`} aria-label={`Open ${product.name} to add to cart`} title="Add to Cart">
+            <CartIcon />
+          </Link>
         </div>
 
         <label className="compare-check"><input type="checkbox" checked={compared} onChange={() => onCompare(product.id)} /> Compare</label>

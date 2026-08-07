@@ -6,12 +6,13 @@ const defaultSettings = {
   businessName: "Legacy Awards",
   email: "orders@legacyawards.in",
   phone: "",
-  whatsapp: "91XXXXXXXXXX",
+  whatsapp: "",
   address: "B-14, Okhla Phase II, New Delhi - 110020",
   timings: "Mon-Sat, 10:00 AM - 7:00 PM",
   mapUrl: "",
   instagramUrl: "",
   facebookUrl: "",
+  customPricing: undefined,
 };
 
 const serialize = (settings) => ({
@@ -24,6 +25,7 @@ const serialize = (settings) => ({
   mapUrl: settings.mapUrl || "",
   instagramUrl: settings.instagramUrl || "",
   facebookUrl: settings.facebookUrl || "",
+  customPricing: settings.customPricing,
   updatedAt: settings.updatedAt,
 });
 

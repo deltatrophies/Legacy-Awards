@@ -12,6 +12,8 @@ export default function ProductDetailPage() {
   const [product, setProduct] = useState(() => getProductBySlug(slug));
   const [notFound, setNotFound] = useState(false);
   const [qty, setQty] = useState(product?.minOrder || 1);
+  const [selectedImage, setSelectedImage] = useState(product?.image || "");
+  const [quantityNotice, setQuantityNotice] = useState("");
 
   const loadProduct = () => {
     catalogApi.get(slug).then((item) => { setProduct(item); setQty(item.minOrder || 1); }).catch(() => {
@@ -41,29 +43,106 @@ export default function ProductDetailPage() {
   useEffect(() => {
     if (!product) return;
     document.title = `${product.name} - Legacy Awards`;
+    setSelectedImage(product.images?.[0]?.url || product.image || "");
     const recent = readStorage("recentlyViewed", []).filter((id) => id !== product.id);
     writeStorage("recentlyViewed", [product.id, ...recent].slice(0, 8));
   }, [product]);
 
+  useEffect(() => {
+    if (!quantityNotice) return undefined;
+    const timer = window.setTimeout(() => setQuantityNotice(""), 2600);
+    return () => window.clearTimeout(timer);
+  }, [quantityNotice]);
+
   if (notFound) return <Navigate to="/products" replace />;
   if (!product) return <main className="commerce-page detail-page"><p>Loading product...</p></main>;
+  const galleryImages = (product.images?.length ? product.images.map((image) => image.url) : [product.image]).filter(Boolean).slice(0, 4);
+  const activeImage = selectedImage || galleryImages[0] || product.image;
   const addToQuote = () => {
+    if (qty < product.minOrder) {
+      setQuantityNotice(`Minimum order is ${product.minOrder} unit${product.minOrder > 1 ? "s" : ""} for this product.`);
+      setQty(product.minOrder);
+      return;
+    }
     const cart = readStorage("cart", []);
     const existing = cart.find((item) => item.id === product.id);
     const next = existing ? cart.map((item) => item.id === product.id ? { ...item, qty: item.qty + qty } : item) : [...cart, { ...product, qty }];
     writeStorage("cart", next);
     navigate("/cart");
   };
+  const changeQuantity = (value) => {
+    const nextQuantity = Number(value) || product.minOrder;
+    if (nextQuantity < product.minOrder) {
+      setQuantityNotice(`Minimum order is ${product.minOrder} unit${product.minOrder > 1 ? "s" : ""} for this product.`);
+      setQty(product.minOrder);
+      return;
+    }
+    setQty(nextQuantity);
+  };
 
   return (
     <main className="commerce-page detail-page">
+      {quantityNotice ? (
+        <div className="detail-toast" role="status" aria-live="polite">
+          <strong>Minimum quantity required</strong>
+          <span>{quantityNotice}</span>
+        </div>
+      ) : null}
       <div className="breadcrumbs"><Link to="/">Home</Link><span>/</span><Link to="/products">Products</Link><span>/</span><span>{product.name}</span></div>
       <section className="product-detail">
-        <div className="detail-media"><span className="product-badge">{product.badge}</span><img src={product.image} alt={product.name} /></div>
-        <div className="detail-copy"><p className="catalog-tag">{product.tag}</p><h1>{product.name}</h1><p className="detail-price">{formatPrice(product.price)} <small>per piece</small></p><p className="detail-description">{product.description}</p>
-          <dl className="spec-grid"><div><dt>Material</dt><dd>{product.material}</dd></div><div><dt>Size</dt><dd>{product.size}</dd></div><div><dt>Delivery</dt><dd>{product.delivery}</dd></div><div><dt>Minimum order</dt><dd>{product.minOrder} unit{product.minOrder > 1 ? "s" : ""}</dd></div><div><dt>Best for</dt><dd>{product.useCase}</dd></div><div><dt>Customization</dt><dd>Text and logo</dd></div></dl>
-          <div className="detail-actions"><label>Quantity<input type="number" min={product.minOrder} value={qty} onChange={(event) => setQty(Math.max(product.minOrder, Number(event.target.value) || product.minOrder))} /></label><button className="primary-command" onClick={addToQuote}>Add to Quote Cart</button><Link className="secondary-command" to={`/custom?product=${product.id}`}>Customize</Link></div>
-          <p className="detail-note">Design proof shared before production. Final price may vary with artwork, finish and quantity.</p>
+        <div className="detail-media">
+          <div className="detail-media-top">
+            {product.badge ? <span className="product-badge">{product.badge}</span> : <span />}
+            <span className="detail-media-code">{product.sku || product.id}</span>
+          </div>
+          <div className="detail-image-stage">
+            <img src={activeImage} alt={product.name} />
+          </div>
+          {galleryImages.length > 1 ? (
+            <div className="detail-thumb-row" aria-label="Product images">
+              {galleryImages.map((image, index) => (
+                <button
+                  aria-label={`Show product image ${index + 1}`}
+                  className={image === activeImage ? "active" : ""}
+                  key={image}
+                  type="button"
+                  onClick={() => setSelectedImage(image)}
+                >
+                  <img src={image} alt="" />
+                </button>
+              ))}
+            </div>
+          ) : null}
+        </div>
+        <div className="detail-copy">
+          <p className="catalog-tag">{product.tag}</p>
+          <h1>{product.name}</h1>
+          <div className="detail-price-card">
+            <p className="detail-price">{formatPrice(product.price)} <small>per piece</small></p>
+            <span>Bulk quote available</span>
+          </div>
+          <p className="detail-description">{product.description}</p>
+
+          <dl className="spec-grid">
+            <div><dt>Material</dt><dd>{product.material}</dd></div>
+            <div><dt>Size</dt><dd>{product.size}</dd></div>
+            <div><dt>Delivery</dt><dd>{product.delivery}</dd></div>
+            <div><dt>Minimum order</dt><dd>{product.minOrder} unit{product.minOrder > 1 ? "s" : ""}</dd></div>
+            <div className="wide"><dt>Best for</dt><dd>{product.useCase}</dd></div>
+            <div><dt>Customization</dt><dd>Text and logo</dd></div>
+          </dl>
+
+          <div className="detail-purchase-panel">
+            <label className="detail-qty-field">
+              <span>Quantity</span>
+              <input type="number" min={product.minOrder} value={qty} onChange={(event) => changeQuantity(event.target.value)} />
+            </label>
+            <div className="detail-actions">
+              <button className="primary-command" onClick={addToQuote}>Add to Quote Cart</button>
+              <Link className="secondary-command" to={`/custom?product=${product.id}`}>Customize</Link>
+            </div>
+            <p className="detail-note">Design proof shared before production. Final price may vary with artwork, finish and quantity.</p>
+          </div>
         </div>
       </section>
       <RecentlyViewed exclude={product.id} />

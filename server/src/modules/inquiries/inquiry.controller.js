@@ -25,6 +25,13 @@ export async function list(req, res) {
   return sendData(res, inquiries, 200, paginationMeta(total, page, limit));
 }
 
+export async function getOne(req, res) {
+  const query = /^[a-f0-9]{24}$/i.test(req.params.id) ? { _id: req.params.id } : { reference: req.params.id };
+  const inquiry = await Inquiry.findOne(query).lean();
+  if (!inquiry) throw new AppError(404, "INQUIRY_NOT_FOUND", "Inquiry was not found");
+  return sendData(res, inquiry);
+}
+
 export async function update(req, res) {
   const inquiry = await Inquiry.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
   if (!inquiry) throw new AppError(404, "INQUIRY_NOT_FOUND", "Inquiry was not found");

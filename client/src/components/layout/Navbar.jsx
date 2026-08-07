@@ -31,6 +31,7 @@ export default function Navbar() {
   const accountRef = useRef(null);
   const { user, logout } = useAuth();
   const [cartQuantity, setCartQuantity] = useState(0);
+  const quoteHref = cartQuantity > 0 ? "/cart" : "/contact";
 
   useEffect(() => {
     const updateCartQuantity = () => {
@@ -104,7 +105,7 @@ export default function Navbar() {
       </ul>
 
       <div className="nav-actions">
-        <NavLink to="/contact" className="nav-btn">Get a Quote</NavLink>
+        <NavLink to={quoteHref} className="nav-btn">Request Quote</NavLink>
         <NavLink className="nav-icon-link cart-link" to="/cart" aria-label={`Cart with ${cartQuantity} items`} title="Cart">
           <CartIcon />
           {cartQuantity > 0 && <span className="cart-count">{cartQuantity > 99 ? "99+" : cartQuantity}</span>}
@@ -181,7 +182,7 @@ export default function Navbar() {
           {user && <NavLink to="/account/orders"><MenuIcon type="orders" />My Orders</NavLink>}
           {user && <NavLink to="/account/wishlist"><MenuIcon type="wishlist" />Wishlist</NavLink>}
           <NavLink to="/cart"><CartIcon />My Cart {cartQuantity > 0 && `(${cartQuantity})`}</NavLink>
-          <NavLink to="/contact" className="mobile-quote-btn">Get a Quote</NavLink>
+          <NavLink to={quoteHref} className="mobile-quote-btn">Request Quote</NavLink>
           {user && <button type="button" className="mobile-logout-btn" onClick={handleLogout}><MenuIcon type="logout" />Logout</button>}
         </div>
       </div>

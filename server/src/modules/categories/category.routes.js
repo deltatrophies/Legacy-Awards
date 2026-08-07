@@ -10,4 +10,5 @@ export const categoryRouter = Router();
 categoryRouter.get("/", optionalAuthenticate, asyncHandler(controller.list));
 categoryRouter.post("/", authenticate, authorize("admin"), validate(createCategorySchema), asyncHandler(controller.create));
 categoryRouter.patch("/:slug", authenticate, authorize("admin"), validate(updateCategorySchema), asyncHandler(controller.update));
+categoryRouter.patch("/:slug/restore", authenticate, authorize("admin"), asyncHandler(controller.restore));
 categoryRouter.delete("/:slug", authenticate, authorize("admin"), asyncHandler(controller.remove));

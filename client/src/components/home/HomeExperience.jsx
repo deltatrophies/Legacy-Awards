@@ -76,15 +76,21 @@ export default function HomeExperience() {
       </div>
 
       <div className="gallery-section">
-        <div>
+        <div className="gallery-head">
           <div className="section-kicker">Customer Gallery</div>
           <h2>Real award styles customers often request.</h2>
+          <p>Popular finishes and formats we regularly prepare for schools, companies, ceremonies, and recognition events.</p>
         </div>
         <div className="gallery-grid">
-          {gallery.map(([title, src]) => (
+          {gallery.map(([title, src], index) => (
             <figure className="gallery-card" key={title}>
-              <img src={src} alt={title} />
-              <figcaption>{title}</figcaption>
+              <div className="gallery-card-media">
+                <img src={src} alt={title} />
+              </div>
+              <figcaption>
+                <span>{String(index + 1).padStart(2, "0")}</span>
+                <strong>{title}</strong>
+              </figcaption>
             </figure>
           ))}
         </div>

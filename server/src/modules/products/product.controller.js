@@ -38,7 +38,8 @@ export async function list(req, res) {
 }
 
 export async function getOne(req, res) {
-  const product = await Product.findOne({ slug: req.params.slug, isActive: true }).lean();
+  const canSeeInactive = req.auth?.role === "admin";
+  const product = await Product.findOne({ slug: req.params.slug, ...(canSeeInactive ? {} : { isActive: true }) }).lean();
   if (!product) throw new AppError(404, "PRODUCT_NOT_FOUND", "Product was not found");
   return sendData(res, serialize(product));
 }
@@ -57,4 +58,10 @@ export async function remove(req, res) {
   const product = await Product.findOneAndUpdate({ slug: req.params.slug }, { isActive: false }, { new: true });
   if (!product) throw new AppError(404, "PRODUCT_NOT_FOUND", "Product was not found");
   return res.status(204).send();
+}
+
+export async function restore(req, res) {
+  const product = await Product.findOneAndUpdate({ slug: req.params.slug }, { isActive: true }, { new: true, runValidators: true });
+  if (!product) throw new AppError(404, "PRODUCT_NOT_FOUND", "Product was not found");
+  return sendData(res, serialize(product));
 }

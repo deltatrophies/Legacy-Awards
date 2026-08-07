@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import AuthBackgroundArt from "../components/auth/AuthBackgroundArt.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
@@ -17,6 +17,10 @@ export default function LoginPage() {
   const [form, setForm] = useState({ firstName: "", lastName: "", email: "", password: "", acceptedTerms: false });
   const set = (key, value) => setForm((current) => ({ ...current, [key]: value }));
   const passwordMeetsPolicy = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,128}$/.test(form.password);
+
+  useEffect(() => {
+    document.title = `${isLogin ? "Login" : "Create Account"} - Legacy Awards`;
+  }, [isLogin]);
 
   const getErrorMessage = (requestError) => {
     if (Array.isArray(requestError.details) && requestError.details.length > 0) {

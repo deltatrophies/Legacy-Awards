@@ -17,6 +17,9 @@ export default function CartPage() {
   const [submitting, setSubmitting] = useState(false);
   const [customer, setCustomer] = useState({ name: "", phone: "", email: "", organization: "", notes: "", preference: "WhatsApp" });
   useEffect(() => {
+    document.title = "Quote Cart - Legacy Awards";
+  }, []);
+  useEffect(() => {
     if (!user) return;
     setCustomer((current) => ({
       ...current,
@@ -25,15 +28,11 @@ export default function CartPage() {
     }));
   }, [user]);
   const subtotal = useMemo(() => items.reduce((sum,item) => sum + (Number(item.price)||0) * (Number(item.qty)||1),0),[items]);
-  const discount = couponApplied ? Math.round(subtotal * .1) : 0;
+  const discount = 0;
   const updateItems = (next) => { setItems(next); writeStorage("cart",next); };
   const changeQty = (id, qty) => updateItems(items.map((item) => item.id === id ? { ...item, qty: Math.max(Number(item.minOrder) || 1, qty) } : item));
   const submit = async () => {
-    if (!user) {
-      navigate("/login", { state: { from: "/cart" } });
-      return;
-    }
-    if (!customer.name.trim() || !/^\+?[0-9 ]{10,16}$/.test(customer.phone)) { setError("Please enter your name and a valid phone number."); return; }
+    if (!customer.name.trim() || !/^\+?[0-9 ]{10,16}$/.test(customer.phone) || !customer.email.trim()) { setError("Please enter your name, email and a valid phone number."); return; }
     setSubmitting(true); setError("");
     try {
       const payloadItems = items.map((item) => item.design
@@ -59,7 +58,7 @@ export default function CartPage() {
         <div className="cart-progress" aria-label="Quote request progress">
           <span className="active"><b>1</b>Cart</span>
           <i />
-          <span className={user ? "active" : ""}><b>2</b>Sign in</span>
+          <span className="active"><b>2</b>Details</span>
           <i />
           <span><b>3</b>Request</span>
         </div>
@@ -120,20 +119,21 @@ export default function CartPage() {
             <div className={`checkout-access ${user ? "ready" : "guest"}`}>
               <span className="access-icon" aria-hidden="true">{user ? "✓" : "○"}</span>
               <div>
-                <strong>{user ? `Signed in as ${user.firstName}` : "Sign in required to continue"}</strong>
-                <small>{user ? "Your account is ready for this request." : "Your cart is saved. Sign in only when you are ready to submit."}</small>
+                <strong>{user ? `Signed in as ${user.firstName}` : "Continue as guest"}</strong>
+                <small>{user ? "This quote will be saved to your account." : "No login needed. We will create a secure tracking link after submission."}</small>
               </div>
-              {!user && <button type="button" onClick={() => navigate("/login", { state: { from: "/cart" } })}>Sign in</button>}
+              {!user && <button type="button" onClick={() => navigate("/login", { state: { from: "/cart" } })}>Sign in instead</button>}
             </div>
 
             <div className="summary-heading"><span>Secure quote review</span><h2>Order summary</h2></div>
             <div className="coupon-box">
               <label htmlFor="coupon">Promo code</label>
-              <div><input id="coupon" placeholder="Enter code" value={coupon} onChange={(event) => setCoupon(event.target.value.toUpperCase())} /><button type="button" onClick={() => { setCouponApplied(coupon === "LEGACY10"); setError(coupon === "LEGACY10" ? "" : "Coupon not recognised."); }}>Apply</button></div>
+              <div><input id="coupon" placeholder="Enter code" value={coupon} onChange={(event) => { setCoupon(event.target.value.toUpperCase()); setCouponApplied(false); }} /><button type="button" onClick={() => { setCouponApplied(Boolean(coupon.trim())); setError(coupon.trim() ? "" : "Enter a coupon code first."); }}>Apply</button></div>
+              {couponApplied ? <small>Coupon will be validated by Legacy Awards before your quote total is saved.</small> : null}
             </div>
             <div className="summary-lines">
               <div><span>Subtotal</span><strong>{formatPrice(subtotal)}</strong></div>
-              <div><span>Discount</span><strong>− {formatPrice(discount)}</strong></div>
+              <div><span>Discount</span><strong>{couponApplied ? "Checked on submit" : formatPrice(discount)}</strong></div>
               <div className="grand-total"><span>Estimated total</span><strong>{formatPrice(subtotal - discount)}</strong></div>
             </div>
 
@@ -141,13 +141,13 @@ export default function CartPage() {
             <div className="customer-form">
               <label>Full name *<input type="text" value={customer.name} onChange={(event) => setCustomer({ ...customer, name: event.target.value })} /></label>
               <label>Phone *<input type="tel" value={customer.phone} onChange={(event) => setCustomer({ ...customer, phone: event.target.value })} placeholder="10-digit mobile number" /></label>
-              <label>Email<input type="email" value={customer.email} onChange={(event) => setCustomer({ ...customer, email: event.target.value })} /></label>
+              <label>Email *<input type="email" value={customer.email} onChange={(event) => setCustomer({ ...customer, email: event.target.value })} /></label>
               <label>Organization<input type="text" value={customer.organization} onChange={(event) => setCustomer({ ...customer, organization: event.target.value })} /></label>
               <label>Preferred response<select value={customer.preference} onChange={(event) => setCustomer({ ...customer, preference: event.target.value })}><option>WhatsApp</option><option>Email</option><option>Phone call</option></select></label>
               <label>Notes<textarea rows="3" value={customer.notes} onChange={(event) => setCustomer({ ...customer, notes: event.target.value })} /></label>
             </div>
             {error && <p className="quote-error">{error}</p>}
-            <button className="submit-quote" type="button" disabled={submitting || authLoading} onClick={submit}>{authLoading ? "Checking account..." : submitting ? "Submitting..." : user ? "Send Quote Request" : "Sign in to Continue"}</button>
+            <button className="submit-quote" type="button" disabled={submitting || authLoading} onClick={submit}>{authLoading ? "Checking account..." : submitting ? "Submitting..." : "Send Quote Request"}</button>
             <div className="secure-note"><span aria-hidden="true">⌁</span><p><strong>No payment collected now</strong>Your artwork, final price and production timeline are confirmed before payment.</p></div>
           </aside>
         </div>

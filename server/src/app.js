@@ -9,7 +9,9 @@ import rateLimit from "express-rate-limit";
 import helmet from "helmet";
 import hpp from "hpp";
 import pinoHttp from "pino-http";
+import { getDatabaseStatus } from "./config/database.js";
 import { errorHandler, notFoundHandler } from "./common/middleware/errorHandler.js";
+import { databaseAvailability } from "./common/middleware/databaseAvailability.js";
 import { rejectUnsafeMongoKeys } from "./common/middleware/security.js";
 import { env, isProduction } from "./config/env.js";
 import { logger } from "./config/logger.js";
@@ -23,6 +25,20 @@ app.set("trust proxy", 1);
 
 app.use(pinoHttp({
   logger,
+  serializers: {
+    req(req) {
+      return {
+        id: req.id,
+        method: req.method,
+        url: req.url,
+      };
+    },
+    res(res) {
+      return {
+        statusCode: res.statusCode,
+      };
+    },
+  },
   genReqId: (req, res) => {
     const id = req.headers["x-request-id"] || randomUUID();
     res.setHeader("x-request-id", id);
@@ -63,12 +79,11 @@ const sensitiveLimiter = rateLimit({
   message: { success: false, error: { code: "RATE_LIMITED", message: "Too many attempts; please try again later" } },
 });
 
-app.get("/api/health", (_req, res) => res.json({ success: true, data: { status: "ok", timestamp: new Date().toISOString() } }));
+app.get("/api/health", (_req, res) => res.json({ success: true, data: { status: "ok", database: getDatabaseStatus(), timestamp: new Date().toISOString() } }));
 app.use("/api/v1/auth/login", sensitiveLimiter);
 app.use("/api/v1/auth/register", sensitiveLimiter);
-app.use("/api/v1/inquiries", sensitiveLimiter);
 app.use("/api/v1/uploads", sensitiveLimiter);
-app.use("/api/v1", apiLimiter, apiRouter);
+app.use("/api/v1", apiLimiter, databaseAvailability, apiRouter);
 
 if (isProduction) {
   const directory = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../client/dist");

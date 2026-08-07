@@ -2,10 +2,11 @@ import { createHash, randomBytes } from "node:crypto";
 import { AppError } from "../../common/errors/AppError.js";
 import { createReference } from "../../common/utils/identifiers.js";
 import { Product } from "../products/product.model.js";
+import { Settings } from "../settings/settings.model.js";
 import { Coupon } from "./coupon.model.js";
 import { Quote } from "./quote.model.js";
 
-const prices = {
+export const defaultCustomPricing = {
   tip: { classic: 300, star: 360, flame: 520 },
   body: { slim: 450, marble: 620, crystal: 780 },
   base: { wood: 300, marble: 380, metal: 420 },
@@ -14,6 +15,12 @@ const prices = {
   branding: { laser: 120, uv: 180, plate: 220, crystal: 350 },
   packaging: { standard: 0, gift: 180, velvet: 320 },
   delivery: { standard: 0, priority: 120, express: 260 },
+  bulkDiscounts: [
+    { minQuantity: 500, rate: 20 },
+    { minQuantity: 200, rate: 15 },
+    { minQuantity: 100, rate: 10 },
+    { minQuantity: 50, rate: 8 },
+  ],
 };
 
 const labels = {
@@ -22,12 +29,56 @@ const labels = {
   base: { wood: "Wood Base", marble: "Marble Base", metal: "Metal Base" },
 };
 
-export function calculateCustomItem(design, quantity) {
+const hashAccessToken = (accessToken) => createHash("sha256").update(accessToken).digest("hex");
+
+function normalizePhone(value = "") {
+  return String(value).replace(/\D/g, "").replace(/^91(?=\d{10}$)/, "");
+}
+
+function identifierMatches(customer, identifier) {
+  const value = String(identifier || "").trim().toLowerCase();
+  if (!value) return false;
+  if (customer.email && customer.email.toLowerCase() === value) return true;
+  const suppliedPhone = normalizePhone(value);
+  return Boolean(suppliedPhone && normalizePhone(customer.phone).endsWith(suppliedPhone.slice(-10)));
+}
+
+export function mergeCustomPricing(customPricing = {}) {
+  return {
+    ...defaultCustomPricing,
+    ...customPricing,
+    tip: { ...defaultCustomPricing.tip, ...(customPricing.tip || {}) },
+    body: { ...defaultCustomPricing.body, ...(customPricing.body || {}) },
+    base: { ...defaultCustomPricing.base, ...(customPricing.base || {}) },
+    size: { ...defaultCustomPricing.size, ...(customPricing.size || {}) },
+    finish: { ...defaultCustomPricing.finish, ...(customPricing.finish || {}) },
+    branding: { ...defaultCustomPricing.branding, ...(customPricing.branding || {}) },
+    packaging: { ...defaultCustomPricing.packaging, ...(customPricing.packaging || {}) },
+    delivery: { ...defaultCustomPricing.delivery, ...(customPricing.delivery || {}) },
+    bulkDiscounts: customPricing.bulkDiscounts?.length ? customPricing.bulkDiscounts : defaultCustomPricing.bulkDiscounts,
+  };
+}
+
+export async function getCustomPricing() {
+  const settings = await Settings.findOne({ key: "site" }).lean();
+  return mergeCustomPricing(settings?.customPricing);
+}
+
+export function calculateCustomItem(design, quantity, customPricing = defaultCustomPricing) {
+  const prices = mergeCustomPricing(customPricing);
+  const requiredKeys = ["tip", "body", "base", "size", "finish", "branding", "packaging", "delivery"];
+  for (const key of requiredKeys) {
+    if (prices[key]?.[design[key]] == null) {
+      throw new AppError(422, "INVALID_CUSTOM_DESIGN", `Custom ${key} option is unavailable`);
+    }
+  }
   const baseUnit = prices.tip[design.tip] + prices.body[design.body] + prices.base[design.base]
     + prices.finish[design.finish] + prices.branding[design.branding]
     + prices.packaging[design.packaging] + prices.delivery[design.delivery];
   const regularUnitPrice = Math.round(baseUnit * prices.size[design.size]);
-  const discountRate = quantity >= 500 ? 20 : quantity >= 200 ? 15 : quantity >= 100 ? 10 : quantity >= 50 ? 8 : 0;
+  const discountRate = [...prices.bulkDiscounts]
+    .sort((a, b) => b.minQuantity - a.minQuantity)
+    .find((tier) => quantity >= tier.minQuantity)?.rate || 0;
   const lineTotal = Math.round(regularUnitPrice * quantity * (1 - discountRate / 100));
   return {
     kind: "custom",
@@ -46,11 +97,14 @@ export function calculateCustomItem(design, quantity) {
 
 async function resolveItems(items) {
   const catalogIds = items.filter((item) => item.kind === "catalog").map((item) => item.productId);
-  const products = catalogIds.length ? await Product.find({ slug: { $in: catalogIds }, isActive: true }).lean() : [];
+  const [products, customPricing] = await Promise.all([
+    catalogIds.length ? Product.find({ slug: { $in: catalogIds }, isActive: true }).lean() : [],
+    items.some((item) => item.kind === "custom") ? getCustomPricing() : Promise.resolve(defaultCustomPricing),
+  ]);
   const bySlug = new Map(products.map((product) => [product.slug, product]));
 
   return items.map((item) => {
-    if (item.kind === "custom") return calculateCustomItem(item.design, item.quantity);
+    if (item.kind === "custom") return calculateCustomItem(item.design, item.quantity, customPricing);
     const product = bySlug.get(item.productId);
     if (!product) throw new AppError(422, "PRODUCT_UNAVAILABLE", `Product ${item.productId} is unavailable`);
     if (item.quantity < product.minOrder) {
@@ -94,7 +148,7 @@ export async function createQuote(input, userId) {
   const accessToken = randomBytes(24).toString("hex");
   const quote = await Quote.create({
     reference: createReference("LAQ"),
-    accessTokenHash: createHash("sha256").update(accessToken).digest("hex"),
+    accessTokenHash: hashAccessToken(accessToken),
     user: userId,
     customer: input.customer,
     items,
@@ -108,10 +162,21 @@ export async function createQuote(input, userId) {
 
 export async function getPublicQuote(reference, accessToken) {
   if (!accessToken) throw new AppError(401, "QUOTE_TOKEN_REQUIRED", "A quote access token is required");
-  const accessTokenHash = createHash("sha256").update(accessToken).digest("hex");
+  const accessTokenHash = hashAccessToken(accessToken);
   const quote = await Quote.findOne({ reference }).select("+accessTokenHash");
   if (!quote || quote.accessTokenHash !== accessTokenHash) {
     throw new AppError(404, "QUOTE_NOT_FOUND", "Quote was not found");
   }
   return quote;
+}
+
+export async function trackQuote(reference, identifier) {
+  const quote = await Quote.findOne({ reference }).select("+accessTokenHash");
+  if (!quote || !identifierMatches(quote.customer, identifier)) {
+    throw new AppError(404, "QUOTE_NOT_FOUND", "Quote was not found for those details");
+  }
+  const accessToken = randomBytes(24).toString("hex");
+  quote.accessTokenHash = hashAccessToken(accessToken);
+  await quote.save();
+  return { quote, accessToken };
 }

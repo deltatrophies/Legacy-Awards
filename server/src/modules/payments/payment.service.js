@@ -5,6 +5,7 @@ import { AppError } from "../../common/errors/AppError.js";
 import { createReference } from "../../common/utils/identifiers.js";
 import { Order } from "../orders/order.model.js";
 import { getPublicQuote } from "../quotes/quote.service.js";
+import { Quote } from "../quotes/quote.model.js";
 import { Payment } from "./payment.model.js";
 
 const safeEqual = (left, right) => {
@@ -37,9 +38,17 @@ async function ensureOrder(payment) {
   );
 }
 
-export async function createPaymentOrder(reference, quoteToken) {
+async function getPayableQuote(reference, quoteToken, userId) {
+  if (quoteToken) return getPublicQuote(reference, quoteToken);
+  if (!userId) throw new AppError(401, "QUOTE_TOKEN_REQUIRED", "A quote access token or signed-in account is required");
+  const quote = await Quote.findOne({ reference, user: userId });
+  if (!quote) throw new AppError(404, "QUOTE_NOT_FOUND", "Quote was not found");
+  return quote;
+}
+
+export async function createPaymentOrder(reference, quoteToken, userId) {
   if (!razorpayEnabled) throw new AppError(503, "PAYMENTS_NOT_CONFIGURED", "Online payments are not configured");
-  const quote = await getPublicQuote(reference, quoteToken);
+  const quote = await getPayableQuote(reference, quoteToken, userId);
   if (quote.status !== "accepted") {
     throw new AppError(409, "QUOTE_NOT_ACCEPTED", "The final quote must be accepted before payment");
   }
@@ -63,9 +72,9 @@ export async function createPaymentOrder(reference, quoteToken) {
   return { payment, keyId: env.RAZORPAY_KEY_ID };
 }
 
-export async function verifyCheckout(input, quoteToken) {
+export async function verifyCheckout(input, quoteToken, userId) {
   if (!razorpayEnabled) throw new AppError(503, "PAYMENTS_NOT_CONFIGURED", "Online payments are not configured");
-  await getPublicQuote(input.quoteReference, quoteToken);
+  await getPayableQuote(input.quoteReference, quoteToken, userId);
   const expected = createHmac("sha256", env.RAZORPAY_KEY_SECRET)
     .update(`${input.razorpay_order_id}|${input.razorpay_payment_id}`)
     .digest("hex");

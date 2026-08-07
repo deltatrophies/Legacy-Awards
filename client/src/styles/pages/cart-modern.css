@@ -464,8 +464,23 @@
 }
 
 .cart-page .quote-error {
-  margin: 12px 0 0;
-  border-radius: 9px;
+  position: fixed;
+  right: clamp(16px, 3vw, 34px);
+  bottom: clamp(18px, 3vw, 34px);
+  z-index: 280;
+  width: min(390px, calc(100vw - 32px));
+  margin: 0;
+  border: 1px solid rgba(161, 50, 50, .22);
+  border-radius: 14px;
+  box-shadow: 0 18px 44px rgba(40, 37, 31, .18);
+}
+
+@media (max-width: 640px) {
+  .cart-page .quote-error {
+    right: 14px;
+    bottom: 14px;
+    width: calc(100vw - 28px);
+  }
 }
 
 .cart-page .submit-quote {

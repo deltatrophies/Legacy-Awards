@@ -4,6 +4,8 @@ import jwt from "jsonwebtoken";
 import { env } from "../../config/env.js";
 import { AppError } from "../../common/errors/AppError.js";
 import { User } from "./user.model.js";
+import { Order } from "../orders/order.model.js";
+import { Quote } from "../quotes/quote.model.js";
 
 const hashToken = (token) => createHash("sha256").update(token).digest("hex");
 const refreshCookieMaxAge = 7 * 24 * 60 * 60 * 1000;
@@ -35,6 +37,14 @@ async function issueSession(user, userAgent) {
   return tokens;
 }
 
+async function attachGuestHistory(user) {
+  if (!user?.email) return;
+  await Promise.all([
+    Quote.updateMany({ user: { $exists: false }, "customer.email": user.email }, { user: user._id }),
+    Order.updateMany({ user: { $exists: false }, "customer.email": user.email }, { user: user._id }),
+  ]);
+}
+
 export async function register(input, userAgent) {
   if (await User.exists({ email: input.email })) {
     throw new AppError(409, "EMAIL_IN_USE", "An account with this email already exists");
@@ -46,6 +56,7 @@ export async function register(input, userAgent) {
     passwordHash: await bcrypt.hash(input.password, 12),
   });
   const hydrated = await User.findById(user._id).select("+sessions");
+  await attachGuestHistory(hydrated);
   return { user: hydrated, ...(await issueSession(hydrated, userAgent)) };
 }
 
@@ -55,6 +66,7 @@ export async function login(input, userAgent) {
     throw new AppError(401, "INVALID_CREDENTIALS", "Email or password is incorrect");
   }
   if (!user.isActive) throw new AppError(403, "ACCOUNT_DISABLED", "This account has been disabled");
+  await attachGuestHistory(user);
   return { user, ...(await issueSession(user, userAgent)) };
 }
 

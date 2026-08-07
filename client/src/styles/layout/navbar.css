@@ -17,25 +17,37 @@ nav.top-nav {
   backdrop-filter: blur(10px);
   border-bottom: 2px solid var(--gold-dark, #8a6e28) !important;
   box-shadow: 0 14px 34px rgba(0, 0, 0, 0.26);
+  color: rgba(250, 244, 228, 0.72);
+  font-family: var(--font-sans, "DM Sans", Inter, Arial, sans-serif) !important;
+  font-size: 14px !important;
+  line-height: 1.2 !important;
 }
 
 nav.site-nav .logo {
+  position: relative;
   flex: 0 0 auto;
-  font-family: "DM Serif Display", serif !important;
-  font-size: 21px !important;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 7px;
+  font-family: var(--font-serif, "DM Serif Display", Georgia, serif) !important;
+  font-size: clamp(28px, 2.25vw, 36px) !important;
   font-style: normal !important;
-  letter-spacing: 0.03em !important;
-  line-height: 1 !important;
+  letter-spacing: 0.01em !important;
+  line-height: 0.9 !important;
   text-decoration: none !important;
   white-space: nowrap;
-  background: linear-gradient(135deg, #f8e89a 0%, #e8c96a 20%, #fffbe0 35%, #c9a84c 50%, #fff5b0 65%, #e8c96a 80%, #8a6e28 90%, #f8e89a 100%) !important;
+  background: linear-gradient(115deg, #fff6bf 0%, #e8c96a 19%, #fffbe0 34%, #c9a84c 52%, #f4dc85 70%, #9d7c28 100%) !important;
   background-clip: text !important;
   -webkit-background-clip: text !important;
   -webkit-text-fill-color: transparent !important;
+  filter: drop-shadow(0 10px 18px rgba(0, 0, 0, 0.18));
+  isolation: isolate;
 }
 
 nav.site-nav .logo span {
+  font-size: 0.82em;
   font-style: italic !important;
+  letter-spacing: 0.02em;
   -webkit-text-fill-color: transparent !important;
 }
 
@@ -337,6 +349,7 @@ nav.top-nav .nav-links a::after {
   bottom: 0;
   height: 1px;
   background: var(--gold-bright, #e8c96a);
+  box-shadow: 0 0 14px rgba(232, 201, 106, 0.7);
   transform: scaleX(0);
   transform-origin: center;
   transition: transform 0.24s ease;
@@ -393,13 +406,31 @@ nav.top-nav .nav-btn {
 }
 
 body > nav .nav-btn::before,
-body > nav .nav-btn::after,
 nav.site-nav .nav-btn::before,
+nav.top-nav .nav-btn::before {
+  content: "" !important;
+  position: absolute !important;
+  inset: -1px !important;
+  z-index: -1 !important;
+  border-radius: inherit !important;
+  background: linear-gradient(110deg, transparent 0%, rgba(232, 201, 106, 0.22) 45%, transparent 70%) !important;
+  opacity: 0 !important;
+  transform: translateX(-120%) !important;
+  transition: opacity 0.25s ease, transform 0.55s ease !important;
+}
+
+body > nav .nav-btn::after,
 nav.site-nav .nav-btn::after,
-nav.top-nav .nav-btn::before,
 nav.top-nav .nav-btn::after {
-  content: none !important;
-  display: none !important;
+  content: "";
+  position: absolute;
+  inset: -7px;
+  z-index: -2;
+  border-radius: inherit;
+  background: rgba(232, 201, 106, 0.16);
+  filter: blur(14px);
+  opacity: 0;
+  transition: opacity 0.25s ease;
 }
 
 body > nav .nav-btn:hover,
@@ -410,6 +441,19 @@ nav.top-nav .nav-btn:hover {
   color: var(--charcoal, #28251f) !important;
   transform: translateY(-2px);
   -webkit-text-fill-color: var(--charcoal, #28251f) !important;
+}
+
+body > nav .nav-btn:hover::before,
+nav.site-nav .nav-btn:hover::before,
+nav.top-nav .nav-btn:hover::before {
+  opacity: 1 !important;
+  transform: translateX(120%) !important;
+}
+
+body > nav .nav-btn:hover::after,
+nav.site-nav .nav-btn:hover::after,
+nav.top-nav .nav-btn:hover::after {
+  opacity: 1;
 }
 
 @media (max-width: 1120px) {
@@ -428,6 +472,10 @@ nav.top-nav .nav-btn:hover {
 
   nav.site-nav .nav-actions {
     gap: 7px;
+  }
+
+  nav.site-nav .logo {
+    font-size: clamp(25px, 3.2vw, 31px) !important;
   }
 
   nav.site-nav .nav-btn {
@@ -463,6 +511,10 @@ nav.top-nav .nav-btn:hover {
   nav.site-nav .nav-icon-link {
     width: 40px;
     height: 40px;
+  }
+
+  nav.site-nav .logo {
+    font-size: 27px !important;
   }
 
   nav.site-nav .menu-toggle {
@@ -684,6 +736,11 @@ nav.top-nav .nav-btn:hover {
   }
 }
 
+nav.site-nav a,
+nav.site-nav button {
+  font-family: inherit !important;
+}
+
 @media (max-width: 560px) {
   body > nav,
   nav.site-nav,
@@ -697,4 +754,10 @@ nav.top-nav .nav-btn:hover {
   nav.top-nav .nav-btn {
     padding: 10px 18px;
   }
+
+  nav.site-nav .logo {
+    gap: 5px;
+    font-size: 24px !important;
+  }
+
 }

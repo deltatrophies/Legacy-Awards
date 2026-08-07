@@ -8,7 +8,8 @@ import { createProductSchema, updateProductSchema } from "./product.schemas.js";
 export const productRouter = Router();
 
 productRouter.get("/", optionalAuthenticate, asyncHandler(controller.list));
-productRouter.get("/:slug", asyncHandler(controller.getOne));
+productRouter.get("/:slug", optionalAuthenticate, asyncHandler(controller.getOne));
 productRouter.post("/", authenticate, authorize("admin"), validate(createProductSchema), asyncHandler(controller.create));
 productRouter.patch("/:slug", authenticate, authorize("admin"), validate(updateProductSchema), asyncHandler(controller.update));
+productRouter.patch("/:slug/restore", authenticate, authorize("admin"), asyncHandler(controller.restore));
 productRouter.delete("/:slug", authenticate, authorize("admin"), asyncHandler(controller.remove));

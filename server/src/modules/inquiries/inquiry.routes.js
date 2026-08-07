@@ -10,4 +10,5 @@ export const inquiryRouter = Router();
 
 inquiryRouter.post("/", upload.single("attachment"), validate(createInquirySchema), asyncHandler(controller.create));
 inquiryRouter.get("/", authenticate, authorize("staff", "admin"), asyncHandler(controller.list));
+inquiryRouter.get("/:id", authenticate, authorize("staff", "admin"), asyncHandler(controller.getOne));
 inquiryRouter.patch("/:id", authenticate, authorize("staff", "admin"), validate(updateInquirySchema), asyncHandler(controller.update));

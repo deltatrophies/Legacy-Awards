@@ -1,11 +1,13 @@
 import { lazy, Suspense } from "react";
-import { Navigate, Route, Routes } from "react-router-dom";
+import { AnimatePresence, motion } from "framer-motion";
+import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import PageSkeleton from "../components/common/PageSkeleton.jsx";
 import SiteLayout from "../layouts/SiteLayout.jsx";
 
 const HomePage = lazy(() => import("../pages/HomePage.jsx"));
 const AboutPage = lazy(() => import("../pages/AboutPage.jsx"));
 const ProductsPage = lazy(() => import("../pages/ProductsPage.jsx"));
+const ComparePage = lazy(() => import("../pages/ComparePage.jsx"));
 const ProductDetailPage = lazy(() => import("../pages/ProductDetailPage.jsx"));
 const CustomPage = lazy(() => import("../pages/CustomPage.jsx"));
 const BlogsPage = lazy(() => import("../pages/BlogsPage.jsx"));
@@ -16,44 +18,88 @@ const ReturnsPage = lazy(() => import("../pages/ReturnsPage.jsx"));
 const ShippingPage = lazy(() => import("../pages/ShippingPage.jsx"));
 const LoginPage = lazy(() => import("../pages/LoginPage.jsx"));
 const QuoteSuccessPage = lazy(() => import("../pages/QuoteSuccessPage.jsx"));
+const QuoteStatusPage = lazy(() => import("../pages/QuoteStatusPage.jsx"));
 const ProfilePage = lazy(() => import("../pages/ProfilePage.jsx"));
 const OrdersPage = lazy(() => import("../pages/OrdersPage.jsx"));
 const WishlistPage = lazy(() => import("../pages/WishlistPage.jsx"));
 const AdminLoginPage = lazy(() => import("../pages/AdminLoginPage.jsx"));
 const AdminPanelPage = lazy(() => import("../pages/AdminPanelPage.jsx"));
 
-function SitePage({ children }) {
-  return <SiteLayout>{children}</SiteLayout>;
+const pageTransition = {
+  duration: 0.2,
+  ease: [0.22, 1, 0.36, 1],
+};
+
+function PageMotion({ children }) {
+  return (
+    <motion.div
+      className="page-motion-shell"
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 1, y: 0 }}
+      transition={pageTransition}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
+function AdminPage({ children }) {
+  return <PageMotion>{children}</PageMotion>;
+}
+
+function PublicRoutes({ location }) {
+  return (
+    <SiteLayout>
+      <Suspense fallback={<PageSkeleton />}>
+        <AnimatePresence initial={false}>
+          <Routes location={location} key={location.pathname}>
+            <Route path="/" element={<PageMotion><HomePage /></PageMotion>} />
+            <Route path="/about" element={<PageMotion><AboutPage /></PageMotion>} />
+            <Route path="/products" element={<PageMotion><ProductsPage /></PageMotion>} />
+            <Route path="/compare" element={<PageMotion><ComparePage /></PageMotion>} />
+            <Route path="/products/:slug" element={<PageMotion><ProductDetailPage /></PageMotion>} />
+            <Route path="/product-detail" element={<Navigate to="/products/gold-prestige-trophy" replace />} />
+            <Route path="/custom" element={<PageMotion><CustomPage /></PageMotion>} />
+            <Route path="/blogs" element={<PageMotion><BlogsPage /></PageMotion>} />
+            <Route path="/contact" element={<PageMotion><ContactPage /></PageMotion>} />
+            <Route path="/cart" element={<PageMotion><CartPage /></PageMotion>} />
+            <Route path="/quote-success" element={<PageMotion><QuoteSuccessPage /></PageMotion>} />
+            <Route path="/quote-status" element={<PageMotion><QuoteStatusPage /></PageMotion>} />
+            <Route path="/quote-status/:reference" element={<PageMotion><QuoteStatusPage /></PageMotion>} />
+            <Route path="/privacy" element={<PageMotion><PrivacyPage /></PageMotion>} />
+            <Route path="/returns" element={<PageMotion><ReturnsPage /></PageMotion>} />
+            <Route path="/shipping" element={<PageMotion><ShippingPage /></PageMotion>} />
+            <Route path="/login" element={<PageMotion><LoginPage /></PageMotion>} />
+            <Route path="/account/profile" element={<PageMotion><ProfilePage /></PageMotion>} />
+            <Route path="/account/orders" element={<PageMotion><OrdersPage /></PageMotion>} />
+            <Route path="/account/wishlist" element={<PageMotion><WishlistPage /></PageMotion>} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </AnimatePresence>
+      </Suspense>
+    </SiteLayout>
+  );
+}
+
+function AdminRoutes({ location }) {
+  return (
+    <Suspense fallback={<PageSkeleton />}>
+      <AnimatePresence initial={false}>
+        <Routes location={location} key={location.pathname}>
+          <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
+          <Route path="/admin/login" element={<AdminPage><AdminLoginPage /></AdminPage>} />
+          <Route path="/admin/:section/:detailType/:detailId" element={<AdminPage><AdminPanelPage /></AdminPage>} />
+          <Route path="/admin/:section" element={<AdminPage><AdminPanelPage /></AdminPage>} />
+        </Routes>
+      </AnimatePresence>
+    </Suspense>
+  );
 }
 
 export default function AppRoutes() {
-  return (
-    <Suspense fallback={<SiteLayout><PageSkeleton /></SiteLayout>}>
-      <Routes>
-        <Route path="/" element={<SitePage><HomePage /></SitePage>} />
-        <Route path="/about" element={<SitePage><AboutPage /></SitePage>} />
-        <Route path="/products" element={<SitePage><ProductsPage /></SitePage>} />
-        <Route path="/products/:slug" element={<SitePage><ProductDetailPage /></SitePage>} />
-        <Route path="/product-detail" element={<Navigate to="/products/gold-prestige-trophy" replace />} />
-        <Route path="/custom" element={<SitePage><CustomPage /></SitePage>} />
-        <Route path="/blogs" element={<SitePage><BlogsPage /></SitePage>} />
-        <Route path="/contact" element={<SitePage><ContactPage /></SitePage>} />
-        <Route path="/cart" element={<SitePage><CartPage /></SitePage>} />
-        <Route path="/quote-success" element={<SitePage><QuoteSuccessPage /></SitePage>} />
-        <Route path="/privacy" element={<SitePage><PrivacyPage /></SitePage>} />
-        <Route path="/returns" element={<SitePage><ReturnsPage /></SitePage>} />
-        <Route path="/shipping" element={<SitePage><ShippingPage /></SitePage>} />
-        <Route path="/login" element={<SitePage><LoginPage /></SitePage>} />
-        <Route path="/account/profile" element={<SitePage><ProfilePage /></SitePage>} />
-        <Route path="/account/orders" element={<SitePage><OrdersPage /></SitePage>} />
-        <Route path="/account/wishlist" element={<SitePage><WishlistPage /></SitePage>} />
-        <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
-        <Route path="/admin/login" element={<AdminLoginPage />} />
-        <Route path="/admin/:section/:detailType/:detailId" element={<AdminPanelPage />} />
-        <Route path="/admin/:section" element={<AdminPanelPage />} />
+  const location = useLocation();
+  const isAdminRoute = location.pathname.startsWith("/admin");
 
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </Suspense>
-  );
+  return isAdminRoute ? <AdminRoutes location={location} /> : <PublicRoutes location={location} />;
 }

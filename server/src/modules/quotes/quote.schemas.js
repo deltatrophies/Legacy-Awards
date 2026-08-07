@@ -41,7 +41,30 @@ export const createQuoteSchema = z.object({
   couponCode: z.string().trim().max(40).optional().default(""),
 }).strict();
 
-export const updateQuoteStatusSchema = z.object({
-  status: z.enum(["submitted", "reviewing", "quoted", "accepted", "expired", "cancelled"]),
-  internalNotes: z.string().max(5000).optional(),
+export const trackQuoteSchema = z.object({
+  reference: z.string().trim().min(4).max(40),
+  identifier: z.string().trim().min(3).max(254),
 }).strict();
+
+export const updateQuoteSchema = z.object({
+  status: z.enum(["submitted", "reviewing", "quoted", "accepted", "expired", "cancelled"]).optional(),
+  subtotal: z.coerce.number().int().nonnegative().optional(),
+  discount: z.coerce.number().int().nonnegative().optional(),
+  total: z.coerce.number().int().nonnegative().optional(),
+  expiresAt: z.coerce.date().optional(),
+  internalNotes: z.string().max(5000).optional(),
+  customerNotes: z.string().trim().max(2000).optional(),
+}).strict().refine((value) => Object.keys(value).length > 0, { message: "At least one field is required" });
+
+export const couponSchema = z.object({
+  code: z.string().trim().min(2).max(40).regex(/^[a-zA-Z0-9_-]+$/).transform((value) => value.toUpperCase()),
+  type: z.enum(["percentage", "fixed"]),
+  value: z.coerce.number().positive(),
+  minimumSubtotal: z.coerce.number().int().nonnegative().optional().default(0),
+  maximumDiscount: z.union([z.coerce.number().int().nonnegative(), z.literal(""), z.null()]).optional().transform((value) => value === "" ? undefined : value),
+  active: z.boolean().optional().default(true),
+  startsAt: z.union([z.coerce.date(), z.literal(""), z.null()]).optional().transform((value) => value === "" ? undefined : value),
+  expiresAt: z.union([z.coerce.date(), z.literal(""), z.null()]).optional().transform((value) => value === "" ? undefined : value),
+}).strict();
+
+export const updateCouponSchema = couponSchema.partial().refine((value) => Object.keys(value).length > 0, { message: "At least one field is required" });

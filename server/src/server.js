@@ -1,14 +1,20 @@
 import http from "node:http";
 import { app } from "./app.js";
 import { connectDatabase, disconnectDatabase } from "./config/database.js";
-import { env } from "./config/env.js";
+import { env, isProduction } from "./config/env.js";
 import { logger } from "./config/logger.js";
 
 let server;
 let shuttingDown = false;
 
 async function start() {
-  await connectDatabase();
+  try {
+    await connectDatabase();
+  } catch (error) {
+    if (isProduction) throw error;
+    logger.error({ err: error }, "MongoDB unavailable; API will start in degraded mode");
+  }
+
   server = http.createServer(app);
   server.requestTimeout = 30_000;
   server.headersTimeout = 35_000;

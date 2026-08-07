@@ -18,6 +18,39 @@ export const customOptions = {
   finishes: [{ id: "gold", name: "Classic Gold", color: "#c9a84c", price: 0 }, { id: "rose", name: "Rose Gold", color: "#c9866a", price: 120 }, { id: "silver", name: "Silver Chrome", color: "#c9ced6", price: 90 }, { id: "black", name: "Matte Black", color: "#28251f", price: 150 }],
 };
 
+export const defaultCustomPricing = {
+  tip: Object.fromEntries(customOptions.tips.map((item) => [item.id, item.price])),
+  body: Object.fromEntries(customOptions.bodies.map((item) => [item.id, item.price])),
+  base: Object.fromEntries(customOptions.bases.map((item) => [item.id, item.price])),
+  size: Object.fromEntries(customOptions.sizes.map((item) => [item.id, item.multiplier])),
+  finish: Object.fromEntries(customOptions.finishes.map((item) => [item.id, item.price])),
+  branding: { laser: 120, uv: 180, plate: 220, crystal: 350 },
+  packaging: { standard: 0, gift: 180, velvet: 320 },
+  delivery: { standard: 0, priority: 120, express: 260 },
+  bulkDiscounts: [
+    { minQuantity: 500, rate: 20 },
+    { minQuantity: 200, rate: 15 },
+    { minQuantity: 100, rate: 10 },
+    { minQuantity: 50, rate: 8 },
+  ],
+};
+
+export function mergeCustomPricing(customPricing = {}) {
+  return {
+    ...defaultCustomPricing,
+    ...customPricing,
+    tip: { ...defaultCustomPricing.tip, ...(customPricing.tip || {}) },
+    body: { ...defaultCustomPricing.body, ...(customPricing.body || {}) },
+    base: { ...defaultCustomPricing.base, ...(customPricing.base || {}) },
+    size: { ...defaultCustomPricing.size, ...(customPricing.size || {}) },
+    finish: { ...defaultCustomPricing.finish, ...(customPricing.finish || {}) },
+    branding: { ...defaultCustomPricing.branding, ...(customPricing.branding || {}) },
+    packaging: { ...defaultCustomPricing.packaging, ...(customPricing.packaging || {}) },
+    delivery: { ...defaultCustomPricing.delivery, ...(customPricing.delivery || {}) },
+    bulkDiscounts: customPricing.bulkDiscounts?.length ? customPricing.bulkDiscounts : defaultCustomPricing.bulkDiscounts,
+  };
+}
+
 export const designPresets = [
   { name: "School Annual Day", tip: "star", body: "slim", base: "wood", finish: "gold", text: "ANNUAL DAY\nEXCELLENCE AWARD", font: "classic" },
   { name: "Corporate Excellence", tip: "flame", body: "crystal", base: "metal", finish: "silver", text: "EXCELLENCE\n2026", font: "modern" },

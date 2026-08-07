@@ -7,7 +7,9 @@ import { updateOrderSchema } from "./order.schemas.js";
 
 export const orderRouter = Router();
 orderRouter.get("/mine", authenticate, asyncHandler(controller.listMine));
+orderRouter.get("/mine/:id", authenticate, asyncHandler(controller.getMine));
 
 orderRouter.use(authenticate, authorize("staff", "admin"));
 orderRouter.get("/", asyncHandler(controller.list));
+orderRouter.get("/:id", asyncHandler(controller.getOne));
 orderRouter.patch("/:id", validate(updateOrderSchema), asyncHandler(controller.update));

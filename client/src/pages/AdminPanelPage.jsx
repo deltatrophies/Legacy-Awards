@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, Navigate, NavLink, useLocation, useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
-import { adminApi, catalogApi, categoryApi } from "../services/apiClient.js";
+import { adminApi, catalogApi, categoryApi, uploadProductImage } from "../services/apiClient.js";
 import "../styles/pages/admin.css";
 
 const productTemplate = {
@@ -31,6 +31,17 @@ const categoryTemplate = {
   isActive: true,
 };
 
+const couponTemplate = {
+  code: "",
+  type: "percentage",
+  value: "",
+  minimumSubtotal: 0,
+  maximumDiscount: "",
+  active: true,
+  startsAt: "",
+  expiresAt: "",
+};
+
 const settingsTemplate = {
   businessName: "Legacy Awards",
   email: "orders@legacyawards.in",
@@ -47,6 +58,7 @@ const sections = [
   ["dashboard", "Dashboard"],
   ["products", "Products"],
   ["categories", "Categories"],
+  ["coupons", "Coupons"],
   ["inquiries", "Inquiries"],
   ["orders", "Orders"],
   ["settings", "Settings"],
@@ -95,6 +107,7 @@ export default function AdminPanelPage() {
   const [inquiries, setInquiries] = useState([]);
   const [quotes, setQuotes] = useState([]);
   const [orders, setOrders] = useState([]);
+  const [coupons, setCoupons] = useState([]);
   const [settings, setSettings] = useState(settingsTemplate);
   const [loading, setLoading] = useState(true);
   const [notice, setNotice] = useState("");
@@ -108,13 +121,14 @@ export default function AdminPanelPage() {
     setLoading(true);
     setError("");
     try {
-      const [summaryData, productData, categoryData, inquiryData, quoteData, orderData, settingsData] = await Promise.all([
+      const [summaryData, productData, categoryData, inquiryData, quoteData, orderData, couponData, settingsData] = await Promise.all([
         adminApi.summary(),
         catalogApi.adminList(),
         categoryApi.adminList(),
         adminApi.listInquiries(),
         adminApi.listQuotes(),
         adminApi.listOrders(),
+        adminApi.listCoupons(),
         adminApi.getSettings(),
       ]);
       setSummary(summaryData);
@@ -123,6 +137,7 @@ export default function AdminPanelPage() {
       setInquiries(inquiryData || []);
       setQuotes(quoteData || []);
       setOrders(orderData || []);
+      setCoupons(couponData || []);
       setSettings({ ...settingsTemplate, ...(settingsData || {}) });
     } catch (requestError) {
       setError(requestError.message || "Could not load admin data.");
@@ -176,8 +191,12 @@ export default function AdminPanelPage() {
             <button className="admin-secondary-button" type="button" onClick={refreshAll}>Refresh</button>
           </header>
 
-          {notice ? <p className="admin-alert admin-alert-success" role="status">{notice}</p> : null}
-          {error ? <p className="admin-alert admin-alert-error" role="alert">{error}</p> : null}
+          {notice || error ? (
+            <div className="admin-toast-stack" aria-live="polite">
+              {notice ? <p className="admin-alert admin-alert-success" role="status">{notice}</p> : null}
+              {error ? <p className="admin-alert admin-alert-error" role="alert">{error}</p> : null}
+            </div>
+          ) : null}
           {loading ? <div className="admin-empty">Loading admin data...</div> : null}
 
           {!loading && activeSection === "dashboard" ? <Dashboard summary={summary} /> : null}
@@ -196,8 +215,17 @@ export default function AdminPanelPage() {
               onSaved={() => { announce("Category saved."); refreshAll(); }}
             />
           ) : null}
+          {!loading && activeSection === "coupons" ? (
+            <CouponManager
+              coupons={coupons}
+              onError={fail}
+              onSaved={() => { announce("Coupon saved."); refreshAll(); }}
+            />
+          ) : null}
           {!loading && activeSection === "inquiries" ? (
             <InquiryManager
+              detailId={detailId}
+              detailType={detailType}
               inquiries={inquiries}
               onError={fail}
               onUpdated={() => { announce("Inquiry updated."); refreshAll(); }}
@@ -276,6 +304,7 @@ function ProductManager({ products, categories, onSaved, onError }) {
   const [form, setForm] = useState(productTemplate);
   const [editingSlug, setEditingSlug] = useState("");
   const [saving, setSaving] = useState(false);
+  const [uploadingImages, setUploadingImages] = useState(false);
   const [activeView, setActiveView] = useState("list");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const categoryNames = useMemo(() => new Map(categories.map((category) => [category.slug || category.id, category.name])), [categories]);
@@ -311,6 +340,10 @@ function ProductManager({ products, categories, onSaved, onError }) {
     if (key === "name" && !editingSlug) next.slug = slugify(value);
     return next;
   });
+
+  const imageUrls = useMemo(() => form.imageUrls.split("\n").map((url) => url.trim()).filter(Boolean).slice(0, 4), [form.imageUrls]);
+
+  const setImageUrls = (urls) => set("imageUrls", urls.filter(Boolean).slice(0, 4).join("\n"));
 
   const editProduct = (product) => {
     setEditingSlug(product.id || product.slug);
@@ -348,7 +381,7 @@ function ProductManager({ products, categories, onSaved, onError }) {
         ...form,
         price: Number(form.price),
         minOrder: Number(form.minOrder || 1),
-        images: form.imageUrls.split("\n").map((url) => url.trim()).filter(Boolean).map((url) => ({ url, alt: form.name })),
+        images: imageUrls.map((url) => ({ url, alt: form.name })),
       };
       delete payload.imageUrls;
       if (editingSlug) await catalogApi.update(editingSlug, payload);
@@ -366,6 +399,36 @@ function ProductManager({ products, categories, onSaved, onError }) {
   const archive = async (product) => {
     try {
       await catalogApi.remove(product.id || product.slug);
+      onSaved();
+    } catch (requestError) {
+      onError(requestError);
+    }
+  };
+
+  const uploadImages = async (files) => {
+    const selectedFiles = Array.from(files || []);
+    if (!selectedFiles.length) return;
+    const availableSlots = Math.max(4 - imageUrls.length, 0);
+    if (!availableSlots) {
+      onError(new Error("Maximum 4 product images are allowed."));
+      return;
+    }
+    setUploadingImages(true);
+    try {
+      const uploads = await Promise.all(selectedFiles.slice(0, availableSlots).map((file) => uploadProductImage(file)));
+      setImageUrls([...imageUrls, ...uploads.map((item) => item.url)]);
+    } catch (requestError) {
+      onError(requestError);
+    } finally {
+      setUploadingImages(false);
+    }
+  };
+
+  const removeImage = (url) => setImageUrls(imageUrls.filter((item) => item !== url));
+
+  const restore = async (product) => {
+    try {
+      await catalogApi.restore(product.id || product.slug);
       onSaved();
     } catch (requestError) {
       onError(requestError);
@@ -421,7 +484,25 @@ function ProductManager({ products, categories, onSaved, onError }) {
             <Field label="Badge"><input value={form.badge} onChange={(event) => set("badge", event.target.value)} /></Field>
           </div>
           <Field label="Description"><textarea required rows="4" value={form.description} onChange={(event) => set("description", event.target.value)} /></Field>
-          <Field label="Image URLs"><textarea rows="3" value={form.imageUrls} onChange={(event) => set("imageUrls", event.target.value)} placeholder="/images/example.jpg" /></Field>
+          <Field label="Image URLs"><textarea rows="3" value={form.imageUrls} onChange={(event) => setImageUrls(event.target.value.split("\n"))} placeholder="/images/example.jpg" /></Field>
+          <div className="admin-product-images">
+            <div className="admin-product-upload-head">
+              <span>{imageUrls.length}/4 images</span>
+              <label>
+                {uploadingImages ? "Uploading..." : "Upload images"}
+                <input accept="image/png,image/jpeg,image/webp,image/svg+xml" disabled={uploadingImages || imageUrls.length >= 4} multiple type="file" onChange={(event) => { uploadImages(event.target.files); event.target.value = ""; }} />
+              </label>
+            </div>
+            <div className="admin-product-image-grid">
+              {imageUrls.length ? imageUrls.map((url, index) => (
+                <figure key={url}>
+                  <img src={url} alt="" />
+                  <figcaption>{index === 0 ? "Main image" : `Image ${index + 1}`}</figcaption>
+                  <button type="button" onClick={() => removeImage(url)}>Remove</button>
+                </figure>
+              )) : <p className="admin-muted">Upload or paste up to 4 product images. First image is used as the main catalogue image.</p>}
+            </div>
+          </div>
         </div>
 
         <label className="admin-check"><input checked={form.isActive} type="checkbox" onChange={(event) => set("isActive", event.target.checked)} /> Active product</label>
@@ -486,7 +567,9 @@ function ProductManager({ products, categories, onSaved, onError }) {
                     <span className={`admin-status-pill ${product.isActive === false ? "is-inactive" : "is-active"}`}>{product.isActive === false ? "Inactive" : "Active"}</span>
                     <div className="admin-row-actions">
                       <button type="button" onClick={() => editProduct(product)}>Edit</button>
-                      <button type="button" onClick={() => archive(product)}>Archive</button>
+                      {product.isActive === false
+                        ? <button type="button" onClick={() => restore(product)}>Restore</button>
+                        : <button type="button" onClick={() => archive(product)}>Archive</button>}
                     </div>
                   </article>
                 ))}
@@ -539,6 +622,15 @@ function CategoryManager({ categories, onSaved, onError }) {
   const archive = async (category) => {
     try {
       await categoryApi.remove(category.slug);
+      onSaved();
+    } catch (requestError) {
+      onError(requestError);
+    }
+  };
+
+  const restore = async (category) => {
+    try {
+      await categoryApi.restore(category.slug);
       onSaved();
     } catch (requestError) {
       onError(requestError);
@@ -614,7 +706,9 @@ function CategoryManager({ categories, onSaved, onError }) {
               <span className={`admin-status-pill ${category.isActive === false ? "is-inactive" : "is-active"}`}>{category.isActive === false ? "Inactive" : "Active"}</span>
               <div className="admin-row-actions">
                 <button type="button" onClick={() => edit(category)}>Edit</button>
-                <button type="button" onClick={() => archive(category)}>Archive</button>
+                {category.isActive === false
+                  ? <button type="button" onClick={() => restore(category)}>Restore</button>
+                  : <button type="button" onClick={() => archive(category)}>Archive</button>}
               </div>
             </article>
           )) : <p className="admin-empty">No categories found.</p>}
@@ -624,7 +718,150 @@ function CategoryManager({ categories, onSaved, onError }) {
   );
 }
 
-function InquiryManager({ inquiries, onUpdated, onError }) {
+function CouponManager({ coupons, onSaved, onError }) {
+  const [form, setForm] = useState(couponTemplate);
+  const [editingId, setEditingId] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const set = (key, value) => setForm((current) => ({ ...current, [key]: value }));
+
+  const edit = (coupon) => {
+    setEditingId(getId(coupon));
+    setForm({
+      ...couponTemplate,
+      code: coupon.code || "",
+      type: coupon.type || "percentage",
+      value: coupon.value ?? "",
+      minimumSubtotal: coupon.minimumSubtotal ?? 0,
+      maximumDiscount: coupon.maximumDiscount ?? "",
+      active: coupon.active !== false,
+      startsAt: coupon.startsAt ? String(coupon.startsAt).slice(0, 10) : "",
+      expiresAt: coupon.expiresAt ? String(coupon.expiresAt).slice(0, 10) : "",
+    });
+  };
+
+  const reset = () => {
+    setEditingId("");
+    setForm(couponTemplate);
+  };
+
+  const submit = async (event) => {
+    event.preventDefault();
+    setSaving(true);
+    try {
+      const payload = {
+        ...form,
+        code: form.code.toUpperCase(),
+        value: Number(form.value),
+        minimumSubtotal: Number(form.minimumSubtotal || 0),
+        maximumDiscount: form.maximumDiscount === "" ? undefined : Number(form.maximumDiscount),
+        startsAt: form.startsAt || undefined,
+        expiresAt: form.expiresAt || undefined,
+      };
+      if (editingId) await adminApi.updateCoupon(editingId, payload);
+      else await adminApi.createCoupon(payload);
+      reset();
+      onSaved();
+    } catch (requestError) {
+      onError(requestError);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const toggle = async (coupon) => {
+    try {
+      await adminApi.updateCoupon(getId(coupon), { active: !coupon.active });
+      onSaved();
+    } catch (requestError) {
+      onError(requestError);
+    }
+  };
+
+  return (
+    <section className="admin-coupon-workspace">
+      <div className="admin-section-heading">
+        <div>
+          <p className="admin-eyebrow">Discount control</p>
+          <h2>Coupon dashboard</h2>
+        </div>
+        <div className="admin-list-stats">
+          <span><strong>{coupons.length}</strong> Total</span>
+          <span><strong>{coupons.filter((coupon) => coupon.active).length}</strong> Active</span>
+        </div>
+      </div>
+
+      <div className="admin-two-column admin-coupon-layout">
+        <form className="admin-form-panel" onSubmit={submit}>
+          <h2>{editingId ? "Edit coupon" : "Add coupon"}</h2>
+          <div className="admin-form-grid">
+            <Field label="Code"><input required value={form.code} onChange={(event) => set("code", event.target.value.toUpperCase())} /></Field>
+            <Field label="Type"><select value={form.type} onChange={(event) => set("type", event.target.value)}><option value="percentage">Percentage</option><option value="fixed">Fixed amount</option></select></Field>
+            <Field label={form.type === "percentage" ? "Value %" : "Value Rs."}><input min="0" required type="number" value={form.value} onChange={(event) => set("value", event.target.value)} /></Field>
+            <Field label="Minimum subtotal"><input min="0" type="number" value={form.minimumSubtotal} onChange={(event) => set("minimumSubtotal", event.target.value)} /></Field>
+            <Field label="Maximum discount"><input min="0" type="number" value={form.maximumDiscount} onChange={(event) => set("maximumDiscount", event.target.value)} placeholder="Optional" /></Field>
+            <Field label="Starts"><input type="date" value={form.startsAt} onChange={(event) => set("startsAt", event.target.value)} /></Field>
+            <Field label="Expires"><input type="date" value={form.expiresAt} onChange={(event) => set("expiresAt", event.target.value)} /></Field>
+          </div>
+          <label className="admin-check"><input checked={form.active} type="checkbox" onChange={(event) => set("active", event.target.checked)} /> Active coupon</label>
+          <div className="admin-button-row">
+            <button className="admin-primary-button" disabled={saving} type="submit">{saving ? "Saving..." : "Save coupon"}</button>
+            <button className="admin-secondary-button" type="button" onClick={reset}>Clear</button>
+          </div>
+        </form>
+
+        <section className="admin-order-panel">
+          {coupons.length ? (
+            <div className="admin-coupon-stack">
+              {coupons.map((coupon) => (
+                <article className="admin-coupon-row" key={getId(coupon)}>
+                  <div>
+                    <strong>{coupon.code}</strong>
+                    <small>{coupon.type === "percentage" ? `${coupon.value}% off` : `${formatMoney(coupon.value)} off`}</small>
+                  </div>
+                  <div>
+                    <span>Min {formatMoney(coupon.minimumSubtotal)}</span>
+                    <span>{coupon.maximumDiscount ? `Cap ${formatMoney(coupon.maximumDiscount)}` : "No cap"}</span>
+                  </div>
+                  <span className={`admin-status-pill ${coupon.active ? "is-active" : "is-inactive"}`}>{coupon.active ? "Active" : "Inactive"}</span>
+                  <div className="admin-row-actions">
+                    <button type="button" onClick={() => edit(coupon)}>Edit</button>
+                    <button type="button" onClick={() => toggle(coupon)}>{coupon.active ? "Deactivate" : "Activate"}</button>
+                  </div>
+                </article>
+              ))}
+            </div>
+          ) : <p className="admin-empty">No coupons yet.</p>}
+        </section>
+      </div>
+    </section>
+  );
+}
+
+function InquiryManager({ inquiries, detailType, detailId, onUpdated, onError }) {
+  const navigate = useNavigate();
+  const [detailInquiry, setDetailInquiry] = useState(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const decodedDetailId = detailId ? decodeURIComponent(detailId) : "";
+  const listInquiry = detailType === "inquiry"
+    ? inquiries.find((inquiry) => [getId(inquiry), inquiry.reference].includes(decodedDetailId))
+    : null;
+  const selectedInquiry = listInquiry || detailInquiry;
+
+  useEffect(() => {
+    if (detailType !== "inquiry" || !decodedDetailId || listInquiry) {
+      setDetailInquiry(null);
+      return undefined;
+    }
+    let mounted = true;
+    setDetailLoading(true);
+    adminApi.getInquiry(decodedDetailId)
+      .then((data) => { if (mounted) setDetailInquiry(data); })
+      .catch(onError)
+      .finally(() => { if (mounted) setDetailLoading(false); });
+    return () => { mounted = false; };
+  }, [decodedDetailId, detailType, listInquiry, onError]);
+
   const updateStatus = async (inquiry, status) => {
     try {
       await adminApi.updateInquiry(getId(inquiry), { status });
@@ -634,31 +871,157 @@ function InquiryManager({ inquiries, onUpdated, onError }) {
     }
   };
 
-  return (
-    <div className="admin-table-panel">
-      <h2>Inquiry management</h2>
-      <DataTable
-        columns={["Reference", "Customer", "Requirement", "Message", "Status"]}
-        rows={inquiries.map((inquiry) => [
-          <strong>{inquiry.reference}</strong>,
-          <span>{inquiry.name}<small>{inquiry.email}<br />{inquiry.phone}</small></span>,
-          <span>{inquiry.type}<small>{inquiry.organization} {inquiry.quantity ? `Qty: ${inquiry.quantity}` : ""}</small></span>,
-          <span>{inquiry.message || "-"}<small>{formatDate(inquiry.createdAt)}</small></span>,
-          <select value={inquiry.status} onChange={(event) => updateStatus(inquiry, event.target.value)}>
-            {inquiryStatuses.map((status) => <option key={status} value={status}>{status}</option>)}
-          </select>,
-        ])}
+  if (detailType) {
+    if (detailLoading) {
+      return (
+        <section className="admin-order-workspace">
+          <Link className="admin-back-link" to="/admin/inquiries">Back to inquiries</Link>
+          <p className="admin-empty">Loading inquiry detail...</p>
+        </section>
+      );
+    }
+    if (!selectedInquiry) {
+      return (
+        <section className="admin-order-workspace">
+          <Link className="admin-back-link" to="/admin/inquiries">Back to inquiries</Link>
+          <p className="admin-empty">This inquiry detail could not be found.</p>
+        </section>
+      );
+    }
+
+    return (
+      <InquiryDetail
+        inquiry={selectedInquiry}
+        onBack={() => navigate("/admin/inquiries")}
+        onStatus={updateStatus}
       />
-    </div>
+    );
+  }
+
+  return (
+    <section className="admin-order-workspace">
+      <div className="admin-section-heading">
+        <div>
+          <p className="admin-eyebrow">Customer requests</p>
+          <h2>Inquiry management</h2>
+        </div>
+        <div className="admin-list-stats">
+          <span><strong>{inquiries.length}</strong> Total inquiries</span>
+          <span><strong>{inquiries.filter((inquiry) => inquiry.status === "new").length}</strong> New</span>
+        </div>
+      </div>
+
+      <section className="admin-order-panel">
+        {inquiries.length ? (
+          <div className="admin-order-stack">
+            {inquiries.map((inquiry) => (
+              <article className="admin-order-row admin-inquiry-row is-clickable" key={getId(inquiry) || inquiry.reference} onClick={() => navigate(`/admin/inquiries/inquiry/${encodeURIComponent(getId(inquiry) || inquiry.reference)}`)}>
+                <div className="admin-order-main">
+                  <strong>{inquiry.reference}</strong>
+                  <small>{formatDate(inquiry.createdAt)}</small>
+                </div>
+                <div className="admin-order-customer">
+                  <strong>{inquiry.name}</strong>
+                  <small>{inquiry.email}{inquiry.phone ? ` - ${inquiry.phone}` : ""}</small>
+                </div>
+                <div className="admin-order-customer">
+                  <strong>{inquiry.type}</strong>
+                  <small>{inquiry.organization}{inquiry.quantity ? ` - Qty ${inquiry.quantity}` : ""}</small>
+                </div>
+                <select value={inquiry.status} onClick={(event) => event.stopPropagation()} onChange={(event) => updateStatus(inquiry, event.target.value)}>
+                  {inquiryStatuses.map((status) => <option key={status} value={status}>{status}</option>)}
+                </select>
+              </article>
+            ))}
+          </div>
+        ) : <p className="admin-empty">No inquiries found.</p>}
+      </section>
+    </section>
+  );
+}
+
+function InquiryDetail({ inquiry, onBack, onStatus }) {
+  return (
+    <section className="admin-order-detail">
+      <button className="admin-secondary-button admin-detail-back" type="button" onClick={onBack}>Back to inquiries</button>
+
+      <header className="admin-detail-hero">
+        <div>
+          <p className="admin-eyebrow">Inquiry request</p>
+          <h2>{inquiry.reference}</h2>
+          <span>{formatDate(inquiry.createdAt)}</span>
+        </div>
+        <div className="admin-detail-actions">
+          <select value={inquiry.status} onChange={(event) => onStatus(inquiry, event.target.value)}>
+            {inquiryStatuses.map((status) => <option key={status} value={status}>{status}</option>)}
+          </select>
+        </div>
+      </header>
+
+      <div className="admin-detail-grid">
+        <section className="admin-detail-card">
+          <h3>Customer</h3>
+          <dl className="admin-detail-list">
+            <div><dt>Name</dt><dd>{inquiry.name || "-"}</dd></div>
+            <div><dt>Email</dt><dd>{inquiry.email || "-"}</dd></div>
+            <div><dt>Phone</dt><dd>{inquiry.phone || "-"}</dd></div>
+            <div><dt>Organization</dt><dd>{inquiry.organization || "-"}</dd></div>
+          </dl>
+        </section>
+
+        <section className="admin-detail-card">
+          <h3>Requirement</h3>
+          <dl className="admin-detail-list">
+            <div><dt>Type</dt><dd>{inquiry.type || "-"}</dd></div>
+            <div><dt>Quantity</dt><dd>{inquiry.quantity || "-"}</dd></div>
+            <div><dt>Event</dt><dd>{inquiry.event || "-"}</dd></div>
+            <div><dt>Status</dt><dd>{inquiry.status || "-"}</dd></div>
+          </dl>
+        </section>
+      </div>
+
+      <section className="admin-detail-card">
+        <h3>Message</h3>
+        <p className="admin-detail-note">{inquiry.message || "No message added."}</p>
+      </section>
+
+      {inquiry.attachment?.url ? (
+        <section className="admin-detail-card">
+          <h3>Attachment</h3>
+          <a className="admin-attachment-link" href={inquiry.attachment.url} target="_blank" rel="noreferrer">
+            Open attached reference
+          </a>
+        </section>
+      ) : null}
+    </section>
   );
 }
 
 function OrderManager({ orders, quotes, detailType, detailId, onUpdated, onError }) {
   const [activeView, setActiveView] = useState("quotes");
+  const [detailRecord, setDetailRecord] = useState(null);
+  const [detailLoading, setDetailLoading] = useState(false);
   const navigate = useNavigate();
   const decodedDetailId = detailId ? decodeURIComponent(detailId) : "";
-  const selectedQuote = detailType === "quote" ? quotes.find((quote) => [getId(quote), quote.reference].includes(decodedDetailId)) : null;
-  const selectedOrder = detailType === "paid" ? orders.find((order) => [getId(order), order.reference].includes(decodedDetailId)) : null;
+  const listQuote = detailType === "quote" ? quotes.find((quote) => [getId(quote), quote.reference].includes(decodedDetailId)) : null;
+  const listOrder = detailType === "paid" ? orders.find((order) => [getId(order), order.reference].includes(decodedDetailId)) : null;
+  const selectedQuote = listQuote || (detailType === "quote" ? detailRecord : null);
+  const selectedOrder = listOrder || (detailType === "paid" ? detailRecord : null);
+
+  useEffect(() => {
+    if (!detailType || !decodedDetailId || listQuote || listOrder) {
+      setDetailRecord(null);
+      return undefined;
+    }
+    let mounted = true;
+    setDetailLoading(true);
+    const loader = detailType === "quote" ? adminApi.getQuote(decodedDetailId) : adminApi.getOrder(decodedDetailId);
+    loader
+      .then((data) => { if (mounted) setDetailRecord(data); })
+      .catch(onError)
+      .finally(() => { if (mounted) setDetailLoading(false); });
+    return () => { mounted = false; };
+  }, [decodedDetailId, detailType, listOrder, listQuote, onError]);
 
   const updateStatus = async (order, fulfillmentStatus) => {
     try {
@@ -669,9 +1032,9 @@ function OrderManager({ orders, quotes, detailType, detailId, onUpdated, onError
     }
   };
 
-  const updateQuoteStatus = async (quote, status) => {
+  const updateQuoteStatus = async (quote, input) => {
     try {
-      await adminApi.updateQuote(getId(quote), { status });
+      await adminApi.updateQuote(getId(quote), typeof input === "string" ? { status: input } : input);
       onUpdated();
     } catch (requestError) {
       onError(requestError);
@@ -680,6 +1043,14 @@ function OrderManager({ orders, quotes, detailType, detailId, onUpdated, onError
 
   if (detailType) {
     const record = detailType === "quote" ? selectedQuote : selectedOrder;
+    if (detailLoading) {
+      return (
+        <section className="admin-order-workspace">
+          <Link className="admin-back-link" to="/admin/orders">Back to orders</Link>
+          <p className="admin-empty">Loading order detail...</p>
+        </section>
+      );
+    }
     if (!record) {
       return (
         <section className="admin-order-workspace">
@@ -792,6 +1163,55 @@ function OrderDetail({ kind, quote, order, onBack, onQuoteStatus, onOrderStatus 
   const customer = record.customer || {};
   const items = record.items || [];
   const isQuote = kind === "quote";
+  const [quoteForm, setQuoteForm] = useState(() => ({
+    status: record.status || "submitted",
+    subtotal: record.subtotal || 0,
+    discount: record.discount || 0,
+    total: record.total || 0,
+    expiresAt: record.expiresAt ? String(record.expiresAt).slice(0, 10) : "",
+    customerNotes: record.customerNotes || "",
+    internalNotes: record.internalNotes || "",
+  }));
+  const [savingQuote, setSavingQuote] = useState(false);
+
+  useEffect(() => {
+    if (!isQuote) return;
+    setQuoteForm({
+      status: record.status || "submitted",
+      subtotal: record.subtotal || 0,
+      discount: record.discount || 0,
+      total: record.total || 0,
+      expiresAt: record.expiresAt ? String(record.expiresAt).slice(0, 10) : "",
+      customerNotes: record.customerNotes || "",
+      internalNotes: record.internalNotes || "",
+    });
+  }, [isQuote, record]);
+
+  const setQuoteField = (key, value) => setQuoteForm((current) => {
+    const next = { ...current, [key]: value };
+    if (key === "subtotal" || key === "discount") {
+      next.total = Math.max(Number(next.subtotal || 0) - Number(next.discount || 0), 0);
+    }
+    return next;
+  });
+
+  const saveQuote = async (event) => {
+    event.preventDefault();
+    setSavingQuote(true);
+    try {
+      await onQuoteStatus(record, {
+        status: quoteForm.status,
+        subtotal: Number(quoteForm.subtotal || 0),
+        discount: Number(quoteForm.discount || 0),
+        total: Number(quoteForm.total || 0),
+        expiresAt: quoteForm.expiresAt || undefined,
+        customerNotes: quoteForm.customerNotes,
+        internalNotes: quoteForm.internalNotes,
+      });
+    } finally {
+      setSavingQuote(false);
+    }
+  };
 
   return (
     <section className="admin-order-detail">
@@ -850,6 +1270,28 @@ function OrderDetail({ kind, quote, order, onBack, onQuoteStatus, onOrderStatus 
         </section>
       ) : null}
 
+      {isQuote ? (
+        <form className="admin-detail-card admin-quote-editor" onSubmit={saveQuote}>
+          <div className="admin-section-heading">
+            <div>
+              <p className="admin-eyebrow">Admin quote editor</p>
+              <h3>Final price and customer instructions</h3>
+            </div>
+            <span className="admin-status-pill is-active">{formatMoney(quoteForm.total)}</span>
+          </div>
+          <div className="admin-form-grid">
+            <Field label="Status"><select value={quoteForm.status} onChange={(event) => setQuoteField("status", event.target.value)}>{quoteStatuses.map((status) => <option key={status} value={status}>{status}</option>)}</select></Field>
+            <Field label="Expires"><input type="date" value={quoteForm.expiresAt} onChange={(event) => setQuoteField("expiresAt", event.target.value)} /></Field>
+            <Field label="Subtotal"><input min="0" type="number" value={quoteForm.subtotal} onChange={(event) => setQuoteField("subtotal", event.target.value)} /></Field>
+            <Field label="Discount"><input min="0" type="number" value={quoteForm.discount} onChange={(event) => setQuoteField("discount", event.target.value)} /></Field>
+            <Field label="Total"><input min="0" type="number" value={quoteForm.total} onChange={(event) => setQuoteField("total", event.target.value)} /></Field>
+          </div>
+          <Field label="Customer note"><textarea rows="3" value={quoteForm.customerNotes} onChange={(event) => setQuoteField("customerNotes", event.target.value)} placeholder="Visible to customer in My Orders" /></Field>
+          <Field label="Internal note"><textarea rows="3" value={quoteForm.internalNotes} onChange={(event) => setQuoteField("internalNotes", event.target.value)} placeholder="Only visible to admin" /></Field>
+          <button className="admin-primary-button" disabled={savingQuote} type="submit">{savingQuote ? "Saving quote..." : "Save quote details"}</button>
+        </form>
+      ) : null}
+
       <section className="admin-detail-card">
         <h3>Items</h3>
         {items.length ? (
@@ -880,10 +1322,12 @@ function OrderDetail({ kind, quote, order, onBack, onQuoteStatus, onOrderStatus 
 
 function SettingsManager({ settings, onSaved, onError }) {
   const [form, setForm] = useState(settings);
+  const [pricingText, setPricingText] = useState(JSON.stringify(settings.customPricing || {}, null, 2));
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     setForm(settings);
+    setPricingText(JSON.stringify(settings.customPricing || {}, null, 2));
   }, [settings]);
 
   const set = (key, value) => setForm((current) => ({ ...current, [key]: value }));
@@ -892,7 +1336,20 @@ function SettingsManager({ settings, onSaved, onError }) {
     event.preventDefault();
     setSaving(true);
     try {
-      const nextSettings = await adminApi.updateSettings(form);
+      const customPricing = pricingText.trim() ? JSON.parse(pricingText) : undefined;
+      const payload = {
+        businessName: form.businessName,
+        email: form.email,
+        phone: form.phone || "",
+        whatsapp: form.whatsapp || "",
+        address: form.address,
+        timings: form.timings || "",
+        mapUrl: form.mapUrl || "",
+        instagramUrl: form.instagramUrl || "",
+        facebookUrl: form.facebookUrl || "",
+        customPricing,
+      };
+      const nextSettings = await adminApi.updateSettings(payload);
       onSaved(nextSettings);
     } catch (requestError) {
       onError(requestError);
@@ -915,6 +1372,7 @@ function SettingsManager({ settings, onSaved, onError }) {
         <Field label="Facebook URL"><input value={form.facebookUrl} onChange={(event) => set("facebookUrl", event.target.value)} /></Field>
       </div>
       <Field label="Address"><textarea required rows="3" value={form.address} onChange={(event) => set("address", event.target.value)} /></Field>
+      <Field label="Custom pricing JSON"><textarea rows="10" value={pricingText} onChange={(event) => setPricingText(event.target.value)} placeholder='{"tip":{"classic":300},"bulkDiscounts":[{"minQuantity":50,"rate":8}]}' /></Field>
       <button className="admin-primary-button" disabled={saving} type="submit">{saving ? "Saving..." : "Save settings"}</button>
     </form>
   );

@@ -1,14 +1,14 @@
 export const navigationLinks = [
   { label: "Home", path: "/" },
-  { label: "About Us", path: "/about" },
-  { label: "Products", path: "/products" },
-  { label: "Customize", path: "/custom" },
-  { label: "Blogs", path: "/blogs" },
-  { label: "Contact Us", path: "/contact" },
+  { label: "Our Story", path: "/about" },
+  { label: "Awards", path: "/products" },
+  { label: "Custom Studio", path: "/custom" },
+  { label: "Journal", path: "/blogs" },
+  { label: "Talk to Us", path: "/contact" },
 ];
 
 export const policyLinks = [
-  { label: "Privacy Policy", path: "/privacy" },
-  { label: "Returns Policy", path: "/returns" },
-  { label: "Shipping Policy", path: "/shipping" },
+  { label: "Privacy & Data Care", path: "/privacy" },
+  { label: "Returns & Revisions", path: "/returns" },
+  { label: "Shipping Timeline", path: "/shipping" },
 ];

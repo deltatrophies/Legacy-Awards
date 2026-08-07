@@ -2,10 +2,12 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import ProductCard from "../components/products/ProductCard.jsx";
 import RecentlyViewed from "../components/products/RecentlyViewed.jsx";
-import { categories, products as fallbackProducts } from "../data/products.js";
+import { categories, formatPrice, products as fallbackProducts } from "../data/products.js";
 import { CATALOG_CHANGED_EVENT, CATALOG_CHANGED_STORAGE_KEY, catalogApi, categoryApi } from "../services/apiClient.js";
 import { readStorage, writeStorage } from "../utils/storage.js";
 import "../styles/pages/commerce.css";
+
+const COMPARE_STORAGE_KEY = "compareProducts";
 
 const categoryCopy = {
   all: "All Products",
@@ -33,10 +35,14 @@ export default function ProductsPage() {
   const [price, setPrice] = useState("all");
   const [sort, setSort] = useState("featured");
   const [wishlist, setWishlist] = useState(() => readStorage("wishlist", []));
-  const [compare, setCompare] = useState([]);
+  const [compare, setCompare] = useState(() => readStorage(COMPARE_STORAGE_KEY, []).slice(0, 3));
   const [searchFocused, setSearchFocused] = useState(false);
   const [catalog, setCatalog] = useState(fallbackProducts);
   const [catalogCategories, setCatalogCategories] = useState(categories);
+
+  useEffect(() => {
+    document.title = "Products - Legacy Awards";
+  }, []);
 
   const loadCatalog = () => {
     catalogApi.list().then((items) => { if (items.length) setCatalog(items); }).catch(() => {});
@@ -78,8 +84,14 @@ export default function ProductsPage() {
 
   const suggestions = query.length > 1 ? catalog.filter((item) => `${item.name} ${item.tag} ${item.useCase}`.toLowerCase().includes(query.toLowerCase())).slice(0, 5) : [];
   const toggleWishlist = (id) => setWishlist((current) => { const next = current.includes(id) ? current.filter((item) => item !== id) : [...current, id]; writeStorage("wishlist", next); return next; });
-  const toggleCompare = (id) => setCompare((current) => current.includes(id) ? current.filter((item) => item !== id) : current.length < 3 ? [...current, id] : current);
+  const updateCompare = (updater) => setCompare((current) => {
+    const next = updater(current).slice(0, 3);
+    writeStorage(COMPARE_STORAGE_KEY, next);
+    return next;
+  });
+  const toggleCompare = (id) => updateCompare((current) => current.includes(id) ? current.filter((item) => item !== id) : current.length < 3 ? [...current, id] : current);
   const compareProducts = compare.map((id) => catalog.find((item) => item.id === id)).filter(Boolean);
+  const compareHref = `/compare?items=${compareProducts.map((item) => encodeURIComponent(item.id)).join(",")}`;
   const clearFilters = () => { setQuery(""); setCategory("all"); setPrice("all"); setSort("featured"); };
   const categoryCounts = useMemo(() => {
     const counts = new Map([["all", catalog.length]]);
@@ -143,7 +155,14 @@ export default function ProductsPage() {
       </div>
       {filtered.length ? <section className="catalog-grid">{filtered.map((product) => <ProductCard key={product.id} product={product} wishlisted={wishlist.includes(product.id)} compared={compare.includes(product.id)} onWishlist={toggleWishlist} onCompare={toggleCompare} />)}</section> : <div className="catalog-empty"><h2>No matching awards</h2><p>Try a broader search or clear the current filters.</p><button onClick={clearFilters}>Clear filters</button></div>}
       <RecentlyViewed />
-      {compareProducts.length > 0 && <aside className="compare-tray"><div><strong>Compare awards</strong><span>{compareProducts.length}/3 selected</span></div><div className="compare-items">{compareProducts.map((item) => <div key={item.id}><button onClick={() => toggleCompare(item.id)} aria-label={`Remove ${item.name}`}>x</button><strong>{item.name}</strong><span>{item.material}</span><span>{item.size}</span><span>Rs. {item.price.toLocaleString("en-IN")}</span><span>{item.delivery}</span></div>)}</div><button className="clear-compare" onClick={() => setCompare([])}>Clear</button></aside>}
+      {compareProducts.length > 0 && <aside className="compare-tray">
+        <div><strong>Compare awards</strong><span>{compareProducts.length}/3 selected</span></div>
+        <div className="compare-items">{compareProducts.map((item) => <div key={item.id}><button onClick={() => toggleCompare(item.id)} aria-label={`Remove ${item.name}`}>x</button><strong>{item.name}</strong><span>{item.material}</span><span>{item.size}</span><span>{formatPrice(item.price)}</span><span>{item.delivery}</span></div>)}</div>
+        <div className="compare-tray-actions">
+          <Link className="compare-open" to={compareHref}>Open comparison</Link>
+          <button className="clear-compare" onClick={() => updateCompare(() => [])}>Clear</button>
+        </div>
+      </aside>}
     </main>
   );
 }
