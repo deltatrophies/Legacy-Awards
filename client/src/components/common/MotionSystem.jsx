@@ -66,6 +66,15 @@ function prefersReducedMotion() {
   return window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 }
 
+function visibleElements(selector) {
+  return gsapSafeArray(selector).filter((element) => element.offsetParent !== null);
+}
+
+function gsapSafeArray(selector) {
+  if (!selector || !document.querySelector(selector)) return [];
+  return Array.from(document.querySelectorAll(selector)).filter((element) => element instanceof HTMLElement);
+}
+
 async function loadGsap() {
   const [{ gsap }, { ScrollTrigger }] = await Promise.all([
     import("gsap"),
@@ -130,30 +139,15 @@ export default function MotionSystem() {
 
       ctx = gsap.context(() => {
         const navTimeline = gsap.timeline({ defaults: { ease: "power3.out" } });
-        navTimeline
-          .fromTo(
-            ".site-nav",
-            { y: -18, autoAlpha: 0 },
-            { y: 0, autoAlpha: 1, duration: 0.44 },
-          )
-          .fromTo(
-            ".site-nav .logo",
-            { x: -10, autoAlpha: 0 },
-            { x: 0, autoAlpha: 1, duration: 0.32 },
-            "-=0.25",
-          )
-          .fromTo(
-            ".site-nav .nav-links li",
-            { y: -6, autoAlpha: 0 },
-            { y: 0, autoAlpha: 1, duration: 0.28, stagger: 0.03 },
-            "-=0.2",
-          )
-          .fromTo(
-            ".site-nav .nav-actions > *",
-            { x: 8, autoAlpha: 0 },
-            { x: 0, autoAlpha: 1, duration: 0.28, stagger: 0.03 },
-            "-=0.2",
-          );
+        const nav = visibleElements(".site-nav");
+        const logo = visibleElements(".site-nav .logo");
+        const links = visibleElements(".site-nav .nav-links li");
+        const actions = visibleElements(".site-nav .nav-actions > *");
+
+        if (nav.length) navTimeline.fromTo(nav, { y: -18, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: 0.44 });
+        if (logo.length) navTimeline.fromTo(logo, { x: -10, autoAlpha: 0 }, { x: 0, autoAlpha: 1, duration: 0.32 }, "-=0.25");
+        if (links.length) navTimeline.fromTo(links, { y: -6, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: 0.28, stagger: 0.03 }, "-=0.2");
+        if (actions.length) navTimeline.fromTo(actions, { x: 8, autoAlpha: 0 }, { x: 0, autoAlpha: 1, duration: 0.28, stagger: 0.03 }, "-=0.2");
 
         gsap.utils.toArray(".site-nav .nav-links a, .site-nav .nav-btn, .site-nav .nav-icon-link").forEach((item) => {
           const enter = () => gsap.to(item, { y: -2, scale: 1.035, duration: 0.22, ease: "power2.out" });
@@ -188,21 +182,33 @@ export default function MotionSystem() {
       if (canceled) return;
 
       ctx = gsap.context(() => {
-        gsap.fromTo(
-          ".legacy-page-home .hero-left > *",
-          { y: 34, autoAlpha: 0 },
-          { y: 0, autoAlpha: 1, duration: 0.82, stagger: 0.08, ease: "power3.out", delay: 0.08 },
-        );
+        const homeHeroLeft = pathname === "/" ? visibleElements(".legacy-page-home .hero-left > *") : [];
+        const homeHeroMedia = pathname === "/" ? visibleElements(".legacy-page-home .hero-right, .legacy-page-home .showcase-frame") : [];
+        const animatedHomeHero = new Set([...homeHeroLeft, ...homeHeroMedia]);
 
-        gsap.fromTo(
-          ".legacy-page-home .hero-right, .legacy-page-home .showcase-frame",
-          { x: 36, autoAlpha: 0, scale: 0.97 },
-          { x: 0, autoAlpha: 1, scale: 1, duration: 0.95, ease: "power3.out", delay: 0.16 },
-        );
+        if (homeHeroLeft.length) {
+          gsap.fromTo(
+            homeHeroLeft,
+            { y: 26, autoAlpha: 0 },
+            { y: 0, autoAlpha: 1, duration: 0.62, stagger: 0.06, ease: "power3.out", delay: 0.04 },
+          );
+        }
+
+        if (homeHeroMedia.length) {
+          gsap.fromTo(
+            homeHeroMedia,
+            { x: 24, autoAlpha: 0, scale: 0.985 },
+            { x: 0, autoAlpha: 1, scale: 1, duration: 0.72, ease: "power3.out", delay: 0.08 },
+          );
+        }
 
         const elements = gsap.utils
           .toArray(revealSelectors)
-          .filter((element) => element instanceof HTMLElement && element.offsetParent !== null);
+          .filter((element) => (
+            element instanceof HTMLElement &&
+            element.offsetParent !== null &&
+            !animatedHomeHero.has(element)
+          ));
 
         elements.forEach((element, index) => {
           gsap.fromTo(

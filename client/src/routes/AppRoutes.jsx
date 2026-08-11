@@ -34,7 +34,7 @@ function PageMotion({ children }) {
   return (
     <motion.div
       className="page-motion-shell"
-      initial={{ opacity: 0, y: 8 }}
+      initial={false}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 1, y: 0 }}
       transition={pageTransition}

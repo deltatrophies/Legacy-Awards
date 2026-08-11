@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
-import { authApi } from "../services/apiClient.js";
+import { authApi, hasStoredAuthSession } from "../services/apiClient.js";
 
 const AuthContext = createContext(null);
 
@@ -11,6 +11,11 @@ export function AuthProvider({ children }) {
   const isAdminRoute = location.pathname.startsWith("/admin");
 
   useEffect(() => {
+    if (!hasStoredAuthSession()) {
+      setLoading(false);
+      return undefined;
+    }
+
     let active = true;
     authApi.restore()
       .then((restoredUser) => { if (active) setSessionUser(restoredUser); })

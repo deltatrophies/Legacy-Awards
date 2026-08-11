@@ -127,10 +127,6 @@ textarea {
   animation: firstNavReveal 0.68s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-.page-motion-shell {
-  animation: firstPageReveal 0.48s cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-
 @keyframes loaderPanelRise {
   from {
     opacity: 0;
@@ -171,18 +167,6 @@ textarea {
   from {
     opacity: 0;
     transform: translateY(-18px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes firstPageReveal {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
   }
 
   to {

@@ -1,4 +1,5 @@
 const API_BASE = `${import.meta.env.VITE_API_URL || ""}/api/v1`;
+const AUTH_SESSION_KEY = "legacyHasAuthSession";
 export const CATALOG_CHANGED_EVENT = "legacy-catalog-changed";
 export const CATALOG_CHANGED_STORAGE_KEY = "legacyCatalogChangedAt";
 export const ORDER_STATUS_CHANGED_EVENT = "legacy-order-status-changed";
@@ -19,8 +20,17 @@ export class ApiError extends Error {
 
 function setAccessToken(token) {
   accessToken = token || "";
-  if (token) sessionStorage.setItem("legacyAccessToken", token);
-  else sessionStorage.removeItem("legacyAccessToken");
+  if (token) {
+    sessionStorage.setItem("legacyAccessToken", token);
+    localStorage.setItem(AUTH_SESSION_KEY, "true");
+  } else {
+    sessionStorage.removeItem("legacyAccessToken");
+    localStorage.removeItem(AUTH_SESSION_KEY);
+  }
+}
+
+export function hasStoredAuthSession() {
+  return Boolean(accessToken || localStorage.getItem(AUTH_SESSION_KEY));
 }
 
 async function refreshSession() {
@@ -31,6 +41,10 @@ async function refreshSession() {
         const payload = await response.json();
         setAccessToken(payload.data.accessToken);
         return payload.data;
+      })
+      .catch((error) => {
+        setAccessToken("");
+        throw error;
       })
       .finally(() => { refreshPromise = undefined; });
   }
