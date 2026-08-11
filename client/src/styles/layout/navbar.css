@@ -27,8 +27,8 @@ nav.site-nav .logo {
   position: relative;
   flex: 0 0 auto;
   display: inline-flex;
-  align-items: baseline;
-  gap: 7px;
+  align-items: center;
+  gap: 12px;
   font-family: var(--font-serif, "DM Serif Display", Georgia, serif) !important;
   font-size: clamp(28px, 2.25vw, 36px) !important;
   font-style: normal !important;
@@ -44,7 +44,27 @@ nav.site-nav .logo {
   isolation: isolate;
 }
 
-nav.site-nav .logo span {
+nav.site-nav .logo img {
+  width: 46px;
+  height: 46px;
+  flex: 0 0 auto;
+  border: 1px solid rgba(232, 201, 106, 0.44);
+  border-radius: 50%;
+  background: rgba(255, 250, 236, 0.95);
+  box-shadow:
+    0 0 0 3px rgba(201, 168, 76, 0.08),
+    0 12px 30px rgba(0, 0, 0, 0.2);
+  object-fit: contain;
+  padding: 4px;
+}
+
+nav.site-nav .logo .logo-text {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 7px;
+}
+
+nav.site-nav .logo em {
   font-size: 0.82em;
   font-style: italic !important;
   letter-spacing: 0.02em;
@@ -478,6 +498,11 @@ nav.top-nav .nav-btn:hover::after {
     font-size: clamp(25px, 3.2vw, 31px) !important;
   }
 
+  nav.site-nav .logo img {
+    width: 42px;
+    height: 42px;
+  }
+
   nav.site-nav .nav-btn {
     padding-inline: 19px !important;
   }
@@ -515,6 +540,11 @@ nav.top-nav .nav-btn:hover::after {
 
   nav.site-nav .logo {
     font-size: 27px !important;
+  }
+
+  nav.site-nav .logo img {
+    width: 40px;
+    height: 40px;
   }
 
   nav.site-nav .menu-toggle {
@@ -756,8 +786,14 @@ nav.site-nav button {
   }
 
   nav.site-nav .logo {
-    gap: 5px;
+    gap: 8px;
     font-size: 24px !important;
+  }
+
+  nav.site-nav .logo img {
+    width: 36px;
+    height: 36px;
+    padding: 3px;
   }
 
 }

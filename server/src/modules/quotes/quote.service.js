@@ -141,6 +141,15 @@ async function calculateDiscount(code, subtotal) {
   return { discount: Math.min(discount, subtotal), couponCode: coupon.code };
 }
 
+export async function validateCoupon(code, subtotal) {
+  const coupon = await calculateDiscount(code, subtotal);
+  return {
+    code: coupon.couponCode,
+    discount: coupon.discount,
+    total: Math.max(subtotal - coupon.discount, 0),
+  };
+}
+
 export async function createQuote(input, userId) {
   const items = await resolveItems(input.items);
   const subtotal = items.reduce((sum, item) => sum + item.lineTotal, 0);

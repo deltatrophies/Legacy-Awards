@@ -46,6 +46,11 @@ export const trackQuoteSchema = z.object({
   identifier: z.string().trim().min(3).max(254),
 }).strict();
 
+export const validateCouponSchema = z.object({
+  code: z.string().trim().min(2).max(40),
+  subtotal: z.coerce.number().int().nonnegative(),
+}).strict();
+
 export const updateQuoteSchema = z.object({
   status: z.enum(["submitted", "reviewing", "quoted", "accepted", "expired", "cancelled"]).optional(),
   subtotal: z.coerce.number().int().nonnegative().optional(),

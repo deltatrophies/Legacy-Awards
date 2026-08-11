@@ -42,7 +42,8 @@ export default function Footer() {
       <div className="footer-top">
         <div>
           <div className="footer-logo">
-            Legacy <span>Awards</span>
+            <img src="/images/brand-logo.png" alt="" />
+            <span>Legacy Awards</span>
           </div>
           <p className="footer-about">
             Thoughtfully crafted trophies, medals, plaques and custom awards for

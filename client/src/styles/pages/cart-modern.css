@@ -385,6 +385,24 @@
   text-transform: uppercase;
 }
 
+.cart-page .coupon-box button:disabled {
+  cursor: wait;
+  opacity: .72;
+}
+
+.cart-page .coupon-box small {
+  font-weight: 800;
+  line-height: 1.45;
+}
+
+.cart-page .coupon-box .coupon-success {
+  color: #1f6b45;
+}
+
+.cart-page .coupon-box .coupon-error {
+  color: #8b251e;
+}
+
 .cart-page .summary-lines {
   gap: 13px;
   padding: 18px 0;
@@ -431,6 +449,15 @@
   letter-spacing: .1em;
 }
 
+.cart-page .customer-form .cart-field {
+  align-content: start;
+  min-height: 80px;
+}
+
+.cart-page .customer-form .cart-field:has(textarea) {
+  min-height: 116px;
+}
+
 .cart-page .customer-form label:nth-last-child(-n+2) {
   grid-column: auto;
 }
@@ -461,6 +488,28 @@
 .cart-page .coupon-box input:focus {
   border-color: #ad8741;
   box-shadow: 0 0 0 3px rgba(178, 138, 61, .12);
+}
+
+.cart-page .customer-form .cart-field--error {
+  color: #8b251e;
+}
+
+.cart-page .customer-form .cart-field--error input,
+.cart-page .customer-form .cart-field--error select,
+.cart-page .customer-form .cart-field--error textarea {
+  background: #fff8f6;
+  border-color: rgba(151, 31, 31, .72);
+  box-shadow: 0 0 0 3px rgba(151, 31, 31, .1);
+}
+
+.cart-field-error {
+  display: block;
+  color: #8b251e;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0;
+  line-height: 1.35;
+  text-transform: none;
 }
 
 .cart-page .quote-error {

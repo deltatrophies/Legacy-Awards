@@ -18,9 +18,9 @@ const ReturnsPage = lazy(() => import("../pages/ReturnsPage.jsx"));
 const ShippingPage = lazy(() => import("../pages/ShippingPage.jsx"));
 const LoginPage = lazy(() => import("../pages/LoginPage.jsx"));
 const QuoteSuccessPage = lazy(() => import("../pages/QuoteSuccessPage.jsx"));
-const QuoteStatusPage = lazy(() => import("../pages/QuoteStatusPage.jsx"));
 const ProfilePage = lazy(() => import("../pages/ProfilePage.jsx"));
 const OrdersPage = lazy(() => import("../pages/OrdersPage.jsx"));
+const EnquiriesPage = lazy(() => import("../pages/EnquiriesPage.jsx"));
 const WishlistPage = lazy(() => import("../pages/WishlistPage.jsx"));
 const AdminLoginPage = lazy(() => import("../pages/AdminLoginPage.jsx"));
 const AdminPanelPage = lazy(() => import("../pages/AdminPanelPage.jsx"));
@@ -65,14 +65,13 @@ function PublicRoutes({ location }) {
             <Route path="/contact" element={<PageMotion><ContactPage /></PageMotion>} />
             <Route path="/cart" element={<PageMotion><CartPage /></PageMotion>} />
             <Route path="/quote-success" element={<PageMotion><QuoteSuccessPage /></PageMotion>} />
-            <Route path="/quote-status" element={<PageMotion><QuoteStatusPage /></PageMotion>} />
-            <Route path="/quote-status/:reference" element={<PageMotion><QuoteStatusPage /></PageMotion>} />
             <Route path="/privacy" element={<PageMotion><PrivacyPage /></PageMotion>} />
             <Route path="/returns" element={<PageMotion><ReturnsPage /></PageMotion>} />
             <Route path="/shipping" element={<PageMotion><ShippingPage /></PageMotion>} />
             <Route path="/login" element={<PageMotion><LoginPage /></PageMotion>} />
             <Route path="/account/profile" element={<PageMotion><ProfilePage /></PageMotion>} />
             <Route path="/account/orders" element={<PageMotion><OrdersPage /></PageMotion>} />
+            <Route path="/account/enquiries" element={<PageMotion><EnquiriesPage /></PageMotion>} />
             <Route path="/account/wishlist" element={<PageMotion><WishlistPage /></PageMotion>} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

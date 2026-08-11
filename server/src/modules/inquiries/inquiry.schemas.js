@@ -20,3 +20,10 @@ export const updateInquirySchema = z.object({
   status: z.enum(["new", "contacted", "qualified", "closed", "spam"]),
   assignedTo: z.string().optional(),
 }).strict();
+
+export const publicInquiryListSchema = z.object({
+  inquiries: z.array(z.object({
+    reference: z.string().trim().min(4).max(40),
+    accessToken: z.string().trim().min(16).max(200),
+  })).max(25).default([]),
+}).strict();

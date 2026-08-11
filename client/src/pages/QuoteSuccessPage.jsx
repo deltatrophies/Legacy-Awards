@@ -7,7 +7,40 @@ import "../styles/pages/quote.css";
 export default function QuoteSuccessPage() {
   const quote = readStorage("lastQuote", null);
   if (!quote) return <Navigate to="/cart" replace />;
-  const trackingPath = `/quote-status/${encodeURIComponent(quote.reference || quote.id)}?token=${encodeURIComponent(quote.accessToken || "")}`;
   const href = createWhatsAppUrl(`Hi ${BUSINESS_NAME}, I submitted quote ${quote.id} for ${formatPrice(quote.total)}. Please help me with the next steps.`);
-  return <main className="success-page"><section><span className="success-mark">OK</span><p className="eyebrow">Request received</p><h1>Thank you, {quote.customer.name}</h1><p>Your quote request is ready for review. Keep this ID for future communication. You can also use the secure tracking link to check status without logging in.</p><div className="quote-id"><span>Quote ID</span><strong>{quote.id}</strong></div><div className="success-summary"><div><span>Items</span><strong>{quote.items.length}</strong></div><div><span>Estimate</span><strong>{formatPrice(quote.total)}</strong></div><div><span>Preference</span><strong>{quote.customer.preference}</strong></div></div><div className="success-actions"><Link to={trackingPath}>Track quote</Link><a href={href} target={href.startsWith("http") ? "_blank" : undefined} rel="noreferrer">Continue on WhatsApp</a><button type="button" onClick={()=>window.print()}>Print Quote</button><Link to="/products">Continue shopping</Link></div></section></main>;
+
+  return (
+    <main className="success-page">
+      <section>
+        <span className="success-mark">OK</span>
+        <p className="eyebrow">Request received</p>
+        <h1>Thank you, {quote.customer.name}</h1>
+        <p>Your quote request is ready for review. Keep this ID for future communication. You can check every quote update from My Orders.</p>
+        <div className="quote-id">
+          <span>Quote ID</span>
+          <strong>{quote.id}</strong>
+        </div>
+        <div className="success-summary">
+          <div>
+            <span>Items</span>
+            <strong>{quote.items.length}</strong>
+          </div>
+          <div>
+            <span>Estimate</span>
+            <strong>{formatPrice(quote.total)}</strong>
+          </div>
+          <div>
+            <span>Preference</span>
+            <strong>{quote.customer.preference}</strong>
+          </div>
+        </div>
+        <div className="success-actions">
+          <Link to="/account/orders">Open My Orders</Link>
+          <a href={href} target={href.startsWith("http") ? "_blank" : undefined} rel="noreferrer">Continue on WhatsApp</a>
+          <button type="button" onClick={() => window.print()}>Print Quote</button>
+          <Link to="/products">Continue shopping</Link>
+        </div>
+      </section>
+    </main>
+  );
 }

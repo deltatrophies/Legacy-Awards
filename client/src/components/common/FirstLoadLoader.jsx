@@ -40,15 +40,7 @@ export default function FirstLoadLoader() {
     <div className={`first-load-loader${leaving ? " is-leaving" : ""}`} role="status" aria-live="polite" aria-label="Loading Legacy Awards">
       <div className="first-load-loader__panel">
         <div className="first-load-loader__mark" aria-hidden="true">
-          <svg className="first-load-loader__trophy" viewBox="0 0 64 64" focusable="false">
-            <path d="M22 12h20v8c0 10.5-3.8 17-10 19-6.2-2-10-8.5-10-19v-8Z" />
-            <path d="M22 17H12v4c0 7.5 4.7 12 11.5 12" />
-            <path d="M42 17h10v4c0 7.5-4.7 12-11.5 12" />
-            <path d="M32 39v8" />
-            <path d="M24 52h16" />
-            <path d="M20 58h24" />
-            <path d="M27 21h10" />
-          </svg>
+          <img className="first-load-loader__logo" src="/images/brand-logo.png" alt="" />
         </div>
         <p className="first-load-loader__eyebrow">Legacy Awards</p>
         <div className="first-load-loader__bar" aria-hidden="true">

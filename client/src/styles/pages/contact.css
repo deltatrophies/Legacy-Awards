@@ -312,6 +312,15 @@
   font-weight: 700;
 }
 
+.contact-field {
+  align-content: start;
+  min-height: 6.95rem;
+}
+
+.contact-field:has(textarea) {
+  min-height: 12.65rem;
+}
+
 .contact-form label > span {
   color: #7e6251;
   font-size: 0.73rem;
@@ -349,6 +358,28 @@
   box-shadow: 0 0 0 4px rgba(183, 132, 42, 0.14);
 }
 
+.contact-field--error input,
+.contact-field--error select,
+.contact-field--error textarea {
+  background: #fff8f6;
+  border-color: rgba(151, 31, 31, 0.75);
+  box-shadow: 0 0 0 4px rgba(151, 31, 31, 0.1);
+}
+
+.contact-field--error label > span,
+.contact-field--error > span {
+  color: #8b251e;
+}
+
+.contact-field-error {
+  color: #8b251e;
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 800;
+  line-height: 1.45;
+  margin-top: 0.05rem;
+}
+
 .contact-upload {
   background: #fff7e8;
   border: 1px dashed rgba(183, 132, 42, 0.48);
@@ -371,30 +402,134 @@
   top: auto;
 }
 
-.contact-alert {
+.contact-toast {
+  align-items: flex-start;
+  animation: contact-toast-in 260ms ease both;
+  backdrop-filter: blur(16px);
+  background: rgba(255, 250, 240, 0.96);
+  border: 1px solid rgba(183, 132, 42, 0.32);
+  border-radius: 22px;
+  box-shadow: 0 24px 70px rgba(50, 26, 20, 0.22);
+  color: var(--contact-deep);
+  display: grid;
+  gap: 0.85rem;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  isolation: isolate;
+  margin: 0;
+  min-height: 92px;
+  overflow: hidden;
+  padding: 1rem 1rem 1.05rem;
   position: fixed;
   right: clamp(16px, 3vw, 34px);
-  bottom: clamp(18px, 3vw, 34px);
-  z-index: 280;
-  width: min(390px, calc(100vw - 32px));
-  border-radius: 18px;
-  box-shadow: 0 18px 44px rgba(40, 37, 31, 0.18);
-  font-weight: 700;
-  line-height: 1.55;
+  bottom: 96px;
+  width: min(430px, calc(100vw - 32px));
+  z-index: 340;
+}
+
+.contact-toast::before {
+  background: linear-gradient(180deg, var(--contact-gold), var(--contact-maroon));
+  content: "";
+  inset: 0 auto 0 0;
+  position: absolute;
+  width: 4px;
+  z-index: -1;
+}
+
+.contact-toast__icon {
+  align-items: center;
+  background: #fff2cf;
+  border: 1px solid rgba(183, 132, 42, 0.35);
+  border-radius: 999px;
+  color: var(--contact-maroon);
+  display: inline-flex;
+  flex: 0 0 2.35rem;
+  font-size: 1rem;
+  font-weight: 900;
+  height: 2.35rem;
+  justify-content: center;
+  width: 2.35rem;
+}
+
+.contact-toast__copy {
+  min-width: 0;
+}
+
+.contact-toast__copy strong {
+  color: var(--contact-maroon);
+  display: block;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.15rem;
+  font-weight: 600;
+  line-height: 1.15;
+  margin-bottom: 0.25rem;
+}
+
+.contact-toast__copy p {
+  color: var(--contact-muted);
+  font-size: 0.92rem;
+  font-weight: 650;
+  line-height: 1.5;
   margin: 0;
-  padding: 1rem;
 }
 
-.contact-alert--success {
-  background: #eef8ed;
-  border: 1px solid rgba(43, 124, 57, 0.2);
-  color: #246831;
+.contact-toast button {
+  align-items: center;
+  background: rgba(104, 24, 24, 0.07);
+  border: 1px solid rgba(104, 24, 24, 0.12);
+  border-radius: 999px;
+  color: var(--contact-maroon);
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 0.78rem;
+  font-weight: 900;
+  height: 1.85rem;
+  justify-content: center;
+  line-height: 1;
+  text-transform: uppercase;
+  width: 1.85rem;
 }
 
-.contact-alert--error {
+.contact-toast__timer {
+  animation: contact-toast-timer 5.2s linear forwards;
+  background: linear-gradient(90deg, var(--contact-maroon), var(--contact-gold));
+  bottom: 0;
+  height: 3px;
+  left: 0;
+  position: absolute;
+  transform-origin: left;
+  width: 100%;
+}
+
+.contact-toast--error {
+  border-color: rgba(104, 24, 24, 0.28);
+}
+
+.contact-toast--error .contact-toast__icon {
   background: #fff1ef;
-  border: 1px solid rgba(162, 54, 42, 0.2);
+  border-color: rgba(162, 54, 42, 0.24);
   color: #8b251e;
+}
+
+.contact-toast--error .contact-toast__timer {
+  animation-duration: 6.8s;
+}
+
+@keyframes contact-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes contact-toast-timer {
+  to {
+    transform: scaleX(0);
+  }
 }
 
 .contact-submit {
@@ -406,9 +541,9 @@
 }
 
 @media (max-width: 640px) {
-  .contact-alert {
+  .contact-toast {
     right: 14px;
-    bottom: 14px;
+    bottom: 82px;
     width: calc(100vw - 28px);
   }
 }

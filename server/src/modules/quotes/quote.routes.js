@@ -3,12 +3,13 @@ import { asyncHandler } from "../../common/middleware/asyncHandler.js";
 import { authenticate, authorize, optionalAuthenticate } from "../../common/middleware/auth.js";
 import { validate } from "../../common/middleware/validate.js";
 import * as controller from "./quote.controller.js";
-import { couponSchema, createQuoteSchema, trackQuoteSchema, updateCouponSchema, updateQuoteSchema } from "./quote.schemas.js";
+import { couponSchema, createQuoteSchema, trackQuoteSchema, updateCouponSchema, updateQuoteSchema, validateCouponSchema } from "./quote.schemas.js";
 
 export const quoteRouter = Router();
 
 quoteRouter.post("/", optionalAuthenticate, validate(createQuoteSchema), asyncHandler(controller.create));
 quoteRouter.post("/track", validate(trackQuoteSchema), asyncHandler(controller.track));
+quoteRouter.post("/coupons/validate", validate(validateCouponSchema), asyncHandler(controller.validateCoupon));
 quoteRouter.post("/public/:reference/accept", asyncHandler(controller.acceptPublic));
 quoteRouter.get("/public/:reference", asyncHandler(controller.getPublic));
 quoteRouter.get("/custom-pricing", asyncHandler(controller.getCustomPricing));

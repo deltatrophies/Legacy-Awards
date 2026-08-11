@@ -152,6 +152,7 @@ export const categoryApi = {
 
 export const quoteApi = {
   create: (input) => apiRequest("/quotes", { method: "POST", body: JSON.stringify(input) }),
+  validateCoupon: (input) => apiRequest("/quotes/coupons/validate", { method: "POST", body: JSON.stringify(input) }, false),
   track: (input) => apiRequest("/quotes/track", { method: "POST", body: JSON.stringify(input) }, false),
   mine: () => apiRequest("/quotes/mine?limit=100"),
   getMine: (id) => apiRequest(`/quotes/mine/${encodeURIComponent(id)}`),
@@ -203,6 +204,11 @@ export const adminApi = {
   listCoupons: () => apiRequest("/quotes/coupons?limit=100"),
   createCoupon: (input) => apiRequest("/quotes/coupons", { method: "POST", body: JSON.stringify(input) }),
   updateCoupon: (id, input) => apiRequest(`/quotes/coupons/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify(input) }),
+};
+
+export const inquiryApi = {
+  mine: () => apiRequest("/inquiries/mine"),
+  publicList: (inquiries) => apiRequest("/inquiries/public", { method: "POST", body: JSON.stringify({ inquiries }) }, false),
 };
 
 export const settingsApi = {

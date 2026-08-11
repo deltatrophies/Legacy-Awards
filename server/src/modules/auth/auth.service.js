@@ -6,6 +6,7 @@ import { AppError } from "../../common/errors/AppError.js";
 import { User } from "./user.model.js";
 import { Order } from "../orders/order.model.js";
 import { Quote } from "../quotes/quote.model.js";
+import { Inquiry } from "../inquiries/inquiry.model.js";
 
 const hashToken = (token) => createHash("sha256").update(token).digest("hex");
 const refreshCookieMaxAge = 7 * 24 * 60 * 60 * 1000;
@@ -42,6 +43,7 @@ async function attachGuestHistory(user) {
   await Promise.all([
     Quote.updateMany({ user: { $exists: false }, "customer.email": user.email }, { user: user._id }),
     Order.updateMany({ user: { $exists: false }, "customer.email": user.email }, { user: user._id }),
+    Inquiry.updateMany({ userId: { $exists: false }, email: user.email }, { userId: user._id }),
   ]);
 }
 

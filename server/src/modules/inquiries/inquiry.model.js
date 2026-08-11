@@ -2,6 +2,8 @@ import mongoose from "mongoose";
 
 const inquirySchema = new mongoose.Schema({
   reference: { type: String, required: true, unique: true, index: true },
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", index: true },
+  accessTokenHash: { type: String, required: true, select: false },
   name: { type: String, required: true, trim: true },
   email: { type: String, required: true, lowercase: true, trim: true, index: true },
   phone: { type: String, trim: true },

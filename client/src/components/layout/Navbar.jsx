@@ -16,6 +16,7 @@ function CartIcon() {
 
 function MenuIcon({ type }) {
   if (type === "orders") return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h10l2 4v14H5V7l2-4Z" /><path d="M5 7h14" /><path d="M9 11h6" /></svg>;
+  if (type === "enquiries") return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v12H7l-3 3V5Z" /><path d="M8 9h8" /><path d="M8 13h5" /></svg>;
   if (type === "wishlist") return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 5.8c-1.6-1.9-4.4-1.6-5.8.1L12 9.2 9 5.9C7.6 4.2 4.8 3.9 3.2 5.8c-1.7 2-1.4 5 .4 6.8L12 21l8.4-8.4c1.8-1.8 2.1-4.8.4-6.8Z" /></svg>;
   if (type === "logout") return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 7V5a2 2 0 0 0-2-2H5v18h8a2 2 0 0 0 2-2v-2" /><path d="M10 12h11" /><path d="m18 9 3 3-3 3" /></svg>;
   return <AccountIcon />;
@@ -31,7 +32,7 @@ export default function Navbar() {
   const accountRef = useRef(null);
   const { user, logout } = useAuth();
   const [cartQuantity, setCartQuantity] = useState(0);
-  const quoteHref = cartQuantity > 0 ? "/cart" : "/contact";
+  const enquiryHref = "/contact#enquiry-form";
 
   useEffect(() => {
     const updateCartQuantity = () => {
@@ -91,7 +92,8 @@ export default function Navbar() {
   return (
     <nav className="site-nav" data-menu-open={menuOpen ? "true" : "false"}>
       <NavLink to="/" className="logo" aria-label={`${BUSINESS_NAME} home`}>
-        Legacy <span>Awards</span>
+        <img src="/images/brand-logo.png" alt="" />
+        <span className="logo-text">Legacy <em>Awards</em></span>
       </NavLink>
 
       <ul className="nav-links">
@@ -105,7 +107,7 @@ export default function Navbar() {
       </ul>
 
       <div className="nav-actions">
-        <NavLink to={quoteHref} className="nav-btn">Request Quote</NavLink>
+        <NavLink to={enquiryHref} className="nav-btn">Send Enquiry</NavLink>
         <NavLink className="nav-icon-link cart-link" to="/cart" aria-label={`Cart with ${cartQuantity} items`} title="Cart">
           <CartIcon />
           {cartQuantity > 0 && <span className="cart-count">{cartQuantity > 99 ? "99+" : cartQuantity}</span>}
@@ -125,15 +127,27 @@ export default function Navbar() {
                 <div className="account-divider" />
                 <NavLink to="/account/profile"><MenuIcon />My Profile</NavLink>
                 <NavLink to="/account/orders"><MenuIcon type="orders" />My Orders</NavLink>
+                <NavLink to="/account/enquiries"><MenuIcon type="enquiries" />My Enquiries</NavLink>
                 <NavLink to="/account/wishlist"><MenuIcon type="wishlist" />Wishlist</NavLink>
                 <div className="account-divider" />
                 <button type="button" className="account-logout" onClick={handleLogout}><MenuIcon type="logout" />Logout</button>
               </div>
             </>
           ) : (
-            <NavLink className="nav-icon-link account-link" to="/login" aria-label="Log in or create account" title="Login">
-              <AccountIcon />
-            </NavLink>
+            <>
+              <button className="nav-icon-link account-link" type="button" aria-label="Open account menu" aria-controls={accountMenuId} aria-expanded={accountOpen} title="Account" onClick={() => setAccountOpen((open) => !open)}>
+                <AccountIcon />
+              </button>
+              <div className="account-dropdown" id={accountMenuId} data-open={accountOpen ? "true" : "false"}>
+                <div className="account-card-head">
+                  <div className="account-avatar">G</div>
+                  <div><strong>Guest</strong><span>Track saved enquiries on this browser</span></div>
+                </div>
+                <div className="account-divider" />
+                <NavLink to="/account/enquiries"><MenuIcon type="enquiries" />My Enquiries</NavLink>
+                <NavLink to="/login"><MenuIcon />Login / Sign up</NavLink>
+              </div>
+            </>
           )}
         </div>
       </div>
@@ -180,9 +194,10 @@ export default function Navbar() {
         <div className="mobile-menu-actions">
           <NavLink to={user ? "/account/profile" : "/login"}>{user?.avatarUrl ? <img className="mobile-profile-photo" src={user.avatarUrl} alt="" /> : <AccountIcon />}{user ? "My Profile" : "Login / Sign up"}</NavLink>
           {user && <NavLink to="/account/orders"><MenuIcon type="orders" />My Orders</NavLink>}
+          <NavLink to="/account/enquiries"><MenuIcon type="enquiries" />My Enquiries</NavLink>
           {user && <NavLink to="/account/wishlist"><MenuIcon type="wishlist" />Wishlist</NavLink>}
           <NavLink to="/cart"><CartIcon />My Cart {cartQuantity > 0 && `(${cartQuantity})`}</NavLink>
-          <NavLink to={quoteHref} className="mobile-quote-btn">Request Quote</NavLink>
+          <NavLink to={enquiryHref} className="mobile-quote-btn">Send Enquiry</NavLink>
           {user && <button type="button" className="mobile-logout-btn" onClick={handleLogout}><MenuIcon type="logout" />Logout</button>}
         </div>
       </div>

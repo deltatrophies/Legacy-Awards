@@ -47,6 +47,10 @@ export async function track(req, res) {
   return sendData(res, serialize(result.quote, result.accessToken));
 }
 
+export async function validateCoupon(req, res) {
+  return sendData(res, await quoteService.validateCoupon(req.body.code, req.body.subtotal));
+}
+
 export async function getPublic(req, res) {
   const quote = await quoteService.getPublicQuote(req.params.reference, req.get("x-quote-token"));
   return sendData(res, serialize(quote));
