@@ -1,19 +1,31 @@
 import http from "node:http";
 import { app } from "./app.js";
-import { connectDatabase, disconnectDatabase } from "./config/database.js";
-import { env, isProduction } from "./config/env.js";
+import { connectDatabase, disconnectDatabase, getDatabaseStatus } from "./config/database.js";
+import { env } from "./config/env.js";
 import { logger } from "./config/logger.js";
+
+const DATABASE_RETRY_MS = 30_000;
 
 let server;
 let shuttingDown = false;
+let databaseRetryTimer;
 
-async function start() {
+async function connectDatabaseWithRetry() {
   try {
     await connectDatabase();
   } catch (error) {
-    if (isProduction) throw error;
     logger.error({ err: error }, "MongoDB unavailable; API will start in degraded mode");
+
+    databaseRetryTimer = setTimeout(() => {
+      databaseRetryTimer = undefined;
+      if (!shuttingDown && !getDatabaseStatus().connected) void connectDatabaseWithRetry();
+    }, DATABASE_RETRY_MS);
+    databaseRetryTimer.unref();
   }
+}
+
+async function start() {
+  await connectDatabaseWithRetry();
 
   server = http.createServer(app);
   server.requestTimeout = 30_000;
@@ -28,6 +40,7 @@ async function shutdown(signal, exitCode = 0) {
   logger.info({ signal }, "Graceful shutdown started");
   const forceExit = setTimeout(() => process.exit(1), 10_000);
   forceExit.unref();
+  if (databaseRetryTimer) clearTimeout(databaseRetryTimer);
   if (server) await new Promise((resolve) => server.close(resolve));
   await disconnectDatabase();
   process.exit(exitCode);
