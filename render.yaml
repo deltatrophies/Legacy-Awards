@@ -10,7 +10,7 @@ services:
       - key: NODE_ENV
         value: production
       - key: APP_ORIGIN
-        value: https://legacy-awards.onrender.com
+        value: https://legacy-awards.vercel.app,https://legacy-awards-delta-trophies.onrender.com
       - key: COOKIE_SECURE
         value: "true"
       - key: JWT_ACCESS_TTL

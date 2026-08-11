@@ -23,6 +23,11 @@ const app = express();
 app.disable("x-powered-by");
 app.set("trust proxy", 1);
 
+const productionOrigins = new Set([
+  "https://legacy-awards.vercel.app",
+  "https://legacy-awards-delta-trophies.onrender.com",
+]);
+
 app.use(pinoHttp({
   logger,
   serializers: {
@@ -48,8 +53,9 @@ app.use(pinoHttp({
 app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
 app.use(cors({
   origin(origin, callback) {
-    const allowed = env.APP_ORIGIN.split(",").map((item) => item.trim());
-    if (!origin || allowed.includes(origin)) return callback(null, true);
+    const allowed = new Set(env.APP_ORIGIN.split(",").map((item) => item.trim()).filter(Boolean));
+    for (const productionOrigin of productionOrigins) allowed.add(productionOrigin);
+    if (!origin || allowed.has(origin)) return callback(null, true);
     return callback(null, false);
   },
   credentials: true,
