@@ -12,7 +12,9 @@ describe("custom quote pricing", () => {
     packaging: "standard",
     delivery: "standard",
     text: "WINNER",
-  };
+  }; 
+
+
 
   it("calculates the authoritative unit price", () => {
     const item = calculateCustomItem(design, 10);
