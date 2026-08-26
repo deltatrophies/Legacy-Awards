@@ -16,6 +16,10 @@
 .category-tabs button.active { background: var(--ink); color: white; border-color: var(--ink); }
 .result-line { display: flex; justify-content: space-between; padding: 10px 2px 20px; color: var(--muted); font-size: 13px; }
 .catalog-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 20px; }
+.catalog-pagination { display: flex; align-items: center; justify-content: center; gap: 16px; margin: 34px 0 0; }
+.catalog-pagination button { min-width: 104px; padding: 11px 16px; border: 1px solid var(--line); background: #fff; color: var(--ink); font: inherit; cursor: pointer; }
+.catalog-pagination button:disabled { cursor: not-allowed; opacity: .45; }
+.catalog-pagination span { color: var(--muted); font-size: 13px; font-weight: 700; }
 .catalog-card { background: white; border: 1px solid var(--line); box-shadow: 0 8px 18px rgba(40,37,31,.05); transition: transform .2s ease,box-shadow .2s ease; }
 .catalog-card:hover { transform: translateY(-5px); box-shadow: 0 22px 44px rgba(40,37,31,.12); }
 .catalog-image { position: relative; aspect-ratio: 4/3; background: #eeeae2; overflow: hidden; }

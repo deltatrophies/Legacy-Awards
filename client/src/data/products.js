@@ -44,4 +44,4 @@ export const products = rawProducts.map(([name, category, price, tag, descriptio
 
 export const categories = ["all", "trophies", "plaques", "medals", "crystal"];
 export const getProductBySlug = (slug) => products.find((product) => product.id === slug);
-export const formatPrice = (value) => `Rs. ${Number(value).toLocaleString("en-IN")}`;
+export const formatPrice = (value) => Number(value) > 0 ? `Rs. ${Number(value).toLocaleString("en-IN")}` : "Price on request";

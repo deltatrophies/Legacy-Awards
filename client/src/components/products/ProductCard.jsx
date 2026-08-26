@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { formatPrice } from "../../data/products.js";
+import { responsiveImageProps } from "../../utils/cloudinaryImage.js";
 
 function HeartIcon({ filled }) {
   return (
@@ -20,12 +21,13 @@ function CartIcon() {
 }
 
 export default function ProductCard({ product, wishlisted, compared, onWishlist, onCompare }) {
-  const badgeClass = `product-badge badge-${product.badge.toLowerCase().replaceAll(" ", "-")}`;
+  const badgeClass = `product-badge badge-${(product.badge || "catalog").toLowerCase().replaceAll(" ", "-")}`;
+  const hasPrice = Number(product.price) > 0;
   return (
     <article className="catalog-card">
       <Link className="catalog-image" to={`/products/${product.id}`} aria-label={`View ${product.name}`}>
         <span className={badgeClass}>{product.badge}</span>
-        <img src={product.image} alt={product.name} loading="lazy" />
+        <img {...responsiveImageProps(product.image)} sizes="(max-width: 560px) 100vw, (max-width: 900px) 50vw, 33vw" alt={product.name} loading="lazy" decoding="async" />
       </Link>
       <button className={`icon-action wishlist-action ${wishlisted ? "active" : ""}`} type="button" onClick={() => onWishlist(product.id)} aria-label={`${wishlisted ? "Remove" : "Add"} ${product.name} ${wishlisted ? "from" : "to"} wishlist`} title={wishlisted ? "Remove from Wishlist" : "Add to Wishlist"}>
         <HeartIcon filled={wishlisted} />
@@ -49,7 +51,7 @@ export default function ProductCard({ product, wishlisted, compared, onWishlist,
 
         <div className="catalog-footer">
           <div>
-            <span className="price-label">Starting from</span>
+            <span className="price-label">{hasPrice ? "Starting from" : "Pricing"}</span>
             <strong>{formatPrice(product.price)}</strong>
           </div>
           <Link className="catalog-cart-icon" to={`/products/${product.id}`} aria-label={`Open ${product.name} to add to cart`} title="Add to Cart">

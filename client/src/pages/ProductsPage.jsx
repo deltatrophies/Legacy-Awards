@@ -8,6 +8,7 @@ import { readStorage, writeStorage } from "../utils/storage.js";
 import "../styles/pages/commerce.css";
 
 const COMPARE_STORAGE_KEY = "compareProducts";
+const PAGE_SIZE = 24;
 
 const categoryCopy = {
   all: "All Products",
@@ -37,6 +38,7 @@ export default function ProductsPage() {
   const [wishlist, setWishlist] = useState(() => readStorage("wishlist", []));
   const [compare, setCompare] = useState(() => readStorage(COMPARE_STORAGE_KEY, []).slice(0, 3));
   const [searchFocused, setSearchFocused] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
   const [catalog, setCatalog] = useState(fallbackProducts);
   const [catalogCategories, setCatalogCategories] = useState(categories);
 
@@ -83,6 +85,10 @@ export default function ProductsPage() {
   }, [catalog, query, category, price, sort]);
 
   const suggestions = query.length > 1 ? catalog.filter((item) => `${item.name} ${item.tag} ${item.useCase}`.toLowerCase().includes(query.toLowerCase())).slice(0, 5) : [];
+  const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const visibleProducts = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+  useEffect(() => { setCurrentPage(1); }, [query, category, price, sort]);
+  useEffect(() => { if (currentPage > pageCount) setCurrentPage(pageCount); }, [currentPage, pageCount]);
   const toggleWishlist = (id) => setWishlist((current) => { const next = current.includes(id) ? current.filter((item) => item !== id) : [...current, id]; writeStorage("wishlist", next); return next; });
   const updateCompare = (updater) => setCompare((current) => {
     const next = updater(current).slice(0, 3);
@@ -153,7 +159,12 @@ export default function ProductsPage() {
         <span>{filtered.length} products found</span>
         <span>{wishlist.length} saved</span>
       </div>
-      {filtered.length ? <section className="catalog-grid">{filtered.map((product) => <ProductCard key={product.id} product={product} wishlisted={wishlist.includes(product.id)} compared={compare.includes(product.id)} onWishlist={toggleWishlist} onCompare={toggleCompare} />)}</section> : <div className="catalog-empty"><h2>No matching awards</h2><p>Try a broader search or clear the current filters.</p><button onClick={clearFilters}>Clear filters</button></div>}
+      {filtered.length ? <section className="catalog-grid">{visibleProducts.map((product) => <ProductCard key={product.id} product={product} wishlisted={wishlist.includes(product.id)} compared={compare.includes(product.id)} onWishlist={toggleWishlist} onCompare={toggleCompare} />)}</section> : <div className="catalog-empty"><h2>No matching awards</h2><p>Try a broader search or clear the current filters.</p><button onClick={clearFilters}>Clear filters</button></div>}
+      {pageCount > 1 ? <nav className="catalog-pagination" aria-label="Product pages">
+        <button type="button" disabled={currentPage === 1} onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}>Previous</button>
+        <span>Page {currentPage} of {pageCount}</span>
+        <button type="button" disabled={currentPage === pageCount} onClick={() => setCurrentPage((page) => Math.min(pageCount, page + 1))}>Next</button>
+      </nav> : null}
       <RecentlyViewed />
       {compareProducts.length > 0 && <aside className="compare-tray">
         <div><strong>Compare awards</strong><span>{compareProducts.length}/3 selected</span></div>

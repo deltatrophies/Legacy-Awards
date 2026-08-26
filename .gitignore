@@ -1,6 +1,7 @@
 node_modules/
 dist/
 *.log
+.catalog-import-manifest.json
 .env
 .env.*
 !.env.example

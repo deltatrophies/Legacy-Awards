@@ -114,9 +114,9 @@ export const authApi = {
 };
 
 export const catalogApi = {
-  list: () => apiRequest("/products?limit=100"),
+  list: () => apiRequest("/products?limit=1000"),
   get: (slug) => apiRequest(`/products/${encodeURIComponent(slug)}`),
-  adminList: () => apiRequest("/products?limit=200&includeInactive=true"),
+  adminList: () => apiRequest("/products?limit=1000&includeInactive=true"),
   async create(input) {
     const product = await apiRequest("/products", { method: "POST", body: JSON.stringify(input) });
     notifyCatalogChanged();

@@ -4,6 +4,7 @@ import RecentlyViewed from "../components/products/RecentlyViewed.jsx";
 import { formatPrice, getProductBySlug } from "../data/products.js";
 import { CATALOG_CHANGED_EVENT, CATALOG_CHANGED_STORAGE_KEY, catalogApi } from "../services/apiClient.js";
 import { readStorage, writeStorage } from "../utils/storage.js";
+import { optimizedImage, responsiveImageProps } from "../utils/cloudinaryImage.js";
 import "../styles/pages/commerce.css";
 
 export default function ProductDetailPage() {
@@ -96,7 +97,7 @@ export default function ProductDetailPage() {
             <span className="detail-media-code">{product.sku || product.id}</span>
           </div>
           <div className="detail-image-stage">
-            <img src={activeImage} alt={product.name} />
+            <img {...responsiveImageProps(activeImage, [640, 960, 1400])} sizes="(max-width: 900px) 100vw, 50vw" alt={product.name} decoding="async" />
           </div>
           {galleryImages.length > 1 ? (
             <div className="detail-thumb-row" aria-label="Product images">
@@ -108,7 +109,7 @@ export default function ProductDetailPage() {
                   type="button"
                   onClick={() => setSelectedImage(image)}
                 >
-                  <img src={image} alt="" />
+                  <img src={optimizedImage(image, 180)} alt="" loading="lazy" decoding="async" />
                 </button>
               ))}
             </div>
@@ -118,7 +119,7 @@ export default function ProductDetailPage() {
           <p className="catalog-tag">{product.tag}</p>
           <h1>{product.name}</h1>
           <div className="detail-price-card">
-            <p className="detail-price">{formatPrice(product.price)} <small>per piece</small></p>
+            <p className="detail-price">{formatPrice(product.price)} {Number(product.price) > 0 ? <small>per piece</small> : null}</p>
             <span>Bulk quote available</span>
           </div>
           <p className="detail-description">{product.description}</p>
