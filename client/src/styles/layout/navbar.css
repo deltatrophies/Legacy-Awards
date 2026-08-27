@@ -516,6 +516,12 @@ nav.top-nav .nav-btn:hover::after {
     min-height: 72px !important;
   }
 
+  nav.site-nav {
+    transform: none !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+
   body > nav .nav-links,
   nav.site-nav .nav-links,
   nav.top-nav .nav-links {
@@ -596,8 +602,9 @@ nav.top-nav .nav-btn:hover::after {
 
   nav.site-nav .mobile-menu-backdrop {
     display: block;
-    position: fixed;
-    inset: 72px 0 0;
+    position: absolute;
+    inset: 100% 0 auto;
+    height: calc(100dvh - 72px);
     z-index: 240;
     border: 0;
     background: rgba(15, 13, 10, 0.42);
@@ -616,10 +623,9 @@ nav.top-nav .nav-btn:hover::after {
     display: grid;
     grid-template-rows: auto 1fr auto;
     gap: 18px;
-    position: fixed;
-    top: 72px;
-    right: 0;
-    bottom: 0;
+    position: absolute;
+    inset: 100% 0 auto auto;
+    height: calc(100dvh - 72px);
     z-index: 251;
     width: 0;
     padding: 22px 0;
@@ -640,6 +646,10 @@ nav.top-nav .nav-btn:hover::after {
     padding: 22px;
     border-left-width: 1px;
     visibility: visible;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    max-height: calc(100dvh - 72px);
     transition:
       width 0.24s ease,
       padding 0.24s ease,

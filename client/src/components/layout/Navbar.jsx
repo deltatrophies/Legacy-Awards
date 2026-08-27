@@ -177,7 +177,7 @@ export default function Navbar() {
         <div className="mobile-menu-head">
           <span>Menu</span>
           <button type="button" onClick={() => setMenuOpen(false)} aria-label="Close navigation menu">
-            Close
+            ×
           </button>
         </div>
 
