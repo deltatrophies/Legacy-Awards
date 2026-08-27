@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import ProductCard from "../components/products/ProductCard.jsx";
 import RecentlyViewed from "../components/products/RecentlyViewed.jsx";
 import { categories, formatPrice, products as fallbackProducts } from "../data/products.js";
@@ -31,8 +31,9 @@ function formatCategory(value) {
 }
 
 export default function ProductsPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [query, setQuery] = useState("");
-  const [category, setCategory] = useState("all");
+  const category = searchParams.get("category") || "all";
   const [price, setPrice] = useState("all");
   const [sort, setSort] = useState("featured");
   const [wishlist, setWishlist] = useState(() => readStorage("wishlist", []));
@@ -96,9 +97,15 @@ export default function ProductsPage() {
     return next;
   });
   const toggleCompare = (id) => updateCompare((current) => current.includes(id) ? current.filter((item) => item !== id) : current.length < 3 ? [...current, id] : current);
+  const selectCategory = (nextCategory) => {
+    const nextParams = new URLSearchParams(searchParams);
+    if (nextCategory === "all") nextParams.delete("category");
+    else nextParams.set("category", nextCategory);
+    setSearchParams(nextParams);
+  };
   const compareProducts = compare.map((id) => catalog.find((item) => item.id === id)).filter(Boolean);
   const compareHref = `/compare?items=${compareProducts.map((item) => encodeURIComponent(item.id)).join(",")}`;
-  const clearFilters = () => { setQuery(""); setCategory("all"); setPrice("all"); setSort("featured"); };
+  const clearFilters = () => { setQuery(""); selectCategory("all"); setPrice("all"); setSort("featured"); };
   const categoryCounts = useMemo(() => {
     const counts = new Map([["all", catalog.length]]);
     catalog.forEach((product) => counts.set(product.category, (counts.get(product.category) || 0) + 1));
@@ -147,7 +154,7 @@ export default function ProductsPage() {
 
         <nav className="category-tabs" aria-label="Categories">
           {catalogCategories.map((item) => (
-            <button type="button" className={category === item ? "active" : ""} onClick={() => setCategory(item)} key={item}>
+            <button type="button" className={category === item ? "active" : ""} onClick={() => selectCategory(item)} key={item}>
               <span>{formatCategory(item)}</span>
               <strong>{categoryCounts.get(item) || 0}</strong>
             </button>
