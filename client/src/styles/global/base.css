@@ -9,6 +9,7 @@
 
 html {
   scroll-behavior: smooth;
+  overflow-x: clip;
 }
 
 html.has-smooth-scroll {
@@ -22,9 +23,14 @@ body {
   font-size: 16px;
   line-height: 1.5;
   font-size: 16px;
+  width: 100%;
+  overflow-wrap: break-word;
 }
 
-img {
+img,
+svg,
+video,
+canvas {
   max-width: 100%;
 }
 

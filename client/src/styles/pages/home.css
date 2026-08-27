@@ -1625,6 +1625,136 @@
         }
       }
 
+      /* Responsive rhythm: content controls section height instead of the monitor. */
+      @media (min-width: 1121px) {
+        .hero {
+          min-height: clamp(720px, calc(100svh - 72px), 920px);
+        }
+
+        .specialization_section,
+        .process-section,
+        .testimonials-section,
+        .cta-banner,
+        .split-feature {
+          min-height: auto;
+        }
+
+        .specialization_section,
+        .process-section,
+        .testimonials-section {
+          padding-block: clamp(72px, 7vw, 108px);
+        }
+
+        .split-feature > div,
+        .cta-banner > div {
+          min-height: clamp(560px, 58vw, 720px);
+        }
+
+        .pillars_heading,
+        .pillars,
+        .process-header,
+        .process-steps,
+        .ts-header,
+        .ts-grid {
+          width: min(100%, 1600px);
+          margin-inline: auto;
+        }
+      }
+
+      @media (min-width: 721px) and (max-width: 1120px) {
+        .hero,
+        .specialization_section,
+        .split-feature,
+        .process-section,
+        .testimonials-section,
+        .cta-banner {
+          min-height: auto;
+        }
+
+        .hero-left {
+          min-height: auto;
+          padding-block: 92px 150px;
+        }
+
+        .hero-right {
+          min-height: 540px;
+          padding-block: 64px;
+        }
+
+        .specialization_section,
+        .process-section,
+        .testimonials-section {
+          padding: 76px 32px;
+        }
+
+        .sf-dark,
+        .sf-stone,
+        .cta-left,
+        .cta-right {
+          padding: 72px 44px;
+        }
+      }
+
+      @media (max-width: 720px) {
+        .hero,
+        .specialization_section,
+        .split-feature,
+        .process-section,
+        .testimonials-section,
+        .cta-banner {
+          min-height: auto;
+        }
+
+        .process-section,
+        .testimonials-section {
+          padding-block: 64px;
+        }
+
+        .sf-dark,
+        .sf-stone,
+        .cta-left,
+        .cta-right {
+          padding-block: 58px;
+        }
+
+        .process-header,
+        .ts-header {
+          margin-bottom: 34px;
+        }
+
+        .pillar-cell,
+        .step,
+        .ts-card {
+          padding: 28px 24px;
+        }
+      }
+
+      @media (max-width: 420px) {
+        .legacy-page-home h1 {
+          font-size: clamp(40px, 13vw, 50px);
+        }
+
+        .hero-left,
+        .hero-right,
+        .sf-dark,
+        .sf-stone,
+        .process-section,
+        .testimonials-section,
+        .cta-left,
+        .cta-right,
+        footer {
+          padding-left: 18px;
+          padding-right: 18px;
+        }
+
+        .btn-maroon,
+        .btn-stone,
+        .cta-btns a {
+          width: 100% !important;
+          padding-inline: 18px !important;
+        }
+      }
+
       /* GLOSSY GOLD TEXT - reusable */
       .logo {
         font-family: "DM Serif Display", serif;

@@ -91,3 +91,86 @@
     border-top-right-radius: 0;
   }
 }
+
+/* Fluid customizer shell and compact step navigation. */
+.customizer-page > :where(.customizer-head,.wizard-steps,.customizer-layout,.saved-designs) {
+  width: min(100%, 1440px);
+  margin-left: auto;
+  margin-right: auto;
+}
+
+@media (max-width: 1120px) {
+  .customizer-page .wizard-steps {
+    display: flex;
+    overflow-x: auto;
+    scrollbar-width: thin;
+  }
+
+  .customizer-page .wizard-steps button {
+    flex: 1 0 150px;
+    border-right: 1px solid var(--line);
+    border-bottom: 0;
+  }
+
+  .customizer-page .wizard-steps button:first-child {
+    border-bottom-left-radius: var(--custom-radius-lg);
+    border-top-right-radius: 0;
+  }
+
+  .customizer-page .wizard-steps button:last-child {
+    border-bottom-left-radius: 0;
+    border-top-right-radius: var(--custom-radius-lg);
+  }
+
+  .customizer-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .preview-shell {
+    position: static;
+  }
+}
+
+@media (max-width: 600px) {
+  .customizer-page .wizard-steps {
+    margin-block: 24px 18px;
+  }
+
+  .customizer-page .wizard-steps button {
+    flex-basis: 128px;
+    min-height: 54px;
+    font-size: 12px;
+  }
+
+  .review-actions button {
+    flex: 1 1 100%;
+  }
+
+  .range-field {
+    grid-template-columns: 1fr auto;
+  }
+
+  .range-field input {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+}
+
+@media (max-width: 390px) {
+  .customizer-page {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+
+  .visual-options {
+    grid-template-columns: 1fr;
+  }
+
+  .customizer-head h1 {
+    font-size: 38px;
+  }
+
+  .wizard-panel h2 {
+    font-size: 30px;
+  }
+}

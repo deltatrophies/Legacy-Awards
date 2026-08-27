@@ -1,7 +1,7 @@
 .home-experience {
   background: #f6f2f0;
   color: #28251f;
-  padding: 72px 100px 84px;
+  padding: clamp(56px, 6vw, 84px) clamp(18px, 5vw, 72px);
 }
 
 .home-tool-grid {
@@ -9,6 +9,9 @@
   grid-template-columns: minmax(320px, 0.9fr) minmax(360px, 1.1fr);
   gap: 24px;
   margin-bottom: 34px;
+  max-width: 1600px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .bulk-calculator,
@@ -150,6 +153,9 @@
   background: #fff;
   border-color: rgba(138, 110, 40, 0.16);
   box-shadow: 0 24px 70px rgba(40, 37, 31, 0.10);
+  max-width: 1600px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .gallery-section::before {
@@ -314,5 +320,22 @@
 
   .gallery-card figcaption {
     min-height: 62px;
+  }
+
+  .home-experience h2 {
+    font-size: clamp(28px, 9vw, 36px);
+  }
+
+  .calc-result div {
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .calc-result strong {
+    text-align: right;
+  }
+
+  .tool-cta {
+    width: 100%;
   }
 }

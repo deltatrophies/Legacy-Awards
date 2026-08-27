@@ -1020,3 +1020,22 @@
     grid-template-columns: 1fr;
   }
 }
+
+.account-page > :where(.account-hero,.account-grid,.orders-layout,.enquiries-layout,.wishlist-shell,.wishlist-hero,.wishlist-toolbar,.wishlist-grid,.account-empty) {
+  width: min(100%, 1360px);
+  margin-left: auto;
+  margin-right: auto;
+}
+
+@media (max-width: 390px) {
+  .account-page {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .account-card,
+  .account-empty,
+  .wishlist-card {
+    border-radius: 18px;
+  }
+}

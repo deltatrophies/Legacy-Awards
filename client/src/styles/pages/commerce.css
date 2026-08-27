@@ -1491,3 +1491,81 @@
     border-radius: 18px;
   }
 }
+
+/* Consistent catalogue width and grid density across laptop and wide displays. */
+.commerce-page > :where(
+  .catalog-hero,
+  .catalog-control-panel,
+  .result-line,
+  .catalog-grid,
+  .catalog-pagination,
+  .recent-section,
+  .breadcrumbs,
+  .product-detail,
+  .compare-hero,
+  .compare-product-strip,
+  .compare-board,
+  .compare-empty
+) {
+  width: min(100%, 1600px);
+  margin-left: auto;
+  margin-right: auto;
+}
+
+@media (min-width: 1680px) {
+  .catalog-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 1180px) {
+  .catalog-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .catalog-card-dock {
+    grid-template-columns: 1.15fr 1fr 58px 58px;
+  }
+
+  .catalog-card-dock .catalog-stat-chip:nth-child(3) {
+    display: none;
+  }
+}
+
+@media (max-width: 620px) {
+  .catalog-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .catalog-pagination {
+    gap: 8px;
+  }
+
+  .catalog-pagination button {
+    min-width: 0;
+    flex: 1;
+  }
+
+  .catalog-pagination span {
+    flex: 0 0 auto;
+  }
+
+  .result-line {
+    gap: 12px;
+  }
+}
+
+@media (max-width: 390px) {
+  .commerce-page {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .catalog-hero h1 {
+    font-size: clamp(38px, 12vw, 42px);
+  }
+
+  .catalog-pagination span {
+    font-size: 11px;
+  }
+}

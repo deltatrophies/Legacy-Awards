@@ -81,3 +81,16 @@
     display: none;
   }
 }
+
+@media (max-width: 480px) {
+  .whatsapp-cta {
+    width: 54px;
+    min-height: 54px;
+    padding: 8px;
+    justify-content: center;
+  }
+
+  .whatsapp-cta-text {
+    display: none;
+  }
+}
