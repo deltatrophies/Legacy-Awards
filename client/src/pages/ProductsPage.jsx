@@ -97,6 +97,12 @@ export default function ProductsPage() {
     return next;
   });
   const toggleCompare = (id) => updateCompare((current) => current.includes(id) ? current.filter((item) => item !== id) : current.length < 3 ? [...current, id] : current);
+  const changePage = (nextPage) => {
+    setCurrentPage(nextPage);
+    window.requestAnimationFrame(() => {
+      document.getElementById("catalog-products")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  };
   const selectCategory = (nextCategory) => {
     const nextParams = new URLSearchParams(searchParams);
     if (nextCategory === "all") nextParams.delete("category");
@@ -168,9 +174,9 @@ export default function ProductsPage() {
       </div>
       {filtered.length ? <section className="catalog-grid">{visibleProducts.map((product) => <ProductCard key={product.id} product={product} wishlisted={wishlist.includes(product.id)} compared={compare.includes(product.id)} onWishlist={toggleWishlist} onCompare={toggleCompare} />)}</section> : <div className="catalog-empty"><h2>No matching awards</h2><p>Try a broader search or clear the current filters.</p><button onClick={clearFilters}>Clear filters</button></div>}
       {pageCount > 1 ? <nav className="catalog-pagination" aria-label="Product pages">
-        <button type="button" disabled={currentPage === 1} onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}>Previous</button>
+        <button type="button" disabled={currentPage === 1} onClick={() => changePage(Math.max(1, currentPage - 1))}>Previous</button>
         <span>Page {currentPage} of {pageCount}</span>
-        <button type="button" disabled={currentPage === pageCount} onClick={() => setCurrentPage((page) => Math.min(pageCount, page + 1))}>Next</button>
+        <button type="button" disabled={currentPage === pageCount} onClick={() => changePage(Math.min(pageCount, currentPage + 1))}>Next</button>
       </nav> : null}
       <RecentlyViewed />
       {compareProducts.length > 0 && <aside className="compare-tray">

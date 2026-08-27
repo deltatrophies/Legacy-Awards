@@ -14,7 +14,7 @@
 .category-tabs { display: flex; gap: 8px; padding: 22px 0 12px; overflow-x: auto; }
 .category-tabs button { flex: 0 0 auto; border: 1px solid var(--line); background: transparent; color: var(--muted); padding: 11px 16px; cursor: pointer; text-transform: capitalize; }
 .category-tabs button.active { background: var(--ink); color: white; border-color: var(--ink); }
-.result-line { display: flex; justify-content: space-between; padding: 10px 2px 20px; color: var(--muted); font-size: 13px; }
+.result-line { display: flex; justify-content: space-between; padding: 10px 2px 20px; color: var(--muted); font-size: 13px; scroll-margin-top: 110px; }
 .catalog-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 20px; }
 .catalog-pagination { display: flex; align-items: center; justify-content: center; gap: 16px; margin: 34px 0 0; }
 .catalog-pagination button { min-width: 104px; padding: 11px 16px; border: 1px solid var(--line); background: #fff; color: var(--ink); font: inherit; cursor: pointer; }
