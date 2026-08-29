@@ -1,7 +1,28 @@
 import { AppError } from "../../common/errors/AppError.js";
 import { paginationFrom, paginationMeta } from "../../common/utils/pagination.js";
 import { sendData } from "../../common/utils/response.js";
+import { cloudinaryPublicId, deleteCloudinaryImages } from "../uploads/upload.service.js";
 import { Product } from "./product.model.js";
+
+function withCloudinaryPublicIds(input) {
+  if (!Array.isArray(input.images)) return input;
+  return {
+    ...input,
+    images: input.images.map((image) => {
+      const publicId = cloudinaryPublicId(image);
+      return { ...image, ...(publicId ? { publicId } : {}) };
+    }),
+  };
+}
+
+function removedImages(previousImages, currentImages) {
+  const retainedUrls = new Set((currentImages || []).map((image) => image.url).filter(Boolean));
+  const retainedPublicIds = new Set((currentImages || []).map(cloudinaryPublicId).filter(Boolean));
+  return (previousImages || []).filter((image) => {
+    const publicId = cloudinaryPublicId(image);
+    return !retainedUrls.has(image.url) && (!publicId || !retainedPublicIds.has(publicId));
+  });
+}
 
 const serialize = (product) => ({
   id: product.slug,
@@ -89,12 +110,20 @@ export async function getOne(req, res) {
 }
 
 export async function create(req, res) {
-  return sendData(res, serialize(await Product.create(req.body)), 201);
+  return sendData(res, serialize(await Product.create(withCloudinaryPublicIds(req.body))), 201);
 }
 
 export async function update(req, res) {
-  const product = await Product.findOneAndUpdate({ slug: req.params.slug }, req.body, { new: true, runValidators: true });
+  const previousProduct = await Product.findOne({ slug: req.params.slug }).select("images").lean();
+  if (!previousProduct) throw new AppError(404, "PRODUCT_NOT_FOUND", "Product was not found");
+
+  const product = await Product.findOneAndUpdate(
+    { slug: req.params.slug },
+    withCloudinaryPublicIds(req.body),
+    { new: true, runValidators: true },
+  );
   if (!product) throw new AppError(404, "PRODUCT_NOT_FOUND", "Product was not found");
+  await deleteCloudinaryImages(removedImages(previousProduct.images, product.images));
   return sendData(res, serialize(product));
 }
 

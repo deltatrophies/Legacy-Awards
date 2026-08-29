@@ -1,4 +1,5 @@
 import { spawn } from "node:child_process";
+import { resolve4 } from "node:dns/promises";
 import { cloudinary } from "../../config/cloudinary.js";
 import { cloudinaryEnabled, env } from "../../config/env.js";
 import { logger } from "../../config/logger.js";
@@ -8,6 +9,18 @@ const sdkAttempts = 2;
 const curlMaxOutputBytes = 1024 * 1024;
 
 const wait = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
+
+async function curlResolveArgs() {
+  const configured = process.env.CLOUDINARY_API_RESOLVE?.trim();
+  if (configured) return ["--resolve", configured];
+  try {
+    const addresses = await resolve4("api.cloudinary.com");
+    return addresses.length ? ["--resolve", `api.cloudinary.com:443:${addresses.join(",")}`] : [];
+  } catch (error) {
+    logger.warn({ cloudinaryError: safeErrorDetails(error) }, "Could not pre-resolve the Cloudinary API host for curl");
+    return [];
+  }
+}
 
 function uploadContext(file, folder) {
   return {
@@ -53,6 +66,24 @@ function mapUpload(result) {
   };
 }
 
+export function cloudinaryPublicId(image) {
+  const storedPublicId = typeof image?.publicId === "string" ? image.publicId.trim() : "";
+  if (storedPublicId.startsWith("legacy-trophies/")) return storedPublicId;
+
+  const rawUrl = typeof image === "string" ? image : image?.url;
+  if (!rawUrl) return "";
+  try {
+    const url = new URL(rawUrl);
+    if (url.hostname !== "res.cloudinary.com") return "";
+    const decodedPath = decodeURIComponent(url.pathname);
+    const folderIndex = decodedPath.indexOf("legacy-trophies/");
+    if (folderIndex < 0) return "";
+    return decodedPath.slice(folderIndex).replace(/\.[a-z0-9]{1,8}$/i, "");
+  } catch {
+    return "";
+  }
+}
+
 function sdkUpload(file, folder, resourceType) {
   return new Promise((resolve, reject) => {
     const stream = cloudinary.uploader.upload_stream({
@@ -71,7 +102,7 @@ function sdkUpload(file, folder, resourceType) {
   });
 }
 
-function curlUpload(file, folder, resourceType) {
+async function curlUpload(file, folder, resourceType) {
   const timestamp = Math.floor(Date.now() / 1000);
   const signedParams = {
     folder,
@@ -85,8 +116,9 @@ function curlUpload(file, folder, resourceType) {
   const extension = file.originalname?.match(/\.[a-z0-9]{1,8}$/i)?.[0] || "";
   const filename = `upload${extension}`;
   const command = process.platform === "win32" ? "curl.exe" : "curl";
+  const resolveArgs = await curlResolveArgs();
   const args = [
-    "-sS",
+    "-sS", ...resolveArgs,
     "--fail-with-body",
     "--connect-timeout", "20",
     "--max-time", "180",
@@ -140,6 +172,125 @@ function curlUpload(file, folder, resourceType) {
     });
     child.stdin.end(file.buffer);
   });
+}
+
+function sdkDestroy(publicId) {
+  return new Promise((resolve, reject) => {
+    cloudinary.uploader.destroy(publicId, {
+      resource_type: "image",
+      invalidate: true,
+      timeout: 30_000,
+    }, (error, result) => {
+      if (error) return reject(error);
+      if (!["ok", "not found"].includes(result?.result)) {
+        return reject(new Error(`Cloudinary returned destroy result: ${result?.result || "unknown"}`));
+      }
+      return resolve(result.result);
+    });
+  });
+}
+
+async function curlDestroy(publicId) {
+  const timestamp = Math.floor(Date.now() / 1000);
+  const signedParams = { invalidate: "true", public_id: publicId, timestamp };
+  const signature = cloudinary.utils.api_sign_request(signedParams, env.CLOUDINARY_API_SECRET);
+  const endpoint = `https://api.cloudinary.com/v1_1/${encodeURIComponent(env.CLOUDINARY_CLOUD_NAME)}/image/destroy`;
+  const command = process.platform === "win32" ? "curl.exe" : "curl";
+  const resolveArgs = await curlResolveArgs();
+  const args = [
+    "-sS", ...resolveArgs,
+    "--fail-with-body",
+    "--connect-timeout", "20",
+    "--max-time", "90",
+    "--retry", "2",
+    "--retry-all-errors",
+    "-X", "POST",
+    endpoint,
+    "-F", `public_id=${publicId}`,
+    "-F", `timestamp=${timestamp}`,
+    "-F", "invalidate=true",
+    "-F", `api_key=${env.CLOUDINARY_API_KEY}`,
+    "-F", `signature=${signature}`,
+  ];
+
+  return new Promise((resolve, reject) => {
+    const child = spawn(command, args, { windowsHide: true, stdio: ["ignore", "pipe", "pipe"] });
+    const stdout = [];
+    const stderr = [];
+    let outputBytes = 0;
+    const collect = (target) => (chunk) => {
+      outputBytes += chunk.length;
+      if (outputBytes <= curlMaxOutputBytes) target.push(chunk);
+    };
+    child.stdout.on("data", collect(stdout));
+    child.stderr.on("data", collect(stderr));
+    child.on("error", reject);
+    child.on("close", (code) => {
+      const body = Buffer.concat(stdout).toString("utf8");
+      let result;
+      try {
+        result = JSON.parse(body);
+      } catch {
+        result = null;
+      }
+      if (code !== 0 || !["ok", "not found"].includes(result?.result)) {
+        const message = result?.error?.message
+          || Buffer.concat(stderr).toString("utf8").trim()
+          || `curl exited with code ${code}`;
+        const error = new Error(message);
+        error.code = code === null ? "CURL_TERMINATED" : `CURL_EXIT_${code}`;
+        return reject(error);
+      }
+      return resolve(result.result);
+    });
+  });
+}
+
+async function destroyCloudinaryImage(publicId) {
+  let sdkError;
+  for (let attempt = 1; attempt <= sdkAttempts; attempt += 1) {
+    try {
+      const result = await sdkDestroy(publicId);
+      logger.info({ publicId, result }, "Cloudinary image deletion succeeded");
+      return result;
+    } catch (error) {
+      sdkError = error;
+      logger.warn({
+        publicId,
+        attempt,
+        maxAttempts: sdkAttempts,
+        cloudinaryError: safeErrorDetails(error),
+      }, "Cloudinary SDK image deletion attempt failed");
+      if (needsNetworkFallback(error)) break;
+      if (attempt < sdkAttempts) await wait(attempt * 800);
+    }
+  }
+
+  logger.warn({ publicId, cloudinaryError: safeErrorDetails(sdkError) }, "Falling back to signed curl image deletion");
+  try {
+    const result = await curlDestroy(publicId);
+    logger.info({ publicId, result }, "Cloudinary curl fallback image deletion succeeded");
+    return result;
+  } catch (curlError) {
+    logger.error({
+      publicId,
+      sdkError: safeErrorDetails(sdkError),
+      curlError: safeErrorDetails(curlError),
+    }, "Cloudinary SDK and curl fallback image deletions failed");
+    throw curlError;
+  }
+}
+
+export async function deleteCloudinaryImages(images) {
+  const publicIds = [...new Set((images || []).map(cloudinaryPublicId).filter(Boolean))];
+  if (!publicIds.length) return { deleted: [], failed: [] };
+
+  const settled = await Promise.allSettled(publicIds.map((publicId) => destroyCloudinaryImage(publicId)));
+  return settled.reduce((summary, result, index) => {
+    const key = publicIds[index];
+    summary[result.status === "fulfilled" ? "deleted" : "failed"].push(key);
+    return summary;
+  }, { deleted: [], failed: [] });
 }
 
 export async function uploadBuffer(file, folder = "legacy-trophies/uploads") {
