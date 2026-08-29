@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, Navigate, NavLink, useLocation, useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
 import { adminApi, catalogApi, categoryApi, uploadProductImage } from "../services/apiClient.js";
+import { optimizedImage } from "../utils/cloudinaryImage.js";
 import "../styles/pages/admin.css";
 
 const productTemplate = {
@@ -551,7 +552,17 @@ function ProductManager({ products, categories, onSaved, onError }) {
                 {group.products.map((product) => (
                   <article className="admin-product-row" key={product.id || product.slug}>
                     <div className="admin-product-thumb">
-                      {product.image ? <img src={product.image} alt="" /> : <span>{product.name.slice(0, 2).toUpperCase()}</span>}
+                      {product.image ? (
+                        <img
+                          src={optimizedImage(product.image, 112)}
+                          alt=""
+                          width="56"
+                          height="56"
+                          loading="lazy"
+                          decoding="async"
+                          fetchPriority="low"
+                        />
+                      ) : <span>{product.name.slice(0, 2).toUpperCase()}</span>}
                     </div>
                     <div className="admin-product-main">
                       <div>
