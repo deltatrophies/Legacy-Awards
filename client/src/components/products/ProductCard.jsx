@@ -40,7 +40,7 @@ export default function ProductCard({ product, wishlisted, compared, onWishlist,
         </div>
         <h3><Link to={`/products/${product.id}`}>{product.name}</Link></h3>
         <p className="catalog-desc">{product.description}</p>
-
+         
         <div className="catalog-specs">
           <div><span>Material</span><strong>{product.material}</strong></div>
           <div><span>Size</span><strong>{product.size}</strong></div>
