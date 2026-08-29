@@ -100,7 +100,11 @@ export default function ProductDetailPage() {
             <img {...responsiveImageProps(activeImage, [640, 960, 1400])} sizes="(max-width: 900px) 100vw, 50vw" alt={product.name} decoding="async" />
           </div>
           {galleryImages.length > 1 ? (
-            <div className="detail-thumb-row" aria-label="Product images">
+            <div
+              className="detail-thumb-row"
+              aria-label="Product images"
+              style={{ "--detail-thumb-count": Math.min(galleryImages.length, 4) }}
+            >
               {galleryImages.map((image, index) => (
                 <button
                   aria-label={`Show product image ${index + 1}`}
