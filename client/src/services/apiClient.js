@@ -51,7 +51,7 @@ async function refreshSession() {
   return refreshPromise;
 }
 
-export async function apiRequest(path, options = {}, allowRefresh = true) {
+export async function apiRequest(path, options = {}, allowRefresh = true, includeMeta = false) {
   const headers = new Headers(options.headers);
   const isForm = options.body instanceof FormData;
   if (options.body && !isForm) headers.set("content-type", "application/json");
@@ -61,7 +61,7 @@ export async function apiRequest(path, options = {}, allowRefresh = true) {
   if (response.status === 401 && allowRefresh && !authRoutesWithoutRefresh.has(path)) {
     try {
       await refreshSession();
-      return apiRequest(path, options, false);
+      return apiRequest(path, options, false, includeMeta);
     } catch {
       setAccessToken("");
     }
@@ -71,7 +71,7 @@ export async function apiRequest(path, options = {}, allowRefresh = true) {
   if (!response.ok) {
     throw new ApiError(payload?.error?.message || "The request could not be completed", response.status, payload?.error?.code, payload?.error?.details);
   }
-  return payload.data;
+  return includeMeta ? { data: payload.data, meta: payload.meta || {} } : payload.data;
 }
 
 function notifyCatalogChanged() {
@@ -116,7 +116,17 @@ export const authApi = {
 export const catalogApi = {
   list: () => apiRequest("/products?limit=1000"),
   get: (slug) => apiRequest(`/products/${encodeURIComponent(slug)}`),
-  adminList: () => apiRequest("/products?limit=1000&includeInactive=true"),
+  adminList: ({ page = 1, limit = 50, category = "all", search = "" } = {}) => {
+    const params = new URLSearchParams({
+      page: String(page),
+      limit: String(limit),
+      includeInactive: "true",
+      adminList: "true",
+    });
+    if (category && category !== "all") params.set("category", category);
+    if (search.trim()) params.set("search", search.trim());
+    return apiRequest(`/products?${params.toString()}`, {}, true, true);
+  },
   async create(input) {
     const product = await apiRequest("/products", { method: "POST", body: JSON.stringify(input) });
     notifyCatalogChanged();

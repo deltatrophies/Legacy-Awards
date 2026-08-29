@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, Navigate, NavLink, useLocation, useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
 import { adminApi, catalogApi, categoryApi, uploadProductImage } from "../services/apiClient.js";
-import { optimizedImage } from "../utils/cloudinaryImage.js";
+import { squareThumbnail } from "../utils/cloudinaryImage.js";
 import "../styles/pages/admin.css";
 
 const productTemplate = {
@@ -68,6 +68,7 @@ const sections = [
 const inquiryStatuses = ["new", "contacted", "qualified", "closed", "spam"];
 const orderStatuses = ["pending", "artwork", "production", "ready", "shipped", "delivered", "cancelled"];
 const quoteStatuses = ["submitted", "reviewing", "quoted", "accepted", "expired", "cancelled"];
+const adminProductPageSize = 50;
 
 function slugify(value) {
   return value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
@@ -103,7 +104,6 @@ export default function AdminPanelPage() {
   const activeSection = sections.some(([key]) => key === section) ? section : "dashboard";
   const { user, logout } = useAuth();
   const [summary, setSummary] = useState(null);
-  const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [inquiries, setInquiries] = useState([]);
   const [quotes, setQuotes] = useState([]);
@@ -122,9 +122,8 @@ export default function AdminPanelPage() {
     setLoading(true);
     setError("");
     try {
-      const [summaryData, productData, categoryData, inquiryData, quoteData, orderData, couponData, settingsData] = await Promise.all([
+      const [summaryData, categoryData, inquiryData, quoteData, orderData, couponData, settingsData] = await Promise.all([
         adminApi.summary(),
-        catalogApi.adminList(),
         categoryApi.adminList(),
         adminApi.listInquiries(),
         adminApi.listQuotes(),
@@ -133,7 +132,6 @@ export default function AdminPanelPage() {
         adminApi.getSettings(),
       ]);
       setSummary(summaryData);
-      setProducts(productData || []);
       setCategories(categoryData || []);
       setInquiries(inquiryData || []);
       setQuotes(quoteData || []);
@@ -206,7 +204,6 @@ export default function AdminPanelPage() {
               categories={categoryOptions}
               onError={fail}
               onSaved={() => { announce("Product saved."); refreshAll(); }}
-              products={products}
             />
           ) : null}
           {!loading && activeSection === "categories" ? (
@@ -301,14 +298,44 @@ function RecentList({ rows, title, type }) {
   );
 }
 
-function ProductManager({ products, categories, onSaved, onError }) {
+function ProductManager({ categories, onSaved, onError }) {
   const [form, setForm] = useState(productTemplate);
   const [editingSlug, setEditingSlug] = useState("");
   const [saving, setSaving] = useState(false);
+  const [loadingEditSlug, setLoadingEditSlug] = useState("");
   const [uploadingImages, setUploadingImages] = useState(false);
   const [activeView, setActiveView] = useState("list");
   const [categoryFilter, setCategoryFilter] = useState("all");
+  const [page, setPage] = useState(1);
+  const [products, setProducts] = useState([]);
+  const [listLoading, setListLoading] = useState(true);
+  const [listMeta, setListMeta] = useState({
+    page: 1,
+    pages: 1,
+    total: 0,
+    activeTotal: 0,
+    categoryCounts: {},
+  });
   const categoryNames = useMemo(() => new Map(categories.map((category) => [category.slug || category.id, category.name])), [categories]);
+
+  useEffect(() => {
+    let active = true;
+    setListLoading(true);
+    catalogApi.adminList({ page, limit: adminProductPageSize, category: categoryFilter })
+      .then((result) => {
+        if (!active) return;
+        setProducts(result.data || []);
+        setListMeta((current) => ({ ...current, ...(result.meta || {}) }));
+      })
+      .catch((requestError) => {
+        if (active) onError(requestError);
+      })
+      .finally(() => {
+        if (active) setListLoading(false);
+      });
+    return () => { active = false; };
+  }, [categoryFilter, page]);
+
   const groupedProducts = useMemo(() => {
     const groups = new Map();
     products.forEach((product) => {
@@ -329,12 +356,28 @@ function ProductManager({ products, categories, onSaved, onError }) {
       }))
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [categoryNames, products]);
-  const categoryFilters = useMemo(() => [
-    { key: "all", name: "All", count: products.length },
-    ...groupedProducts.map((group) => ({ key: group.key, name: group.name, count: group.products.length })),
-  ], [groupedProducts, products.length]);
-  const visibleGroups = categoryFilter === "all" ? groupedProducts : groupedProducts.filter((group) => group.key === categoryFilter);
-  const activeCount = products.filter((product) => product.isActive !== false).length;
+  const categoryFilters = useMemo(() => {
+    const counts = listMeta.categoryCounts || {};
+    const allCount = Object.values(counts).reduce((sum, item) => sum + (item.total || 0), 0);
+    const knownKeys = new Set(categories.map((category) => category.slug || category.id));
+    const known = categories
+      .map((category) => {
+        const key = category.slug || category.id;
+        return { key, name: category.name, count: counts[key]?.total || 0 };
+      })
+      .filter((category) => category.count > 0);
+    const unknown = Object.entries(counts)
+      .filter(([key, item]) => !knownKeys.has(key) && item.total > 0)
+      .map(([key, item]) => ({ key, name: key.replaceAll("-", " "), count: item.total }));
+    return [{ key: "all", name: "All", count: allCount }, ...known, ...unknown];
+  }, [categories, listMeta.categoryCounts]);
+  const visibleGroups = groupedProducts;
+  const activeCount = listMeta.activeTotal || 0;
+
+  const selectCategory = (key) => {
+    setCategoryFilter(key);
+    setPage(1);
+  };
 
   const set = (key, value) => setForm((current) => {
     const next = { ...current, [key]: value };
@@ -346,27 +389,36 @@ function ProductManager({ products, categories, onSaved, onError }) {
 
   const setImageUrls = (urls) => set("imageUrls", urls.filter(Boolean).slice(0, 4).join("\n"));
 
-  const editProduct = (product) => {
-    setEditingSlug(product.id || product.slug);
-    setForm({
-      ...productTemplate,
-      slug: product.id || product.slug,
-      sku: product.sku || "",
-      name: product.name || "",
-      category: product.category || categories[0]?.slug || "trophies",
-      price: product.price || "",
-      tag: product.tag || "",
-      description: product.description || "",
-      badge: product.badge || "",
-      imageUrls: (product.images?.length ? product.images.map((image) => image.url) : [product.image]).filter(Boolean).join("\n"),
-      material: product.material || "",
-      size: product.size || "",
-      delivery: product.delivery || "",
-      useCase: product.useCase || "",
-      minOrder: product.minOrder || 1,
-      isActive: product.isActive !== false,
-    });
-    setActiveView("form");
+  const editProduct = async (summaryProduct) => {
+    const slug = summaryProduct.id || summaryProduct.slug;
+    setLoadingEditSlug(slug);
+    try {
+      const product = await catalogApi.get(slug);
+      setEditingSlug(slug);
+      setForm({
+        ...productTemplate,
+        slug,
+        sku: product.sku || "",
+        name: product.name || "",
+        category: product.category || categories[0]?.slug || "trophies",
+        price: product.price || "",
+        tag: product.tag || "",
+        description: product.description || "",
+        badge: product.badge || "",
+        imageUrls: (product.images?.length ? product.images.map((image) => image.url) : [product.image]).filter(Boolean).join("\n"),
+        material: product.material || "",
+        size: product.size || "",
+        delivery: product.delivery || "",
+        useCase: product.useCase || "",
+        minOrder: product.minOrder || 1,
+        isActive: product.isActive !== false,
+      });
+      setActiveView("form");
+    } catch (requestError) {
+      onError(requestError);
+    } finally {
+      setLoadingEditSlug("");
+    }
   };
 
   const reset = () => {
@@ -520,22 +572,24 @@ function ProductManager({ products, categories, onSaved, onError }) {
             <h2>Product list</h2>
           </div>
           <div className="admin-list-stats">
-            <span><strong>{products.length}</strong> Total</span>
+            <span><strong>{listMeta.total || 0}</strong> Total</span>
             <span><strong>{activeCount}</strong> Active</span>
           </div>
         </div>
 
         <div className="admin-category-toggle" aria-label="Filter products by category">
           {categoryFilters.map((category) => (
-            <button type="button" className={categoryFilter === category.key ? "active" : ""} key={category.key} onClick={() => setCategoryFilter(category.key)}>
+            <button type="button" className={categoryFilter === category.key ? "active" : ""} key={category.key} onClick={() => selectCategory(category.key)}>
               <span>{category.name}</span>
               <strong>{category.count}</strong>
             </button>
           ))}
         </div>
 
-        {visibleGroups.length ? visibleGroups.map((group) => {
-          const groupActive = group.products.filter((product) => product.isActive !== false).length;
+        {listLoading ? <p className="admin-empty">Loading products...</p> : visibleGroups.length ? visibleGroups.map((group) => {
+          const groupStats = listMeta.categoryCounts?.[group.key];
+          const groupTotal = groupStats?.total || group.products.length;
+          const groupActive = groupStats?.active ?? group.products.filter((product) => product.isActive !== false).length;
           return (
             <section className="admin-category-group" key={group.key}>
               <header className="admin-category-head">
@@ -544,7 +598,7 @@ function ProductManager({ products, categories, onSaved, onError }) {
                   <span>{group.key}</span>
                 </div>
                 <div className="admin-category-count">
-                  <strong>{group.products.length}</strong>
+                  <strong>{groupTotal}</strong>
                   <span>{groupActive} active</span>
                 </div>
               </header>
@@ -554,7 +608,7 @@ function ProductManager({ products, categories, onSaved, onError }) {
                     <div className="admin-product-thumb">
                       {product.image ? (
                         <img
-                          src={optimizedImage(product.image, 112)}
+                          src={squareThumbnail(product.image, 112)}
                           alt=""
                           width="56"
                           height="56"
@@ -577,7 +631,9 @@ function ProductManager({ products, categories, onSaved, onError }) {
                     </div>
                     <span className={`admin-status-pill ${product.isActive === false ? "is-inactive" : "is-active"}`}>{product.isActive === false ? "Inactive" : "Active"}</span>
                     <div className="admin-row-actions">
-                      <button type="button" onClick={() => editProduct(product)}>Edit</button>
+                      <button disabled={loadingEditSlug === (product.id || product.slug)} type="button" onClick={() => editProduct(product)}>
+                        {loadingEditSlug === (product.id || product.slug) ? "Loading..." : "Edit"}
+                      </button>
                       {product.isActive === false
                         ? <button type="button" onClick={() => restore(product)}>Restore</button>
                         : <button type="button" onClick={() => archive(product)}>Archive</button>}
@@ -588,6 +644,14 @@ function ProductManager({ products, categories, onSaved, onError }) {
             </section>
           );
         }) : <p className="admin-empty">No products found.</p>}
+
+        {!listLoading && listMeta.pages > 1 ? (
+          <nav className="admin-product-pagination" aria-label="Product list pages">
+            <button disabled={page <= 1} type="button" onClick={() => setPage((current) => Math.max(1, current - 1))}>Previous</button>
+            <span>Page <strong>{listMeta.page || page}</strong> of <strong>{listMeta.pages}</strong></span>
+            <button disabled={page >= listMeta.pages} type="button" onClick={() => setPage((current) => Math.min(listMeta.pages, current + 1))}>Next</button>
+          </nav>
+        ) : null}
       </div> : null}
     </section>
   );

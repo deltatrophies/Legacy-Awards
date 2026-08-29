@@ -6,6 +6,13 @@ export function optimizedImage(url, width = 800) {
   return url.replace(CLOUDINARY_UPLOAD, `${CLOUDINARY_UPLOAD}${transformation}/`);
 }
 
+export function squareThumbnail(url, size = 112) {
+  if (!url || !url.includes("res.cloudinary.com") || !url.includes(CLOUDINARY_UPLOAD)) return url;
+  const pixels = Math.max(1, Math.round(size));
+  const transformation = `f_auto,q_auto,c_fill,w_${pixels},h_${pixels}`;
+  return url.replace(CLOUDINARY_UPLOAD, `${CLOUDINARY_UPLOAD}${transformation}/`);
+}
+
 export function responsiveImageProps(url, widths = [360, 640, 960]) {
   if (!url?.includes("res.cloudinary.com")) return { src: url };
   return {
