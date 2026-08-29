@@ -7,7 +7,7 @@ if (cloudinaryEnabled) {
     api_key: env.CLOUDINARY_API_KEY,
     api_secret: env.CLOUDINARY_API_SECRET,
     secure: true,
-    timeout: 10_000,
+    timeout: 30_000,
   });
 }
 
