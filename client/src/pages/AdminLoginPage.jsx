@@ -10,6 +10,11 @@ export default function AdminLoginPage() {
   const [form, setForm] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const devCredentials = import.meta.env.DEV ? {
+    email: import.meta.env.VITE_DEV_ADMIN_EMAIL || "",
+    password: import.meta.env.VITE_DEV_ADMIN_PASSWORD || "",
+  } : null;
+  const canFillDevLogin = Boolean(devCredentials?.email && devCredentials?.password);
 
   useEffect(() => {
     document.title = "Admin Login - Legacy Awards";
@@ -31,6 +36,12 @@ export default function AdminLoginPage() {
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const fillDevLogin = () => {
+    if (!canFillDevLogin) return;
+    setForm(devCredentials);
+    setError("");
   };
 
   return (
@@ -67,6 +78,11 @@ export default function AdminLoginPage() {
               />
             </label>
             {error ? <p className="admin-alert admin-alert-error" role="alert">{error}</p> : null}
+            {import.meta.env.DEV && canFillDevLogin ? (
+              <button className="admin-dev-login-button" type="button" onClick={fillDevLogin}>
+                Fill dev login
+              </button>
+            ) : null}
             <button className="admin-primary-button" disabled={submitting || loading} type="submit">
               {submitting ? "Checking..." : "Log in to admin"}
             </button>
