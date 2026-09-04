@@ -389,7 +389,7 @@
 .admin-quote-response {
   display: grid;
   gap: 14px;
-  margin: 0 0 16px;
+  margin: 0;
   padding: 18px;
   border: 1px solid rgba(92, 26, 26, .3);
   border-left: 5px solid #5c1a1a;
@@ -477,20 +477,63 @@
   color: #77570c;
 }
 
-.quote-decision-confirmation.is-accepted {
-  border: 1px solid rgba(31, 107, 69, .25);
-  background: rgba(31, 107, 69, .08);
-  color: #1f6b45;
+.quote-detail-grid {
+  display: grid;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.quote-detail-grid.has-payment {
+  grid-template-columns: minmax(0, 1.25fr) minmax(300px, .75fr);
+  align-items: stretch;
 }
 
 .quote-payment-step {
   display: grid;
   gap: 8px;
-  margin-bottom: 16px;
-  padding: 18px;
+  align-content: start;
+  margin: 0;
+  padding: 16px;
   border: 1px solid #dfd4c5;
   border-radius: 16px;
   background: #fff;
+}
+
+.quote-payment-confirmed {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 5px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(31, 107, 69, .18);
+}
+
+.quote-payment-confirmed > span {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  flex: none;
+  border-radius: 50%;
+  background: #1f6b45;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.quote-payment-confirmed > div {
+  display: grid;
+  gap: 2px;
+}
+
+.quote-payment-confirmed strong {
+  color: #1f6b45;
+  font-size: 14px;
+}
+
+.quote-payment-confirmed small {
+  color: #6f6154;
+  font-size: 11px;
 }
 
 .quote-payment-step > span {
@@ -580,12 +623,15 @@
 }
 
 .order-card {
-  max-width: 920px;
+  width: 100%;
+  max-width: none;
 }
 
 .order-history {
   display: grid;
   gap: 18px;
+  width: min(1180px, 100%);
+  margin-inline: auto;
 }
 
 .order-tabs {
@@ -1146,7 +1192,8 @@
   .order-metrics,
   .enquiry-details,
   .order-tabs,
-  .profile-update-form {
+  .profile-update-form,
+  .quote-detail-grid.has-payment {
     grid-template-columns: 1fr;
   }
 

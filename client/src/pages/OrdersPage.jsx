@@ -328,62 +328,67 @@ function HistoryCard({ busy = false, onAccept, onContactSales, onOpenPaymentWhat
         <div><span>{type === "quote" ? "Request estimate" : "Total"}</span><strong>{formatPrice(type === "quote" ? requestEstimate : record.total || 0)}</strong></div>
         <div><span>{type === "quote" ? "Preference" : "Payment"}</span><strong>{type === "quote" ? record.customer?.preference || "WhatsApp" : record.paymentStatus || "Pending"}</strong></div>
       </div>
-      {type === "quote" ? <p className="order-status-note">{quoteStatusCopy[status] || "We will keep this request updated here."}</p> : null}
-      {hasAdminQuote ? (
-        <section className="admin-quote-response" aria-label="Quote from Legacy Awards">
-          <div className="admin-quote-response__head">
-            <div>
-              <span>Quote from Legacy Awards</span>
-              <strong>Admin response</strong>
-            </div>
-            <div className="admin-quote-response__price">
-              <span>Quoted price</span>
-              <strong>{formatPrice(record.total || 0)}</strong>
-            </div>
-          </div>
-          {record.customerNotes ? (
-            <div className="admin-quote-response__message">
-              <span>Message from our team</span>
-              <p>{record.customerNotes}</p>
-            </div>
+      {type === "quote" && !customerAccepted && record.customerDecision !== "sales_requested" ? <p className="order-status-note">{quoteStatusCopy[status] || "We will keep this request updated here."}</p> : null}
+      {hasAdminQuote || customerAccepted ? (
+        <div className={`quote-detail-grid ${customerAccepted ? "has-payment" : ""}`}>
+          {hasAdminQuote ? (
+            <section className="admin-quote-response" aria-label="Quote from Legacy Awards">
+              <div className="admin-quote-response__head">
+                <div>
+                  <span>Quote from Legacy Awards</span>
+                  <strong>Admin response</strong>
+                </div>
+                <div className="admin-quote-response__price">
+                  <span>Quoted price</span>
+                  <strong>{formatPrice(record.total || 0)}</strong>
+                </div>
+              </div>
+              {record.customerNotes ? (
+                <div className="admin-quote-response__message">
+                  <span>Message from our team</span>
+                  <p>{record.customerNotes}</p>
+                </div>
+              ) : null}
+              {record.expiresAt ? <small>Valid until {formatDate(record.expiresAt)}</small> : null}
+            </section>
           ) : null}
-          {record.expiresAt ? <small>Quote valid until {formatDate(record.expiresAt)}</small> : null}
-        </section>
+          {customerAccepted ? (
+            <section className={`quote-payment-step is-${record.paymentMethod || "pending"}`}>
+              <div className="quote-payment-confirmed">
+                <span aria-hidden="true">✓</span>
+                <div>
+                  <strong>Quotation accepted</strong>
+                  <small>Price confirmed and admin notified</small>
+                </div>
+              </div>
+              <span>Payment next step</span>
+              {record.paymentMethod === "whatsapp" ? (
+                <>
+                  <strong>Payment through WhatsApp</strong>
+                  <p>Continue on WhatsApp to receive the verified QR or bank details.</p>
+                  <button type="button" onClick={() => onOpenPaymentWhatsApp(record)}>Get payment details</button>
+                </>
+              ) : record.paymentMethod === "razorpay" ? (
+                <>
+                  <strong>Online payment requested</strong>
+                  <p>Your quote is ready for website payment.</p>
+                  <button type="button" onClick={() => onPay(record)}>Pay quoted amount</button>
+                </>
+              ) : (
+                <>
+                  <strong>Payment method being confirmed</strong>
+                  <p>Admin is choosing website or WhatsApp payment. This page updates automatically.</p>
+                </>
+              )}
+            </section>
+          ) : null}
+        </div>
       ) : null}
       {record.customerDecision === "sales_requested" ? (
         <div className="quote-decision-confirmation is-sales">
           <strong>Sales conversation requested</strong>
           <span>Our team has your request{record.salesContactChannel ? ` and your ${record.salesContactChannel === "whatsapp" ? "WhatsApp" : "call"} preference` : " and can contact you directly"}.</span>
         </div>
-      ) : null}
-      {customerAccepted ? (
-        <div className="quote-decision-confirmation is-accepted">
-          <strong>Quotation accepted</strong>
-          <span>Legacy Awards has been notified. Your quoted price is now confirmed.</span>
-        </div>
-      ) : null}
-      {customerAccepted ? (
-        <section className={`quote-payment-step is-${record.paymentMethod || "pending"}`}>
-          <span>Payment next step</span>
-          {record.paymentMethod === "whatsapp" ? (
-            <>
-              <strong>Payment through WhatsApp</strong>
-              <p>Our admin has selected manual payment. Continue on WhatsApp to receive the verified QR or bank details.</p>
-              <button type="button" onClick={() => onOpenPaymentWhatsApp(record)}>Get payment details on WhatsApp</button>
-            </>
-          ) : record.paymentMethod === "razorpay" ? (
-            <>
-              <strong>Online payment requested</strong>
-              <p>Your quote is ready for website payment.</p>
-              <button type="button" onClick={() => onPay(record)}>Pay quoted amount</button>
-            </>
-          ) : (
-            <>
-              <strong>Payment method is being confirmed</strong>
-              <p>Admin will choose secure website payment or manual WhatsApp payment. This page updates automatically.</p>
-            </>
-          )}
-        </section>
       ) : null}
       <div className="order-items">
         {items.slice(0, 4).map((item, index) => (
