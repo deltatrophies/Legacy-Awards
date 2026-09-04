@@ -101,3 +101,5 @@ export default function AppRoutes() {
   const isAdminRoute = location.pathname.startsWith("/admin");            
   return isAdminRoute ? <AdminRoutes location={location} /> : <PublicRoutes location={location} />;
 }
+
+
