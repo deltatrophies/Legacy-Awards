@@ -158,6 +158,8 @@ export async function getAdmin(req, res) {
 
 export async function updateQuote(req, res) {
   const update = { ...req.body };
+  const includesQuotedPrice = update.subtotal != null || update.discount != null || update.total != null;
+  if (includesQuotedPrice && ["submitted", "reviewing"].includes(update.status)) update.status = "quoted";
   let current;
   if (update.subtotal != null || update.discount != null || update.total != null || update.paymentMethod != null || update.status === "accepted") {
     current = await Quote.findById(req.params.id);

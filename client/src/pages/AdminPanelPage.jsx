@@ -1357,8 +1357,9 @@ function OrderDetail({ kind, quote, order, onBack, onQuoteStatus, onOrderStatus 
     event.preventDefault();
     setSavingQuote(true);
     try {
-      await onQuoteStatus(record, {
-        status: quoteForm.status,
+      const submittedStatus = ["submitted", "reviewing"].includes(quoteForm.status) ? "quoted" : quoteForm.status;
+      const updated = await onQuoteStatus(record, {
+        status: submittedStatus,
         subtotal: Number(quoteForm.subtotal || 0),
         discount: Number(quoteForm.discount || 0),
         total: Number(quoteForm.total || 0),
@@ -1366,6 +1367,7 @@ function OrderDetail({ kind, quote, order, onBack, onQuoteStatus, onOrderStatus 
         customerNotes: quoteForm.customerNotes,
         internalNotes: quoteForm.internalNotes,
       });
+      if (updated) setQuoteForm((current) => ({ ...current, status: updated.status || submittedStatus }));
     } finally {
       setSavingQuote(false);
     }
@@ -1464,9 +1466,9 @@ function OrderDetail({ kind, quote, order, onBack, onQuoteStatus, onOrderStatus 
             <Field label="Discount"><input min="0" type="number" value={quoteForm.discount} onChange={(event) => setQuoteField("discount", event.target.value)} /></Field>
             <Field label="Total"><input min="0" type="number" value={quoteForm.total} onChange={(event) => setQuoteField("total", event.target.value)} /></Field>
           </div>
-          <Field label="Customer note"><textarea rows="3" value={quoteForm.customerNotes} onChange={(event) => setQuoteField("customerNotes", event.target.value)} placeholder="Visible to customer in My Orders" /></Field>
+          <Field label="Customer note (optional)"><textarea rows="3" value={quoteForm.customerNotes} onChange={(event) => setQuoteField("customerNotes", event.target.value)} placeholder="Optional message shown with the quotation" /></Field>
           <Field label="Internal note"><textarea rows="3" value={quoteForm.internalNotes} onChange={(event) => setQuoteField("internalNotes", event.target.value)} placeholder="Only visible to admin" /></Field>
-          <button className="admin-primary-button" disabled={savingQuote} type="submit">{savingQuote ? "Saving quote..." : "Save quote details"}</button>
+          <button className="admin-primary-button" disabled={savingQuote} type="submit">{savingQuote ? "Sending quotation..." : ["submitted", "reviewing"].includes(quoteForm.status) ? "Save & send quotation" : "Save quote details"}</button>
         </form>
       ) : null}
 
