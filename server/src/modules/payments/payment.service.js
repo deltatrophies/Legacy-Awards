@@ -52,6 +52,9 @@ export async function createPaymentOrder(reference, quoteToken, userId) {
   if (quote.status !== "accepted") {
     throw new AppError(409, "QUOTE_NOT_ACCEPTED", "The final quote must be accepted before payment");
   }
+  if (quote.paymentMethod !== "razorpay") {
+    throw new AppError(409, "ONLINE_PAYMENT_NOT_SELECTED", "Admin has not selected online payment for this quote");
+  }
   if (quote.expiresAt <= new Date()) throw new AppError(410, "QUOTE_EXPIRED", "This quote has expired");
 
   const existing = await Payment.findOne({ quote: quote._id, status: { $in: ["created", "authorized"] } });
@@ -74,7 +77,10 @@ export async function createPaymentOrder(reference, quoteToken, userId) {
 
 export async function verifyCheckout(input, quoteToken, userId) {
   if (!razorpayEnabled) throw new AppError(503, "PAYMENTS_NOT_CONFIGURED", "Online payments are not configured");
-  await getPayableQuote(input.quoteReference, quoteToken, userId);
+  const quote = await getPayableQuote(input.quoteReference, quoteToken, userId);
+  if (quote.status !== "accepted" || quote.paymentMethod !== "razorpay") {
+    throw new AppError(409, "ONLINE_PAYMENT_NOT_ALLOWED", "Online payment is not enabled for this quote");
+  }
   const expected = createHmac("sha256", env.RAZORPAY_KEY_SECRET)
     .update(`${input.razorpay_order_id}|${input.razorpay_payment_id}`)
     .digest("hex");

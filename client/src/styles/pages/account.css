@@ -454,6 +454,131 @@
   font-weight: 700;
 }
 
+.quote-decision-confirmation {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 14px;
+  padding: 13px 15px;
+  border-radius: 14px;
+  font-size: 13px;
+}
+
+.quote-decision-confirmation strong {
+  color: inherit;
+}
+
+.quote-decision-confirmation span {
+  line-height: 1.5;
+}
+
+.quote-decision-confirmation.is-sales {
+  border: 1px solid rgba(181, 139, 42, .34);
+  background: #fff7dc;
+  color: #77570c;
+}
+
+.quote-decision-confirmation.is-accepted {
+  border: 1px solid rgba(31, 107, 69, .25);
+  background: rgba(31, 107, 69, .08);
+  color: #1f6b45;
+}
+
+.quote-payment-step {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 16px;
+  padding: 18px;
+  border: 1px solid #dfd4c5;
+  border-radius: 16px;
+  background: #fff;
+}
+
+.quote-payment-step > span {
+  color: #8f6911;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: .13em;
+  text-transform: uppercase;
+}
+
+.quote-payment-step > strong {
+  color: #3f3128;
+  font-size: 18px;
+}
+
+.quote-payment-step p {
+  margin: 0;
+  color: #6f6154;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.quote-payment-step button,
+.quote-sales-options button {
+  width: max-content;
+  min-height: 40px;
+  padding: 9px 14px;
+  border: 1px solid #5c1a1a;
+  border-radius: 999px;
+  background: #5c1a1a;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.quote-payment-step.is-whatsapp {
+  border-color: rgba(31, 107, 69, .25);
+  background: rgba(31, 107, 69, .05);
+}
+
+.quote-payment-step.is-pending {
+  border-style: dashed;
+  background: #fffaf0;
+}
+
+.quote-sales-options {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 12px;
+  padding: 15px;
+  border: 1px solid rgba(181, 139, 42, .28);
+  border-radius: 15px;
+  background: #fffaf0;
+}
+
+.quote-sales-options > div {
+  display: grid;
+  flex: 1 1 300px;
+  gap: 4px;
+}
+
+.quote-sales-options > div strong {
+  color: #3f3128;
+  font-size: 14px;
+}
+
+.quote-sales-options > div span {
+  color: #74695d;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.quote-sales-options button:last-child {
+  background: transparent;
+  color: #5c1a1a;
+}
+
+.quote-sales-options button:disabled,
+.quote-payment-step button:disabled {
+  cursor: wait;
+  opacity: .65;
+}
+
 .order-card {
   max-width: 920px;
 }
@@ -1049,6 +1174,11 @@
   .admin-quote-response__price {
     justify-items: start;
     text-align: left;
+  }
+
+  .quote-payment-step button,
+  .quote-sales-options button {
+    width: 100%;
   }
 
   .profile-photo-field {

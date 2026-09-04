@@ -24,11 +24,50 @@ const serialize = (quote, accessToken) => ({
   currency: quote.currency,
   status: quote.status,
   expiresAt: quote.expiresAt,
+  customerDecision: quote.customerDecision === "pending" && quote.status === "accepted" ? "accepted" : quote.customerDecision || (quote.status === "accepted" ? "accepted" : "pending"),
+  customerDecisionAt: quote.customerDecisionAt,
+  salesContactRequestedAt: quote.salesContactRequestedAt,
+  salesContactChannel: quote.salesContactChannel || "",
+  salesContactChannelSelectedAt: quote.salesContactChannelSelectedAt,
+  paymentMethod: quote.paymentMethod || "pending",
+  paymentMethodSelectedAt: quote.paymentMethodSelectedAt,
   internalNotes: quote.internalNotes || "",
   customerNotes: quote.customerNotes || "",
   createdAt: quote.createdAt,
   updatedAt: quote.updatedAt,
 });
+
+function ensureCustomerActionable(quote) {
+  if (!["quoted", "accepted"].includes(quote.status)) {
+    throw new AppError(409, "QUOTE_NOT_READY", "This quote is not ready for a customer decision yet");
+  }
+  if (quote.expiresAt <= new Date()) throw new AppError(410, "QUOTE_EXPIRED", "This quote has expired");
+}
+
+async function acceptQuote(quote) {
+  ensureCustomerActionable(quote);
+  quote.status = "accepted";
+  quote.customerDecision = "accepted";
+  quote.customerDecisionAt = new Date();
+  await quote.save();
+  return quote;
+}
+
+async function requestSalesContact(quote, channel) {
+  ensureCustomerActionable(quote);
+  const now = new Date();
+  if (quote.customerDecision !== "accepted") {
+    if (quote.customerDecision !== "sales_requested") quote.customerDecisionAt = now;
+    quote.customerDecision = "sales_requested";
+  }
+  quote.salesContactRequestedAt = quote.salesContactRequestedAt || now;
+  if (channel) {
+    quote.salesContactChannel = channel;
+    quote.salesContactChannelSelectedAt = now;
+  }
+  await quote.save();
+  return quote;
+}
 
 const serializeCoupon = (coupon) => ({
   id: coupon._id.toString(),
@@ -65,13 +104,12 @@ export async function getPublic(req, res) {
 
 export async function acceptPublic(req, res) {
   const quote = await quoteService.getPublicQuote(req.params.reference, req.get("x-quote-token"));
-  if (!["quoted", "accepted"].includes(quote.status)) {
-    throw new AppError(409, "QUOTE_NOT_READY", "This quote is not ready to accept yet");
-  }
-  if (quote.expiresAt <= new Date()) throw new AppError(410, "QUOTE_EXPIRED", "This quote has expired");
-  quote.status = "accepted";
-  await quote.save();
-  return sendData(res, serialize(quote));
+  return sendData(res, serialize(await acceptQuote(quote)));
+}
+
+export async function contactSalesPublic(req, res) {
+  const quote = await quoteService.getPublicQuote(req.params.reference, req.get("x-quote-token"));
+  return sendData(res, serialize(await requestSalesContact(quote, req.body.channel)));
 }
 
 export async function listMine(req, res) {
@@ -92,13 +130,13 @@ export async function getMine(req, res) {
 export async function acceptMine(req, res) {
   const quote = await Quote.findOne({ _id: req.params.id, user: req.auth.userId });
   if (!quote) throw new AppError(404, "QUOTE_NOT_FOUND", "Quote was not found");
-  if (!["quoted", "accepted"].includes(quote.status)) {
-    throw new AppError(409, "QUOTE_NOT_READY", "This quote is not ready to accept yet");
-  }
-  if (quote.expiresAt <= new Date()) throw new AppError(410, "QUOTE_EXPIRED", "This quote has expired");
-  quote.status = "accepted";
-  await quote.save();
-  return sendData(res, serialize(quote));
+  return sendData(res, serialize(await acceptQuote(quote)));
+}
+
+export async function contactSalesMine(req, res) {
+  const quote = await Quote.findOne({ _id: req.params.id, user: req.auth.userId });
+  if (!quote) throw new AppError(404, "QUOTE_NOT_FOUND", "Quote was not found");
+  return sendData(res, serialize(await requestSalesContact(quote, req.body.channel)));
 }
 
 export async function listAdmin(req, res) {
@@ -120,14 +158,29 @@ export async function getAdmin(req, res) {
 
 export async function updateQuote(req, res) {
   const update = { ...req.body };
-  if (update.subtotal != null || update.discount != null || update.total != null) {
-    const current = await Quote.findById(req.params.id);
+  let current;
+  if (update.subtotal != null || update.discount != null || update.total != null || update.paymentMethod != null || update.status === "accepted") {
+    current = await Quote.findById(req.params.id);
     if (!current) throw new AppError(404, "QUOTE_NOT_FOUND", "Quote was not found");
+  }
+  if (update.status === "accepted" && current.status !== "accepted" && current.customerDecision !== "accepted") {
+    throw new AppError(409, "CUSTOMER_ACCEPTANCE_REQUIRED", "Only the customer can accept a quotation");
+  }
+  if (update.subtotal != null || update.discount != null || update.total != null) {
     const subtotal = update.subtotal ?? current.subtotal;
     const discount = Math.min(update.discount ?? current.discount, subtotal);
     update.subtotal = subtotal;
     update.discount = discount;
     update.total = update.total ?? Math.max(subtotal - discount, 0);
+  }
+  if (update.paymentMethod != null) {
+    const nextStatus = update.status ?? current.status;
+    const hasCustomerAcceptance = current.customerDecision === "accepted"
+      || (current.status === "accepted" && !current.customerDecisionAt);
+    if (nextStatus !== "accepted" || !hasCustomerAcceptance) {
+      throw new AppError(409, "QUOTE_NOT_ACCEPTED", "Payment method can only be selected after the customer accepts the quote");
+    }
+    if (update.paymentMethod !== current.paymentMethod) update.paymentMethodSelectedAt = new Date();
   }
   const quote = await Quote.findByIdAndUpdate(req.params.id, update, { new: true, runValidators: true }).select("+internalNotes");
   if (!quote) throw new AppError(404, "QUOTE_NOT_FOUND", "Quote was not found");

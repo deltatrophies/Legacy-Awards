@@ -35,6 +35,13 @@ const quoteSchema = new mongoose.Schema({
   currency: { type: String, default: "INR", immutable: true },
   status: { type: String, enum: ["submitted", "reviewing", "quoted", "accepted", "expired", "cancelled"], default: "submitted", index: true },
   expiresAt: { type: Date, required: true, index: true },
+  customerDecision: { type: String, enum: ["pending", "accepted", "sales_requested"], default: "pending", index: true },
+  customerDecisionAt: Date,
+  salesContactRequestedAt: Date,
+  salesContactChannel: { type: String, enum: ["whatsapp", "call"] },
+  salesContactChannelSelectedAt: Date,
+  paymentMethod: { type: String, enum: ["pending", "razorpay", "whatsapp"], default: "pending", index: true },
+  paymentMethodSelectedAt: Date,
   internalNotes: { type: String, select: false },
   customerNotes: { type: String, trim: true, default: "" },
 }, { timestamps: true, versionKey: false });

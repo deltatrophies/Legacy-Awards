@@ -28,4 +28,20 @@ describe("HTTP application", () => {
     expect(response.status).toBe(401);
     expect(response.body.error.code).toBe("AUTH_REQUIRED");
   });
+
+  it("validates sales contact channels before accessing a quote", async () => {
+    const response = await request(app)
+      .post("/api/v1/quotes/public/LAQ-TEST/contact-sales")
+      .send({ channel: "email" });
+    expect(response.status).toBe(422);
+    expect(response.body.error.code).toBe("VALIDATION_ERROR");
+  });
+
+  it("protects logged-in quote decisions from guests", async () => {
+    const response = await request(app)
+      .post("/api/v1/quotes/mine/507f1f77bcf86cd799439011/contact-sales")
+      .send({ channel: "call" });
+    expect(response.status).toBe(401);
+    expect(response.body.error.code).toBe("AUTH_REQUIRED");
+  });
 });

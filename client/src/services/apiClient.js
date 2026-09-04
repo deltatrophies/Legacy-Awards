@@ -181,8 +181,14 @@ export const quoteApi = {
   mine: () => apiRequest("/quotes/mine?limit=100"),
   getMine: (id) => apiRequest(`/quotes/mine/${encodeURIComponent(id)}`),
   acceptMine: (id) => apiRequest(`/quotes/mine/${encodeURIComponent(id)}/accept`, { method: "POST" }),
+  contactSalesMine: (id, channel) => apiRequest(`/quotes/mine/${encodeURIComponent(id)}/contact-sales`, { method: "POST", body: JSON.stringify(channel ? { channel } : {}) }),
   public: (reference, accessToken) => apiRequest(`/quotes/public/${encodeURIComponent(reference)}`, { headers: { "x-quote-token": accessToken || "" } }, false),
   accept: (reference, accessToken) => apiRequest(`/quotes/public/${encodeURIComponent(reference)}/accept`, { method: "POST", headers: { "x-quote-token": accessToken || "" } }, false),
+  contactSales: (reference, accessToken, channel) => apiRequest(`/quotes/public/${encodeURIComponent(reference)}/contact-sales`, {
+    method: "POST",
+    headers: { "x-quote-token": accessToken || "" },
+    body: JSON.stringify(channel ? { channel } : {}),
+  }, false),
   customPricing: () => apiRequest("/quotes/custom-pricing", {}, false),
 };
 

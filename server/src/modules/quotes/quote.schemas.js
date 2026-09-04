@@ -51,12 +51,17 @@ export const validateCouponSchema = z.object({
   subtotal: z.coerce.number().int().nonnegative(),
 }).strict();
 
+export const contactSalesSchema = z.object({
+  channel: z.enum(["whatsapp", "call"]).optional(),
+}).strict();
+
 export const updateQuoteSchema = z.object({
   status: z.enum(["submitted", "reviewing", "quoted", "accepted", "expired", "cancelled"]).optional(),
   subtotal: z.coerce.number().int().nonnegative().optional(),
   discount: z.coerce.number().int().nonnegative().optional(),
   total: z.coerce.number().int().nonnegative().optional(),
   expiresAt: z.coerce.date().optional(),
+  paymentMethod: z.enum(["pending", "razorpay", "whatsapp"]).optional(),
   internalNotes: z.string().max(5000).optional(),
   customerNotes: z.string().trim().max(2000).optional(),
 }).strict().refine((value) => Object.keys(value).length > 0, { message: "At least one field is required" });

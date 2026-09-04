@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
+import { createWhatsAppUrl } from "../config/business.js";
 import { readStorage, writeStorage } from "../utils/storage.js";
 import { formatPrice } from "../data/products.js";
-import { ORDER_STATUS_CHANGED_EVENT, ORDER_STATUS_CHANGED_STORAGE_KEY, orderApi, paymentApi, quoteApi } from "../services/apiClient.js";
+import { ORDER_STATUS_CHANGED_EVENT, ORDER_STATUS_CHANGED_STORAGE_KEY, orderApi, quoteApi, settingsApi } from "../services/apiClient.js";
 import "../styles/pages/account.css";
 
 function AccountShell({ children }) {
@@ -27,22 +28,11 @@ function formatDate(value) {
 const quoteStatusCopy = {
   submitted: "Request received. Our team will review your items.",
   reviewing: "We are checking pricing, artwork and timeline.",
-  quoted: "Final quote is ready. Accept it to unlock online payment.",
-  accepted: "Quote accepted. You can complete payment now.",
+  quoted: "Final quote is ready. Accept it or speak with our sales team if you need help.",
+  accepted: "Quotation accepted. Admin is confirming the payment method.",
   expired: "This quote has expired. Send a fresh request to continue.",
   cancelled: "This quote was cancelled.",
 };
-
-function loadRazorpay() {
-  if (window.Razorpay) return Promise.resolve(true);
-  return new Promise((resolve) => {
-    const script = document.createElement("script");
-    script.src = "https://checkout.razorpay.com/v1/checkout.js";
-    script.onload = () => resolve(true);
-    script.onerror = () => resolve(false);
-    document.body.appendChild(script);
-  });
-}
 
 export default function OrdersPage() {
   const { user, loading } = useAuth();
@@ -52,12 +42,23 @@ export default function OrdersPage() {
   const [fallbackQuote, setFallbackQuote] = useState(lastQuote);
   const [historyLoading, setHistoryLoading] = useState(true);
   const [historyError, setHistoryError] = useState("");
+  const [historyNotice, setHistoryNotice] = useState("");
   const [busyQuote, setBusyQuote] = useState("");
   const [activeTab, setActiveTab] = useState("quotes");
+  const [businessContact, setBusinessContact] = useState({ businessName: "Legacy Awards", phone: "", whatsapp: "" });
 
   useEffect(() => {
     document.title = "My Orders - Legacy Awards";
+    settingsApi.get().then((settings) => {
+      if (settings) setBusinessContact((current) => ({ ...current, ...settings }));
+    }).catch(() => {});
   }, []);
+
+  useEffect(() => {
+    if (!historyNotice) return undefined;
+    const timer = window.setTimeout(() => setHistoryNotice(""), 5000);
+    return () => window.clearTimeout(timer);
+  }, [historyNotice]);
 
   const loadHistory = async () => {
     try {
@@ -131,6 +132,7 @@ export default function OrdersPage() {
       const token = quote.accessToken || (lastQuote?.reference === quote.reference ? lastQuote.accessToken : "");
       if (quote.id && !quote.accessToken) await quoteApi.acceptMine(quote.id);
       else await quoteApi.accept(quote.reference, token);
+      setHistoryNotice("Quotation accepted. Legacy Awards has been notified and will now select the payment method.");
       await loadHistory();
     } catch (requestError) {
       setHistoryError(requestError.message || "Could not accept this quote.");
@@ -139,45 +141,43 @@ export default function OrdersPage() {
     }
   };
 
-  const payQuote = async (quote) => {
+  const requestSalesContact = async (quote, channel) => {
     setBusyQuote(quote.reference || quote.id);
     setHistoryError("");
     try {
       const token = quote.accessToken || (lastQuote?.reference === quote.reference ? lastQuote.accessToken : "");
-      const gateway = await paymentApi.createOrder(quote.reference, token);
-      const ready = await loadRazorpay();
-      if (!ready) throw new Error("Payment checkout could not load. Please try again or contact us on WhatsApp.");
-      await new Promise((resolve, reject) => {
-        const checkout = new window.Razorpay({
-          key: gateway.keyId,
-          amount: gateway.amount * 100,
-          currency: gateway.currency,
-          name: "Legacy Awards",
-          description: quote.reference,
-          order_id: gateway.gatewayOrderId,
-          prefill: {
-            name: quote.customer?.name || "",
-            email: quote.customer?.email || "",
-            contact: quote.customer?.phone || "",
-          },
-          handler: async (response) => {
-            try {
-              await paymentApi.verify({ quoteReference: quote.reference, ...response }, token);
-              resolve();
-            } catch (error) {
-              reject(error);
-            }
-          },
-          modal: { ondismiss: () => reject(new Error("Payment was cancelled before completion.")) },
-        });
-        checkout.open();
-      });
+      if (quote.id && !quote.accessToken) await quoteApi.contactSalesMine(quote.id, channel);
+      else await quoteApi.contactSales(quote.reference, token, channel);
+      setHistoryNotice(channel
+        ? `Your ${channel === "whatsapp" ? "WhatsApp" : "call"} preference has been shared with our sales team.`
+        : "Your request to speak with a sales executive has been shared. Our team can contact you even if you do not choose a channel.");
       await loadHistory();
+      if (channel === "whatsapp") {
+        const url = createWhatsAppUrl(`Hi ${businessContact.businessName}, I want to discuss quotation ${quote.reference}.`, businessContact.whatsapp);
+        if (url.startsWith("http")) window.open(url, "_blank", "noopener,noreferrer");
+        else window.location.assign(url);
+      }
+      if (channel === "call") {
+        const number = String(businessContact.phone || businessContact.whatsapp || "").replace(/[^\d+]/g, "");
+        window.location.assign(number ? `tel:${number.startsWith("+") ? number : `+${number}`}` : "/contact");
+      }
+      return true;
     } catch (requestError) {
-      setHistoryError(requestError.message || "Payment could not be completed.");
+      setHistoryError(requestError.message || "Could not notify the sales team.");
+      return false;
     } finally {
       setBusyQuote("");
     }
+  };
+
+  const openPaymentWhatsApp = (quote) => {
+    const url = createWhatsAppUrl(`Hi ${businessContact.businessName}, I accepted quotation ${quote.reference}. Please share the payment QR/details.`, businessContact.whatsapp);
+    if (url.startsWith("http")) window.open(url, "_blank", "noopener,noreferrer");
+    else window.location.assign(url);
+  };
+
+  const showOnlinePaymentNotice = () => {
+    setHistoryNotice("Online payment has been selected for this quotation. Secure checkout will be enabled here shortly.");
   };
 
   if (loading) return <AccountShell><div className="account-card">Loading orders...</div></AccountShell>;
@@ -185,6 +185,7 @@ export default function OrdersPage() {
   return (
     <AccountShell>
       {historyError ? <p className="account-form-error">{historyError}</p> : null}
+      {historyNotice ? <p className="account-form-success">{historyNotice}</p> : null}
       {historyLoading ? <div className="account-card">Loading latest status...</div> : null}
 
       {!historyLoading && hasHistory ? (
@@ -228,7 +229,9 @@ export default function OrdersPage() {
                       busy={busyQuote === (quote.reference || quote.id)}
                       key={quote.id || quote.reference}
                       onAccept={acceptQuote}
-                      onPay={payQuote}
+                      onContactSales={requestSalesContact}
+                      onOpenPaymentWhatsApp={openPaymentWhatsApp}
+                      onPay={showOnlinePaymentNotice}
                       record={quote}
                       type="quote"
                     />
@@ -279,16 +282,27 @@ function TabEmpty({ text, title }) {
   );
 }
 
-function HistoryCard({ busy = false, onAccept, onPay, record, type }) {
+function HistoryCard({ busy = false, onAccept, onContactSales, onOpenPaymentWhatsApp, onPay, record, type }) {
+  const [showSalesChoices, setShowSalesChoices] = useState(record.customerDecision === "sales_requested");
   const items = record.items || [];
-  const status = type === "quote" ? record.status : record.fulfillmentStatus;
+  const quoteExpired = type === "quote" && record.status !== "accepted" && record.expiresAt && new Date(record.expiresAt) <= new Date();
+  const status = type === "quote" ? (quoteExpired ? "expired" : record.status) : record.fulfillmentStatus;
   const label = type === "quote" ? "Quote request" : "Paid order";
   const statusLabel = type === "quote" ? "Quote status" : "Order status";
-  const canAccept = type === "quote" && status === "quoted";
-  const canPay = type === "quote" && status === "accepted";
+  const customerAccepted = type === "quote" && (record.customerDecision === "accepted" || status === "accepted");
+  const canAccept = type === "quote" && status === "quoted" && !customerAccepted;
+  const canContactSales = type === "quote" && status === "quoted" && !customerAccepted;
   const itemEstimate = items.reduce((sum, item) => sum + Number(item.lineTotal || 0), 0);
   const requestEstimate = record.requestEstimate ?? (itemEstimate > 0 ? itemEstimate : record.total ?? 0);
   const hasAdminQuote = type === "quote" && (Boolean(record.customerNotes) || ["quoted", "accepted"].includes(status));
+
+  useEffect(() => {
+    if (record.customerDecision === "sales_requested") setShowSalesChoices(true);
+  }, [record.customerDecision]);
+
+  const beginSalesContact = async () => {
+    if (await onContactSales(record)) setShowSalesChoices(true);
+  };
 
   return (
     <article className="order-history-card">
@@ -330,6 +344,41 @@ function HistoryCard({ busy = false, onAccept, onPay, record, type }) {
           {record.expiresAt ? <small>Quote valid until {formatDate(record.expiresAt)}</small> : null}
         </section>
       ) : null}
+      {record.customerDecision === "sales_requested" ? (
+        <div className="quote-decision-confirmation is-sales">
+          <strong>Sales conversation requested</strong>
+          <span>Our team has your request{record.salesContactChannel ? ` and your ${record.salesContactChannel === "whatsapp" ? "WhatsApp" : "call"} preference` : " and can contact you directly"}.</span>
+        </div>
+      ) : null}
+      {customerAccepted ? (
+        <div className="quote-decision-confirmation is-accepted">
+          <strong>Quotation accepted</strong>
+          <span>Legacy Awards has been notified. Your quoted price is now confirmed.</span>
+        </div>
+      ) : null}
+      {customerAccepted ? (
+        <section className={`quote-payment-step is-${record.paymentMethod || "pending"}`}>
+          <span>Payment next step</span>
+          {record.paymentMethod === "whatsapp" ? (
+            <>
+              <strong>Payment through WhatsApp</strong>
+              <p>Our admin has selected manual payment. Continue on WhatsApp to receive the verified QR or bank details.</p>
+              <button type="button" onClick={() => onOpenPaymentWhatsApp(record)}>Get payment details on WhatsApp</button>
+            </>
+          ) : record.paymentMethod === "razorpay" ? (
+            <>
+              <strong>Online payment requested</strong>
+              <p>Your quote is ready for website payment.</p>
+              <button type="button" onClick={() => onPay(record)}>Pay quoted amount</button>
+            </>
+          ) : (
+            <>
+              <strong>Payment method is being confirmed</strong>
+              <p>Admin will choose secure website payment or manual WhatsApp payment. This page updates automatically.</p>
+            </>
+          )}
+        </section>
+      ) : null}
       <div className="order-items">
         {items.slice(0, 4).map((item, index) => (
           <div key={item._id || item.productId || `${item.name}-${index}`}>
@@ -340,9 +389,19 @@ function HistoryCard({ busy = false, onAccept, onPay, record, type }) {
       </div>
       <div className="account-actions">
         {canAccept ? <button type="button" disabled={busy} onClick={() => onAccept(record)}>{busy ? "Accepting..." : "Accept quote"}</button> : null}
-        {canPay ? <button type="button" disabled={busy} onClick={() => onPay(record)}>{busy ? "Opening..." : "Pay now"}</button> : null}
+        {canContactSales && !showSalesChoices ? <button type="button" disabled={busy} onClick={beginSalesContact}>{busy ? "Notifying..." : "Talk to a sales executive"}</button> : null}
         <Link to="/products">Order more</Link>
       </div>
+      {canContactSales && showSalesChoices ? (
+        <div className="quote-sales-options">
+          <div>
+            <strong>How would you like to connect?</strong>
+            <span>Your request is already visible to admin. Selecting a channel is optional.</span>
+          </div>
+          <button type="button" disabled={busy} onClick={() => onContactSales(record, "whatsapp")}>Chat on WhatsApp</button>
+          <button type="button" disabled={busy} onClick={() => onContactSales(record, "call")}>Call sales team</button>
+        </div>
+      ) : null}
     </article>
   );
 }

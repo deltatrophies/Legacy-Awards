@@ -95,6 +95,19 @@ function getId(item) {
   return item?._id || item?.id || item?.databaseId;
 }
 
+function customerContactNumber(value, defaultCountryCode = "91") {
+  const digits = String(value || "").replace(/\D/g, "");
+  if (!digits) return "";
+  return digits.length === 10 ? `${defaultCountryCode}${digits}` : digits;
+}
+
+function customerWhatsAppUrl(customer, reference) {
+  const number = customerContactNumber(customer?.phone);
+  if (!number) return "";
+  const message = `Hi ${customer?.name || "there"}, this is Legacy Awards regarding quotation ${reference}. We are ready to help with your payment and next steps.`;
+  return `https://wa.me/${number}?text=${encodeURIComponent(message)}`;
+}
+
 function AdminGuard({ children }) {
   const location = useLocation();
   const { user, loading } = useAuth();
@@ -160,6 +173,34 @@ export default function AdminPanelPage() {
   useEffect(() => {
     refreshAll();
   }, [refreshAll]);
+
+  useEffect(() => {
+    if (activeSection !== "orders") return undefined;
+    let active = true;
+    let refreshing = false;
+    const refreshOrderPipeline = async () => {
+      if (refreshing || document.hidden) return;
+      refreshing = true;
+      try {
+        const [quoteData, orderData] = await Promise.all([adminApi.listQuotes(), adminApi.listOrders()]);
+        if (active) {
+          setQuotes(quoteData || []);
+          setOrders(orderData || []);
+        }
+      } catch {
+        // The regular refresh button remains available if a background refresh fails.
+      } finally {
+        refreshing = false;
+      }
+    };
+    const timer = window.setInterval(refreshOrderPipeline, 5000);
+    window.addEventListener("focus", refreshOrderPipeline);
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+      window.removeEventListener("focus", refreshOrderPipeline);
+    };
+  }, [activeSection]);
 
   const announce = (message) => {
     setNotice(message);
@@ -1117,10 +1158,12 @@ function OrderManager({ orders, quotes, detailType, detailId, onUpdated, onError
 
   const updateQuoteStatus = async (quote, input) => {
     try {
-      await adminApi.updateQuote(getId(quote), typeof input === "string" ? { status: input } : input);
+      const updated = await adminApi.updateQuote(getId(quote), typeof input === "string" ? { status: input } : input);
       onUpdated();
+      return updated;
     } catch (requestError) {
       onError(requestError);
+      return null;
     }
   };
 
@@ -1193,6 +1236,7 @@ function OrderManager({ orders, quotes, detailType, detailId, onUpdated, onError
                 <div className="admin-order-main">
                   <strong>{quote.reference}</strong>
                   <small>{formatDate(quote.createdAt)} · {quote.items?.length || 0} item{quote.items?.length === 1 ? "" : "s"}</small>
+                  {quote.customerDecision && quote.customerDecision !== "pending" ? <span className={`admin-decision-label is-${quote.customerDecision}`}>{quote.customerDecision === "accepted" ? "Customer accepted" : "Sales contact requested"}</span> : null}
                 </div>
                 <div className="admin-order-customer">
                   <strong>{quote.customer?.name || "Customer"}</strong>
@@ -1200,7 +1244,7 @@ function OrderManager({ orders, quotes, detailType, detailId, onUpdated, onError
                 </div>
                 <div className="admin-order-total">{formatMoney(quote.total)}</div>
                 <select value={quote.status} onClick={(event) => event.stopPropagation()} onChange={(event) => updateQuoteStatus(quote, event.target.value)}>
-                  {quoteStatuses.map((status) => <option key={status} value={status}>{status}</option>)}
+                  {quoteStatuses.filter((status) => status !== "accepted" || quote.status === "accepted").map((status) => <option key={status} value={status}>{status}</option>)}
                 </select>
               </article>
             ))}
@@ -1252,6 +1296,7 @@ function OrderDetail({ kind, quote, order, onBack, onQuoteStatus, onOrderStatus 
     discount: record.discount || 0,
     total: record.total || 0,
     expiresAt: toLocalDateTimeInput(record.expiresAt),
+    paymentMethod: record.paymentMethod || "pending",
     customerNotes: record.customerNotes || "",
     internalNotes: record.internalNotes || "",
   }));
@@ -1265,10 +1310,40 @@ function OrderDetail({ kind, quote, order, onBack, onQuoteStatus, onOrderStatus 
       discount: record.discount || 0,
       total: record.total || 0,
       expiresAt: toLocalDateTimeInput(record.expiresAt),
+      paymentMethod: record.paymentMethod || "pending",
       customerNotes: record.customerNotes || "",
       internalNotes: record.internalNotes || "",
     });
-  }, [isQuote, record]);
+  }, [
+    isQuote,
+    record.customerNotes,
+    record.discount,
+    record.expiresAt,
+    record.id,
+    record.internalNotes,
+    record.paymentMethod,
+    record.reference,
+    record.status,
+    record.subtotal,
+    record.total,
+  ]);
+
+  const customerAccepted = isQuote && (record.customerDecision === "accepted" || record.status === "accepted");
+  const salesRequested = isQuote && record.customerDecision === "sales_requested";
+  const customerWhatsApp = customerWhatsAppUrl(customer, record.reference);
+  const customerCallNumber = customerContactNumber(customer.phone);
+
+  const choosePaymentMethod = async (paymentMethod) => {
+    setSavingQuote(true);
+    try {
+      const updated = await onQuoteStatus(record, { paymentMethod });
+      if (!updated) return;
+      setQuoteForm((current) => ({ ...current, paymentMethod }));
+      if (paymentMethod === "whatsapp" && customerWhatsApp) window.open(customerWhatsApp, "_blank", "noopener,noreferrer");
+    } finally {
+      setSavingQuote(false);
+    }
+  };
 
   const setQuoteField = (key, value) => setQuoteForm((current) => {
     const next = { ...current, [key]: value };
@@ -1309,7 +1384,7 @@ function OrderDetail({ kind, quote, order, onBack, onQuoteStatus, onOrderStatus 
         <div className="admin-detail-actions">
           {isQuote ? (
             <select value={record.status} onChange={(event) => onQuoteStatus(record, event.target.value)}>
-              {quoteStatuses.map((status) => <option key={status} value={status}>{status}</option>)}
+              {quoteStatuses.filter((status) => status !== "accepted" || record.status === "accepted").map((status) => <option key={status} value={status}>{status}</option>)}
             </select>
           ) : (
             <>
@@ -1342,9 +1417,29 @@ function OrderDetail({ kind, quote, order, onBack, onQuoteStatus, onOrderStatus 
             <div><dt>Discount</dt><dd>{formatMoney(record.discount)}</dd></div>
             <div><dt>Total</dt><dd>{formatMoney(record.total)}</dd></div>
             {isQuote ? <div><dt>Expires</dt><dd>{formatDate(record.expiresAt)}</dd></div> : <div><dt>Payment</dt><dd>{record.paymentStatus || "-"}</dd></div>}
+            {isQuote ? <div><dt>Customer decision</dt><dd>{record.customerDecision === "accepted" || record.status === "accepted" ? "Quotation accepted" : record.customerDecision === "sales_requested" ? "Wants sales assistance" : "Waiting for customer"}</dd></div> : null}
+            {isQuote && record.salesContactRequestedAt ? <div><dt>Sales requested</dt><dd>{formatDate(record.salesContactRequestedAt)}</dd></div> : null}
+            {isQuote && record.salesContactChannel ? <div><dt>Contact channel</dt><dd>{record.salesContactChannel === "whatsapp" ? "WhatsApp" : "Phone call"}</dd></div> : null}
+            {isQuote && customerAccepted ? <div><dt>Payment route</dt><dd>{record.paymentMethod === "razorpay" ? "Website / Razorpay" : record.paymentMethod === "whatsapp" ? "WhatsApp / manual QR" : "Not decided"}</dd></div> : null}
           </dl>
         </section>
       </div>
+
+      {isQuote && (salesRequested || customerAccepted) ? (
+        <section className={`admin-detail-card admin-customer-decision is-${customerAccepted ? "accepted" : "sales"}`}>
+          <div>
+            <p className="admin-eyebrow">Customer activity · auto-updated</p>
+            <h3>{customerAccepted ? "Customer accepted this quotation" : "Customer wants to speak with sales"}</h3>
+            <span>{customerAccepted
+              ? `Accepted ${record.customerDecisionAt ? formatDate(record.customerDecisionAt) : "recently"}. Choose how payment should be collected.`
+              : `${record.salesContactChannel ? `Preferred channel: ${record.salesContactChannel === "whatsapp" ? "WhatsApp" : "phone call"}.` : "No channel selected yet."} You can contact the customer proactively.`}</span>
+          </div>
+          <div className="admin-customer-contact-actions">
+            {customerWhatsApp ? <a href={customerWhatsApp} target="_blank" rel="noreferrer">WhatsApp customer</a> : null}
+            {customerCallNumber ? <a href={`tel:+${customerCallNumber}`}>Call customer</a> : null}
+          </div>
+        </section>
+      ) : null}
 
       {customer.notes ? (
         <section className="admin-detail-card">
@@ -1363,7 +1458,7 @@ function OrderDetail({ kind, quote, order, onBack, onQuoteStatus, onOrderStatus 
             <span className="admin-status-pill is-active">{formatMoney(quoteForm.total)}</span>
           </div>
           <div className="admin-form-grid">
-            <Field label="Status"><select value={quoteForm.status} onChange={(event) => setQuoteField("status", event.target.value)}>{quoteStatuses.map((status) => <option key={status} value={status}>{status}</option>)}</select></Field>
+            <Field label="Status"><select value={quoteForm.status} onChange={(event) => setQuoteField("status", event.target.value)}>{quoteStatuses.filter((status) => status !== "accepted" || record.status === "accepted").map((status) => <option key={status} value={status}>{status}</option>)}</select></Field>
             <Field label="Quote valid until"><input required step="60" type="datetime-local" value={quoteForm.expiresAt} onChange={(event) => setQuoteField("expiresAt", event.target.value)} /></Field>
             <Field label="Subtotal"><input min="0" type="number" value={quoteForm.subtotal} onChange={(event) => setQuoteField("subtotal", event.target.value)} /></Field>
             <Field label="Discount"><input min="0" type="number" value={quoteForm.discount} onChange={(event) => setQuoteField("discount", event.target.value)} /></Field>
@@ -1373,6 +1468,27 @@ function OrderDetail({ kind, quote, order, onBack, onQuoteStatus, onOrderStatus 
           <Field label="Internal note"><textarea rows="3" value={quoteForm.internalNotes} onChange={(event) => setQuoteField("internalNotes", event.target.value)} placeholder="Only visible to admin" /></Field>
           <button className="admin-primary-button" disabled={savingQuote} type="submit">{savingQuote ? "Saving quote..." : "Save quote details"}</button>
         </form>
+      ) : null}
+
+      {customerAccepted ? (
+        <section className="admin-detail-card admin-payment-routing">
+          <div>
+            <p className="admin-eyebrow">Payment routing</p>
+            <h3>Choose how this customer should pay</h3>
+            <span>The selected option appears automatically in the customer&apos;s My Orders page.</span>
+          </div>
+          <div className="admin-payment-options">
+            <button className={quoteForm.paymentMethod === "razorpay" ? "active" : ""} disabled={savingQuote} type="button" onClick={() => choosePaymentMethod("razorpay")}>
+              <strong>Website payment</strong>
+              <span>Show the online payment button. Gateway checkout will be connected later.</span>
+            </button>
+            <button className={quoteForm.paymentMethod === "whatsapp" ? "active" : ""} disabled={savingQuote} type="button" onClick={() => choosePaymentMethod("whatsapp")}>
+              <strong>WhatsApp payment</strong>
+              <span>Open the customer chat and arrange a verified QR/manual payment.</span>
+            </button>
+          </div>
+          {quoteForm.paymentMethod !== "pending" ? <button className="admin-payment-reset" disabled={savingQuote} type="button" onClick={() => choosePaymentMethod("pending")}>Clear payment selection</button> : null}
+        </section>
       ) : null}
 
       <section className="admin-detail-card">

@@ -838,6 +838,25 @@
   font-weight: 700;
 }
 
+.admin-decision-label {
+  width: max-content;
+  max-width: 100%;
+  margin-top: 3px;
+  padding: 5px 8px;
+  border-radius: 999px;
+  background: #fff2c9;
+  color: #77570c;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.admin-decision-label.is-accepted {
+  background: rgba(31, 107, 69, .1);
+  color: #1f6b45;
+}
+
 .admin-order-total {
   justify-self: end;
 }
@@ -932,6 +951,125 @@
 
 .admin-quote-editor .admin-primary-button {
   justify-self: start;
+}
+
+.admin-customer-decision {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  border-left: 5px solid #b58b2a;
+  background: #fffaf0;
+}
+
+.admin-customer-decision.is-accepted {
+  border-left-color: #1f6b45;
+  background: rgba(31, 107, 69, .06);
+}
+
+.admin-customer-decision > div:first-child {
+  display: grid;
+  gap: 6px;
+}
+
+.admin-customer-decision > div:first-child > span,
+.admin-payment-routing > div:first-child > span {
+  color: #6f6258;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.admin-customer-contact-actions {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.admin-customer-contact-actions a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid #5c1a1a;
+  border-radius: 999px;
+  background: #5c1a1a;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: .06em;
+  text-decoration: none;
+  text-transform: uppercase;
+}
+
+.admin-customer-contact-actions a:last-child {
+  background: transparent;
+  color: #5c1a1a;
+}
+
+.admin-payment-routing {
+  border: 1px solid rgba(92, 26, 26, .2);
+  background: #fffdf9;
+}
+
+.admin-payment-routing > div:first-child {
+  display: grid;
+  gap: 6px;
+}
+
+.admin-payment-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.admin-payment-options button {
+  display: grid;
+  gap: 7px;
+  min-height: 112px;
+  padding: 16px;
+  border: 1px solid #ddd2c5;
+  border-radius: 10px;
+  background: #fff;
+  color: #3f3128;
+  text-align: left;
+  cursor: pointer;
+}
+
+.admin-payment-options button:hover,
+.admin-payment-options button.active {
+  border-color: #5c1a1a;
+  background: #fff7e7;
+  box-shadow: inset 0 0 0 1px #5c1a1a;
+}
+
+.admin-payment-options button:disabled {
+  cursor: wait;
+  opacity: .65;
+}
+
+.admin-payment-options strong {
+  color: #5c1a1a;
+  font-size: 15px;
+}
+
+.admin-payment-options span {
+  color: #6f6258;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.admin-payment-reset {
+  width: max-content;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #7a2d2d;
+  font-size: 11px;
+  font-weight: 900;
+  text-decoration: underline;
+  cursor: pointer;
 }
 
 .admin-detail-card h3 {
@@ -1430,6 +1568,20 @@
     grid-template-columns: 1fr;
   }
 
+}
+
+@media (max-width: 700px) {
+  .admin-customer-decision {
+    display: grid;
+  }
+
+  .admin-payment-options {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-customer-contact-actions a {
+    flex: 1 1 160px;
+  }
 }
 
 @media (max-width: 760px) {
