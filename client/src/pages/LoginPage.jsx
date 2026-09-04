@@ -15,6 +15,11 @@ export default function LoginPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [form, setForm] = useState({ firstName: "", lastName: "", email: "", password: "", acceptedTerms: false });
+  const devCredentials = import.meta.env.DEV ? {
+    email: import.meta.env.VITE_DEV_CUSTOMER_EMAIL || "",
+    password: import.meta.env.VITE_DEV_CUSTOMER_PASSWORD || "",
+  } : null;
+  const canFillDevLogin = Boolean(devCredentials?.email && devCredentials?.password);
   const set = (key, value) => setForm((current) => ({ ...current, [key]: value }));
   const passwordMeetsPolicy = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,128}$/.test(form.password);
 
@@ -27,6 +32,13 @@ export default function LoginPage() {
       return requestError.details.map((detail) => detail.message).join(" ");
     }
     return requestError.message || "Authentication failed. Please try again.";
+  };
+
+  const fillDevLogin = () => {
+    if (!canFillDevLogin) return;
+    setIsLogin(true);
+    setForm((current) => ({ ...current, ...devCredentials }));
+    setError("");
   };
 
   const submit = async (event) => {
@@ -64,6 +76,9 @@ export default function LoginPage() {
             {isLogin ? "New to Legacy Awards? " : "Already have an account? "}
             <button type="button" className="auth-switch" onClick={() => { setIsLogin(!isLogin); setError(""); }}>{isLogin ? "Create account" : "Log in"}</button>
           </p>
+          {import.meta.env.DEV && canFillDevLogin ? (
+            <button className="customer-dev-login-button" type="button" onClick={fillDevLogin}>Fill dev login</button>
+          ) : null}
           <form id="signupForm" className={isLogin ? "auth-login" : ""} onSubmit={submit}>
             {!isLogin && <div className="field-row signup-only">
               <div className="field-group"><label htmlFor="firstName">First Name</label><input type="text" id="firstName" placeholder="First name" value={form.firstName} onChange={(event) => set("firstName", event.target.value)} autoComplete="given-name" required /></div>

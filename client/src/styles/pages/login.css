@@ -640,6 +640,26 @@ body::after {
 .legacy-page-login .auth-switch { background: none; border: 0; color: inherit; cursor: pointer; font: inherit; padding: 0; text-decoration: underline; }
 .legacy-page-login .auth-error { color: #9f1d1d; font-size: .88rem; margin: 0 0 12px; }
 
+.legacy-page-login .customer-dev-login-button {
+  align-self: flex-start;
+  min-height: 32px;
+  margin: 0 0 14px;
+  padding: 0 11px;
+  border: 1px dashed #b9a791;
+  border-radius: 7px;
+  background: #fffaf2;
+  color: #6a4c27;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .04em;
+  cursor: pointer;
+}
+
+.legacy-page-login .customer-dev-login-button:hover {
+  border-color: #6e1d1d;
+  color: #6e1d1d;
+}
+
 .legacy-page-login .password-hint {
   color: #7a6d60;
   font-size: .78rem;
