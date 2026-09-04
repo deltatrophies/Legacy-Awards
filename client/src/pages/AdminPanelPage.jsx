@@ -1334,12 +1334,20 @@ function OrderDetail({ kind, quote, order, onBack, onQuoteStatus, onOrderStatus 
   const customerCallNumber = customerContactNumber(customer.phone);
 
   const choosePaymentMethod = async (paymentMethod) => {
+    const chatWindow = paymentMethod === "whatsapp" && customerWhatsApp ? window.open("about:blank", "_blank") : null;
+    if (chatWindow) chatWindow.opener = null;
     setSavingQuote(true);
     try {
       const updated = await onQuoteStatus(record, { paymentMethod });
-      if (!updated) return;
+      if (!updated) {
+        chatWindow?.close();
+        return;
+      }
       setQuoteForm((current) => ({ ...current, paymentMethod }));
-      if (paymentMethod === "whatsapp" && customerWhatsApp) window.open(customerWhatsApp, "_blank", "noopener,noreferrer");
+      if (paymentMethod === "whatsapp" && customerWhatsApp) {
+        if (chatWindow) chatWindow.location.assign(customerWhatsApp);
+        else window.open(customerWhatsApp, "_blank", "noopener,noreferrer");
+      }
     } finally {
       setSavingQuote(false);
     }
@@ -1437,8 +1445,22 @@ function OrderDetail({ kind, quote, order, onBack, onQuoteStatus, onOrderStatus 
               : `${record.salesContactChannel ? `Preferred channel: ${record.salesContactChannel === "whatsapp" ? "WhatsApp" : "phone call"}.` : "No channel selected yet."} You can contact the customer proactively.`}</span>
           </div>
           <div className="admin-customer-contact-actions">
-            {customerWhatsApp ? <a href={customerWhatsApp} target="_blank" rel="noreferrer">WhatsApp customer</a> : null}
-            {customerCallNumber ? <a href={`tel:+${customerCallNumber}`}>Call customer</a> : null}
+            {customerAccepted ? (
+              <>
+                <button className={quoteForm.paymentMethod === "razorpay" ? "active" : ""} disabled={savingQuote} type="button" onClick={() => choosePaymentMethod("razorpay")}>
+                  {quoteForm.paymentMethod === "razorpay" ? "Website payment selected" : "Use website payment"}
+                </button>
+                <button className={quoteForm.paymentMethod === "whatsapp" ? "active" : "is-secondary"} disabled={savingQuote} type="button" onClick={() => choosePaymentMethod("whatsapp")}>
+                  {quoteForm.paymentMethod === "whatsapp" ? "Open WhatsApp payment" : "Use WhatsApp payment"}
+                </button>
+                {quoteForm.paymentMethod !== "pending" ? <button className="is-reset" disabled={savingQuote} type="button" onClick={() => choosePaymentMethod("pending")}>Clear selection</button> : null}
+              </>
+            ) : (
+              <>
+                {customerWhatsApp ? <a href={customerWhatsApp} target="_blank" rel="noreferrer">WhatsApp customer</a> : null}
+                {customerCallNumber ? <a className="is-secondary" href={`tel:+${customerCallNumber}`}>Call customer</a> : null}
+              </>
+            )}
           </div>
         </section>
       ) : null}
@@ -1470,27 +1492,6 @@ function OrderDetail({ kind, quote, order, onBack, onQuoteStatus, onOrderStatus 
           <Field label="Internal note"><textarea rows="3" value={quoteForm.internalNotes} onChange={(event) => setQuoteField("internalNotes", event.target.value)} placeholder="Only visible to admin" /></Field>
           <button className="admin-primary-button" disabled={savingQuote} type="submit">{savingQuote ? "Sending quotation..." : ["submitted", "reviewing"].includes(quoteForm.status) ? "Save & send quotation" : "Save quote details"}</button>
         </form>
-      ) : null}
-
-      {customerAccepted ? (
-        <section className="admin-detail-card admin-payment-routing">
-          <div>
-            <p className="admin-eyebrow">Payment routing</p>
-            <h3>Choose how this customer should pay</h3>
-            <span>The selected option appears automatically in the customer&apos;s My Orders page.</span>
-          </div>
-          <div className="admin-payment-options">
-            <button className={quoteForm.paymentMethod === "razorpay" ? "active" : ""} disabled={savingQuote} type="button" onClick={() => choosePaymentMethod("razorpay")}>
-              <strong>Website payment</strong>
-              <span>Show the online payment button. Gateway checkout will be connected later.</span>
-            </button>
-            <button className={quoteForm.paymentMethod === "whatsapp" ? "active" : ""} disabled={savingQuote} type="button" onClick={() => choosePaymentMethod("whatsapp")}>
-              <strong>WhatsApp payment</strong>
-              <span>Open the customer chat and arrange a verified QR/manual payment.</span>
-            </button>
-          </div>
-          {quoteForm.paymentMethod !== "pending" ? <button className="admin-payment-reset" disabled={savingQuote} type="button" onClick={() => choosePaymentMethod("pending")}>Clear payment selection</button> : null}
-        </section>
       ) : null}
 
       <section className="admin-detail-card">

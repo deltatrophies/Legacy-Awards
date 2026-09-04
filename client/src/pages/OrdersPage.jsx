@@ -142,6 +142,11 @@ export default function OrdersPage() {
   };
 
   const requestSalesContact = async (quote, channel) => {
+    const whatsappUrl = channel === "whatsapp"
+      ? createWhatsAppUrl(`Hi ${businessContact.businessName}, I want to discuss quotation ${quote.reference}.`, businessContact.whatsapp)
+      : "";
+    const chatWindow = whatsappUrl.startsWith("http") ? window.open("about:blank", "_blank") : null;
+    if (chatWindow) chatWindow.opener = null;
     setBusyQuote(quote.reference || quote.id);
     setHistoryError("");
     try {
@@ -153,9 +158,9 @@ export default function OrdersPage() {
         : "Your request to speak with a sales executive has been shared. Our team can contact you even if you do not choose a channel.");
       await loadHistory();
       if (channel === "whatsapp") {
-        const url = createWhatsAppUrl(`Hi ${businessContact.businessName}, I want to discuss quotation ${quote.reference}.`, businessContact.whatsapp);
-        if (url.startsWith("http")) window.open(url, "_blank", "noopener,noreferrer");
-        else window.location.assign(url);
+        if (chatWindow) chatWindow.location.assign(whatsappUrl);
+        else if (whatsappUrl.startsWith("http")) window.open(whatsappUrl, "_blank", "noopener,noreferrer");
+        else window.location.assign(whatsappUrl);
       }
       if (channel === "call") {
         const number = String(businessContact.phone || businessContact.whatsapp || "").replace(/[^\d+]/g, "");
@@ -163,6 +168,7 @@ export default function OrdersPage() {
       }
       return true;
     } catch (requestError) {
+      chatWindow?.close();
       setHistoryError(requestError.message || "Could not notify the sales team.");
       return false;
     } finally {
