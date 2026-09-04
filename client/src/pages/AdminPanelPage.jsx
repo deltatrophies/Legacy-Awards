@@ -79,6 +79,14 @@ function formatDate(value) {
   return new Intl.DateTimeFormat("en-IN", { dateStyle: "medium", timeStyle: "short" }).format(new Date(value));
 }
 
+function toLocalDateTimeInput(value) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
+  return localDate.toISOString().slice(0, 16);
+}
+
 function formatMoney(value) {
   return `Rs. ${Number(value || 0).toLocaleString("en-IN")}`;
 }
@@ -1243,7 +1251,7 @@ function OrderDetail({ kind, quote, order, onBack, onQuoteStatus, onOrderStatus 
     subtotal: record.subtotal || 0,
     discount: record.discount || 0,
     total: record.total || 0,
-    expiresAt: record.expiresAt ? String(record.expiresAt).slice(0, 10) : "",
+    expiresAt: toLocalDateTimeInput(record.expiresAt),
     customerNotes: record.customerNotes || "",
     internalNotes: record.internalNotes || "",
   }));
@@ -1256,7 +1264,7 @@ function OrderDetail({ kind, quote, order, onBack, onQuoteStatus, onOrderStatus 
       subtotal: record.subtotal || 0,
       discount: record.discount || 0,
       total: record.total || 0,
-      expiresAt: record.expiresAt ? String(record.expiresAt).slice(0, 10) : "",
+      expiresAt: toLocalDateTimeInput(record.expiresAt),
       customerNotes: record.customerNotes || "",
       internalNotes: record.internalNotes || "",
     });
@@ -1279,7 +1287,7 @@ function OrderDetail({ kind, quote, order, onBack, onQuoteStatus, onOrderStatus 
         subtotal: Number(quoteForm.subtotal || 0),
         discount: Number(quoteForm.discount || 0),
         total: Number(quoteForm.total || 0),
-        expiresAt: quoteForm.expiresAt || undefined,
+        expiresAt: quoteForm.expiresAt ? new Date(quoteForm.expiresAt).toISOString() : undefined,
         customerNotes: quoteForm.customerNotes,
         internalNotes: quoteForm.internalNotes,
       });
@@ -1356,7 +1364,7 @@ function OrderDetail({ kind, quote, order, onBack, onQuoteStatus, onOrderStatus 
           </div>
           <div className="admin-form-grid">
             <Field label="Status"><select value={quoteForm.status} onChange={(event) => setQuoteField("status", event.target.value)}>{quoteStatuses.map((status) => <option key={status} value={status}>{status}</option>)}</select></Field>
-            <Field label="Expires"><input type="date" value={quoteForm.expiresAt} onChange={(event) => setQuoteField("expiresAt", event.target.value)} /></Field>
+            <Field label="Quote valid until"><input required step="60" type="datetime-local" value={quoteForm.expiresAt} onChange={(event) => setQuoteField("expiresAt", event.target.value)} /></Field>
             <Field label="Subtotal"><input min="0" type="number" value={quoteForm.subtotal} onChange={(event) => setQuoteField("subtotal", event.target.value)} /></Field>
             <Field label="Discount"><input min="0" type="number" value={quoteForm.discount} onChange={(event) => setQuoteField("discount", event.target.value)} /></Field>
             <Field label="Total"><input min="0" type="number" value={quoteForm.total} onChange={(event) => setQuoteField("total", event.target.value)} /></Field>
