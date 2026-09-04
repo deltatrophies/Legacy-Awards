@@ -161,6 +161,7 @@ export async function createQuote(input, userId) {
     user: userId,
     customer: input.customer,
     items,
+    requestEstimate: subtotal - coupon.discount,
     subtotal,
     ...coupon,
     total: subtotal - coupon.discount,

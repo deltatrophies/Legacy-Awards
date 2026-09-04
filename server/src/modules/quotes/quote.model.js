@@ -27,6 +27,7 @@ const quoteSchema = new mongoose.Schema({
   user: { type: mongoose.Schema.Types.ObjectId, ref: "User", index: true },
   customer: { type: customerSchema, required: true },
   items: { type: [quoteItemSchema], required: true },
+  requestEstimate: { type: Number, min: 0, immutable: true },
   subtotal: { type: Number, required: true, min: 0 },
   couponCode: String,
   discount: { type: Number, required: true, min: 0, default: 0 },

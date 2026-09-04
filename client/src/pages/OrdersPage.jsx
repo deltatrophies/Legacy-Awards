@@ -286,6 +286,9 @@ function HistoryCard({ busy = false, onAccept, onPay, record, type }) {
   const statusLabel = type === "quote" ? "Quote status" : "Order status";
   const canAccept = type === "quote" && status === "quoted";
   const canPay = type === "quote" && status === "accepted";
+  const itemEstimate = items.reduce((sum, item) => sum + Number(item.lineTotal || 0), 0);
+  const requestEstimate = record.requestEstimate ?? (itemEstimate > 0 ? itemEstimate : record.total ?? 0);
+  const hasAdminQuote = type === "quote" && (Boolean(record.customerNotes) || ["quoted", "accepted"].includes(status));
 
   return (
     <article className="order-history-card">
@@ -302,11 +305,31 @@ function HistoryCard({ busy = false, onAccept, onPay, record, type }) {
       </div>
       <div className="order-metrics">
         <div><span>Items</span><strong>{items.length}</strong></div>
-        <div><span>{type === "quote" ? "Estimate" : "Total"}</span><strong>{formatPrice(record.total || 0)}</strong></div>
+        <div><span>{type === "quote" ? "Request estimate" : "Total"}</span><strong>{formatPrice(type === "quote" ? requestEstimate : record.total || 0)}</strong></div>
         <div><span>{type === "quote" ? "Preference" : "Payment"}</span><strong>{type === "quote" ? record.customer?.preference || "WhatsApp" : record.paymentStatus || "Pending"}</strong></div>
       </div>
       {type === "quote" ? <p className="order-status-note">{quoteStatusCopy[status] || "We will keep this request updated here."}</p> : null}
-      {record.customerNotes ? <p className="order-status-note">{record.customerNotes}</p> : null}
+      {hasAdminQuote ? (
+        <section className="admin-quote-response" aria-label="Quote from Legacy Awards">
+          <div className="admin-quote-response__head">
+            <div>
+              <span>Quote from Legacy Awards</span>
+              <strong>Admin response</strong>
+            </div>
+            <div className="admin-quote-response__price">
+              <span>Quoted price</span>
+              <strong>{formatPrice(record.total || 0)}</strong>
+            </div>
+          </div>
+          {record.customerNotes ? (
+            <div className="admin-quote-response__message">
+              <span>Message from our team</span>
+              <p>{record.customerNotes}</p>
+            </div>
+          ) : null}
+          {record.expiresAt ? <small>Quote valid until {formatDate(record.expiresAt)}</small> : null}
+        </section>
+      ) : null}
       <div className="order-items">
         {items.slice(0, 4).map((item, index) => (
           <div key={item._id || item.productId || `${item.name}-${index}`}>

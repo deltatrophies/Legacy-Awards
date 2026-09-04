@@ -386,6 +386,74 @@
   line-height: 1.55;
 }
 
+.admin-quote-response {
+  display: grid;
+  gap: 14px;
+  margin: 0 0 16px;
+  padding: 18px;
+  border: 1px solid rgba(92, 26, 26, .3);
+  border-left: 5px solid #5c1a1a;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #fff8e8, #fffdf8);
+  box-shadow: 0 12px 28px rgba(92, 26, 26, .08);
+}
+
+.admin-quote-response__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.admin-quote-response__head > div:first-child,
+.admin-quote-response__price,
+.admin-quote-response__message {
+  display: grid;
+  gap: 5px;
+}
+
+.admin-quote-response span {
+  color: #8f6911;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: .13em;
+  text-transform: uppercase;
+}
+
+.admin-quote-response__head > div:first-child strong {
+  color: #5c1a1a;
+  font: 400 22px/1.15 "DM Serif Display", Georgia, serif;
+}
+
+.admin-quote-response__price {
+  justify-items: end;
+  text-align: right;
+}
+
+.admin-quote-response__price strong {
+  color: #5c1a1a;
+  font-size: 24px;
+  line-height: 1.1;
+}
+
+.admin-quote-response__message {
+  padding-top: 13px;
+  border-top: 1px solid rgba(92, 26, 26, .14);
+}
+
+.admin-quote-response__message p {
+  margin: 0;
+  color: #3f372f;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.admin-quote-response > small {
+  color: #74695d;
+  font-size: 11px;
+  font-weight: 700;
+}
+
 .order-card {
   max-width: 920px;
 }
@@ -972,6 +1040,15 @@
 
   .order-status-wrap {
     justify-items: start;
+  }
+
+  .admin-quote-response__head {
+    display: grid;
+  }
+
+  .admin-quote-response__price {
+    justify-items: start;
+    text-align: left;
   }
 
   .profile-photo-field {

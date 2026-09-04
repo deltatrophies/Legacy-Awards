@@ -5,12 +5,19 @@ import { Quote } from "./quote.model.js";
 import { Coupon } from "./coupon.model.js";
 import * as quoteService from "./quote.service.js";
 
+const getRequestEstimate = (quote) => {
+  if (quote.requestEstimate != null) return quote.requestEstimate;
+  const itemEstimate = quote.items?.reduce((sum, item) => sum + Number(item.lineTotal || 0), 0);
+  return itemEstimate || quote.total || 0;
+};
+
 const serialize = (quote, accessToken) => ({
   id: quote._id.toString(),
   reference: quote.reference,
   ...(accessToken ? { accessToken } : {}),
   customer: quote.customer,
   items: quote.items,
+  requestEstimate: getRequestEstimate(quote),
   subtotal: quote.subtotal,
   discount: quote.discount,
   total: quote.total,
