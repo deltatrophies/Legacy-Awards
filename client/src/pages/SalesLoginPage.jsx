@@ -4,6 +4,11 @@ import { useAuth } from "../context/AuthContext.jsx";
 import "../styles/pages/admin.css";
 
 const allowedRoles = ["sales", "sales_manager", "staff", "admin"];
+const demoSalesAccounts = import.meta.env.DEV ? [
+  { label: "Sales 1", name: "Arjun", email: import.meta.env.VITE_DEV_SALES_1_EMAIL || "sales1@legacyawards.dev", password: import.meta.env.VITE_DEV_SALES_1_PASSWORD || "SalesOne@123" },
+  { label: "Sales 2", name: "Neha", email: import.meta.env.VITE_DEV_SALES_2_EMAIL || "sales2@legacyawards.dev", password: import.meta.env.VITE_DEV_SALES_2_PASSWORD || "SalesTwo@123" },
+  { label: "Sales 3", name: "Kabir", email: import.meta.env.VITE_DEV_SALES_3_EMAIL || "sales3@legacyawards.dev", password: import.meta.env.VITE_DEV_SALES_3_PASSWORD || "SalesThree@123" },
+] : [];
 
 export default function SalesLoginPage() {
   const navigate = useNavigate();
@@ -12,12 +17,6 @@ export default function SalesLoginPage() {
   const [form, setForm] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const devCredentials = import.meta.env.DEV ? {
-    email: import.meta.env.VITE_DEV_SALES_EMAIL || "",
-    password: import.meta.env.VITE_DEV_SALES_PASSWORD || "",
-  } : null;
-  const canFillDevLogin = Boolean(devCredentials?.email && devCredentials?.password);
-
   useEffect(() => { document.title = "Sales Login - Legacy Awards"; }, []);
 
   if (!loading && user && allowedRoles.includes(user.role)) {
@@ -53,7 +52,7 @@ export default function SalesLoginPage() {
             <label><span>Email</span><input autoComplete="email" required type="email" value={form.email} onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))} /></label>
             <label><span>Password</span><input autoComplete="current-password" minLength="8" required type="password" value={form.password} onChange={(event) => setForm((current) => ({ ...current, password: event.target.value }))} /></label>
             {error ? <p className="admin-alert admin-alert-error" role="alert">{error}</p> : null}
-            {import.meta.env.DEV && canFillDevLogin ? <button className="admin-dev-login-button" type="button" onClick={() => { setForm(devCredentials); setError(""); }}>Fill dev sales login</button> : null}
+            {demoSalesAccounts.length ? <div className="sales-demo-logins"><span>Development demo accounts</span><div>{demoSalesAccounts.map((account) => <button className="admin-dev-login-button" key={account.email} type="button" onClick={() => { setForm({ email: account.email, password: account.password }); setError(""); }}>{account.label}<small>{account.name}</small></button>)}</div><small>Choose an account to autofill its login details.</small></div> : null}
             <button className="admin-primary-button" disabled={submitting || loading} type="submit">{submitting ? "Checking..." : "Open sales workspace"}</button>
           </form>
           <Link className="admin-back-link" to="/">Back to website</Link>

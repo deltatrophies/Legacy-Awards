@@ -63,11 +63,14 @@ export async function register(input, userAgent) {
 }
 
 export async function login(input, userAgent) {
-  const user = await User.findOne({ email: input.email }).select("+passwordHash +sessions +sessionVersion");
+  const user = await User.findOne({ email: input.email }).select("+passwordHash +sessions +sessionVersion +developmentOnly");
   if (!user || !(await bcrypt.compare(input.password, user.passwordHash))) {
     throw new AppError(401, "INVALID_CREDENTIALS", "Email or password is incorrect");
   }
   if (!user.isActive) throw new AppError(403, "ACCOUNT_DISABLED", "This account has been disabled");
+  if (env.NODE_ENV === "production" && user.developmentOnly) {
+    throw new AppError(403, "DEMO_ACCOUNT_DISABLED", "Demo accounts are disabled in production");
+  }
   if (user.role === "customer") await attachGuestHistory(user);
   return { user, ...(await issueSession(user, userAgent)) };
 }
@@ -99,9 +102,9 @@ export async function rotateRefreshToken(token, userAgent) {
   } catch {
     throw new AppError(401, "INVALID_REFRESH_TOKEN", "Your session has expired");
   }
-  const user = await User.findById(payload.sub).select("+sessions +sessionVersion");
+  const user = await User.findById(payload.sub).select("+sessions +sessionVersion +developmentOnly");
   const tokenHash = hashToken(token);
-  if (!user || !user.isActive || !user.sessions.some((session) => session.tokenHash === tokenHash)) {
+  if (!user || !user.isActive || (env.NODE_ENV === "production" && user.developmentOnly) || !user.sessions.some((session) => session.tokenHash === tokenHash)) {
     throw new AppError(401, "INVALID_REFRESH_TOKEN", "Your session has expired");
   }
   user.sessions = user.sessions.filter((session) => session.tokenHash !== tokenHash);

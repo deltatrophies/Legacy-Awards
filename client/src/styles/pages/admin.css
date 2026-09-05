@@ -158,6 +158,52 @@
   color: #6e1d1d;
 }
 
+.sales-demo-logins {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px dashed #cdbfae;
+  border-radius: 9px;
+  background: #fffaf3;
+}
+
+.sales-demo-logins > span {
+  color: #5f5145;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.sales-demo-logins > div {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.sales-demo-logins .admin-dev-login-button {
+  display: grid;
+  justify-items: center;
+  width: 100%;
+  min-height: 48px;
+  padding: 7px;
+}
+
+.sales-demo-logins .admin-dev-login-button small {
+  font-size: 9px;
+  font-weight: 600;
+  opacity: 0.75;
+}
+
+.sales-demo-logins > small {
+  color: #837568;
+  font-size: 10px;
+}
+
+@media (max-width: 480px) {
+  .sales-demo-logins > div { grid-template-columns: 1fr; }
+}
+
 .admin-primary-button,
 .admin-secondary-button,
 .admin-user-box button,

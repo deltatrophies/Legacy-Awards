@@ -17,6 +17,7 @@ const userSchema = new mongoose.Schema({
   role: { type: String, enum: ["customer", "sales", "sales_manager", "staff", "admin"], default: "customer", index: true },
   phone: { type: String, trim: true, maxlength: 20 },
   jobTitle: { type: String, trim: true, maxlength: 100 },
+  developmentOnly: { type: Boolean, default: false, select: false },
   isActive: { type: Boolean, default: true },
   sessions: { type: [sessionSchema], default: [], select: false },
   sessionVersion: { type: Number, default: 0, select: false },

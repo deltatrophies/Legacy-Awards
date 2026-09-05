@@ -9,6 +9,7 @@
     "seed": "node src/database/seed.js",
     "catalog:import-jpg": "node src/database/importJpgCatalog.js",
     "admin:create": "node src/database/createAdmin.js",
+    "demo:sales": "node src/database/seedDemoSales.js",
     "smoke": "node scripts/smoke.js",
     "test": "vitest run",
     "test:watch": "vitest"

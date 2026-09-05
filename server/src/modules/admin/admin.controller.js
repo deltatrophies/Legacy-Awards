@@ -18,6 +18,7 @@ const teamMemberData = (user, workloads = {}) => ({
   phone: user.phone || "",
   jobTitle: user.jobTitle || (user.role === "sales_manager" ? "Sales Manager" : "Sales Executive"),
   role: user.role === "staff" ? "sales_manager" : user.role,
+  isDemo: Boolean(user.developmentOnly),
   isActive: user.isActive,
   lastLoginAt: user.lastLoginAt,
   createdAt: user.createdAt,
@@ -74,7 +75,7 @@ export async function summary(_req, res) {
 
 export async function listTeam(_req, res) {
   const [users, quoteWorkloads, orderWorkloads] = await Promise.all([
-    User.find({ role: { $in: teamRoles } }).sort({ isActive: -1, firstName: 1, lastName: 1 }).lean(),
+    User.find({ role: { $in: teamRoles } }).select("+developmentOnly").sort({ isActive: -1, firstName: 1, lastName: 1 }).lean(),
     Quote.aggregate([
       { $match: { assignedTo: { $ne: null }, status: { $nin: ["expired", "cancelled"] }, paymentStatus: { $nin: ["paid", "refunded"] } } },
       { $group: { _id: "$assignedTo", count: { $sum: 1 } } },

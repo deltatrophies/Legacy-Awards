@@ -16,8 +16,9 @@ export async function authenticate(req, _res, next) {
   }
 
   try {
-    const user = await User.findById(payload.sub).select("role isActive firstName lastName email +sessionVersion").lean();
+    const user = await User.findById(payload.sub).select("role isActive firstName lastName email +sessionVersion +developmentOnly").lean();
     if (!user?.isActive) return next(new AppError(401, "ACCOUNT_DISABLED", "This account is no longer active"));
+    if (env.NODE_ENV === "production" && user.developmentOnly) return next(new AppError(401, "DEMO_ACCOUNT_DISABLED", "Demo accounts are disabled in production"));
     if (Number(payload.ver || 0) !== Number(user.sessionVersion || 0)) return next(new AppError(401, "SESSION_REVOKED", "This session has been revoked"));
     req.auth = { userId: user._id.toString(), role: user.role, user };
     return next();
@@ -39,8 +40,8 @@ export async function optionalAuthenticate(req, _res, next) {
     return next();
   }
   try {
-    const user = await User.findById(payload.sub).select("role isActive firstName lastName email +sessionVersion").lean();
-    if (user?.isActive && Number(payload.ver || 0) === Number(user.sessionVersion || 0)) req.auth = { userId: user._id.toString(), role: user.role, user };
+    const user = await User.findById(payload.sub).select("role isActive firstName lastName email +sessionVersion +developmentOnly").lean();
+    if (user?.isActive && !(env.NODE_ENV === "production" && user.developmentOnly) && Number(payload.ver || 0) === Number(user.sessionVersion || 0)) req.auth = { userId: user._id.toString(), role: user.role, user };
   } catch (error) {
     return next(error);
   }
