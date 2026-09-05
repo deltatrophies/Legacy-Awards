@@ -12,6 +12,7 @@ const settingsSchema = new mongoose.Schema({
   instagramUrl: { type: String, trim: true, maxlength: 1000, default: "" },
   facebookUrl: { type: String, trim: true, maxlength: 1000, default: "" },
   customPricing: { type: mongoose.Schema.Types.Mixed, default: undefined },
+  salesAssignmentMode: { type: String, enum: ["manual", "round_robin"], default: "manual" },
 }, { timestamps: true, versionKey: false });
 
 export const Settings = mongoose.model("Settings", settingsSchema);

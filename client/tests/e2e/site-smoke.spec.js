@@ -29,6 +29,9 @@ test("account and admin entry points are reachable", async ({ page }) => {
 
   await page.goto("/admin/login");
   await expect(page.getByRole("heading", { name: /Admin Login/i })).toBeVisible();
+
+  await page.goto("/sales/login");
+  await expect(page.getByRole("heading", { name: /Sales Team Login/i })).toBeVisible();
 });
 
 test("catalogue item can reach cart and invalid quote details are blocked", async ({ page }) => {

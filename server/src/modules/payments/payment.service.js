@@ -8,6 +8,7 @@ import { Order } from "../orders/order.model.js";
 import { getPublicQuote } from "../quotes/quote.service.js";
 import { Quote } from "../quotes/quote.model.js";
 import { Payment } from "./payment.model.js";
+import { activityEntry, assertSalesRecordAccess } from "../../common/utils/salesAccess.js";
 
 const INITIALIZATION_TIMEOUT_MS = 2 * 60 * 1000;
 const SUPPORTED_WEBHOOKS = new Map([
@@ -40,6 +41,7 @@ function toAmountMinor(amount) {
 function buildOrderSnapshot(quote) {
   return {
     user: quote.user,
+    assignedTo: quote.assignedTo,
     customer: quote.customer.toObject?.() || quote.customer,
     items: quote.items.map((item) => item.toObject?.() || item),
     subtotal: quote.subtotal,
@@ -59,6 +61,8 @@ async function upsertPaidOrder({ quote, snapshot, paymentProvider, gatewayPaymen
             reference: createReference("LAO"),
             quote: quote._id,
             user: snapshot.user,
+            assignedTo: quote.assignedTo || snapshot.assignedTo,
+            assignedAt: quote.assignedAt,
             customer: snapshot.customer,
             items: snapshot.items,
             subtotal: snapshot.subtotal,
@@ -66,6 +70,14 @@ async function upsertPaidOrder({ quote, snapshot, paymentProvider, gatewayPaymen
             total: snapshot.total,
             currency: snapshot.currency,
             fulfillmentStatus: "pending",
+            activity: [{
+              type: "payment_confirmed",
+              message: paymentProvider === "manual" ? "Manual payment was confirmed and the paid order was created." : "Razorpay payment was verified and the paid order was created.",
+              actor: manualPaymentConfirmedBy,
+              actorName: manualPaymentConfirmedBy ? "Sales team" : "Payment gateway",
+              actorRole: manualPaymentConfirmedBy ? "sales" : "system",
+              createdAt: paidAt,
+            }],
           },
           $set: {
             paymentStatus: "paid",
@@ -147,17 +159,31 @@ async function ensureOrder(payment) {
     paymentId: fullPayment._id,
   });
   await Quote.updateOne(
-    { _id: fullPayment.quote._id, paymentStatus: { $ne: "refunded" } },
-    { $set: { paymentStatus: "paid", paidAt, convertedOrder: order._id, orderReference: order.reference } },
+    { _id: fullPayment.quote._id, paymentStatus: { $nin: ["paid", "refunded"] } },
+    {
+      $set: { paymentStatus: "paid", paidAt, convertedOrder: order._id, orderReference: order.reference },
+      $push: { activity: { $each: [{
+        type: "online_payment_confirmed",
+        message: `Razorpay payment was verified and order ${order.reference} was created.`,
+        actorName: "Payment gateway",
+        actorRole: "system",
+        createdAt: paidAt,
+      }], $slice: -200 } },
+    },
   );
   return order;
 }
 
-export async function confirmManualPayment(quoteId, confirmedBy) {
-  const quote = await Quote.findById(quoteId);
+export async function confirmManualPayment(quoteId, auth) {
+  const quote = await Quote.findById(quoteId).select("+activity");
   if (!quote) throw new AppError(404, "QUOTE_NOT_FOUND", "Quote was not found");
+  assertSalesRecordAccess(quote, auth);
   if (quote.paymentStatus === "refunded") {
     throw new AppError(409, "PAYMENT_REFUNDED", "This order has been refunded and cannot be marked paid again");
+  }
+  if (quote.paymentStatus === "paid") {
+    const existingOrder = await Order.findOne({ quote: quote._id });
+    if (existingOrder) return { quote, order: existingOrder };
   }
   const customerAccepted = quote.customerDecision === "accepted"
     || (quote.status === "accepted" && !quote.customerDecisionAt);
@@ -174,11 +200,15 @@ export async function confirmManualPayment(quoteId, confirmedBy) {
     snapshot: buildOrderSnapshot(quote),
     paymentProvider: "manual",
     paidAt,
-    manualPaymentConfirmedBy: confirmedBy,
+    manualPaymentConfirmedBy: auth.userId,
   });
+  const entry = activityEntry(auth, "manual_payment_confirmed", `Confirmed manual payment of ${quote.currency} ${quote.total}.`);
   await Quote.updateOne(
     { _id: quote._id, paymentStatus: { $ne: "refunded" } },
-    { $set: { paymentStatus: "paid", paidAt, convertedOrder: order._id, orderReference: order.reference } },
+    {
+      $set: { paymentStatus: "paid", paidAt, convertedOrder: order._id, orderReference: order.reference },
+      $push: { activity: { $each: [entry], $slice: -200 } },
+    },
   );
   return { quote, order };
 }
@@ -314,7 +344,7 @@ export async function createPaymentOrder(reference, quoteToken, userId) {
   } catch (error) {
     const details = gatewayErrorDetails(error);
     logger.error({ quoteReference: quote.reference, gatewayCode: details.code, gatewayDescription: details.description }, "Razorpay order creation failed");
-    await Payment.updateOne(
+    const failureUpdate = await Payment.updateOne(
       { _id: initialization.payment._id, initializationKey: initialization.payment.initializationKey },
       {
         $set: { status: "failed", failureCode: details.code, failureReason: details.description.slice(0, 500) },

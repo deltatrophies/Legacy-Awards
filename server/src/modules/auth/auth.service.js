@@ -13,7 +13,7 @@ const refreshCookieMaxAge = 7 * 24 * 60 * 60 * 1000;
 
 function signTokens(user) {
   const accessToken = jwt.sign(
-    { role: user.role },
+    { role: user.role, ver: Number(user.sessionVersion || 0) },
     env.JWT_ACCESS_SECRET,
     { algorithm: "HS256", subject: user._id.toString(), expiresIn: env.JWT_ACCESS_TTL },
   );
@@ -57,18 +57,18 @@ export async function register(input, userAgent) {
     email: input.email,
     passwordHash: await bcrypt.hash(input.password, 12),
   });
-  const hydrated = await User.findById(user._id).select("+sessions");
+  const hydrated = await User.findById(user._id).select("+sessions +sessionVersion");
   await attachGuestHistory(hydrated);
   return { user: hydrated, ...(await issueSession(hydrated, userAgent)) };
 }
 
 export async function login(input, userAgent) {
-  const user = await User.findOne({ email: input.email }).select("+passwordHash +sessions");
+  const user = await User.findOne({ email: input.email }).select("+passwordHash +sessions +sessionVersion");
   if (!user || !(await bcrypt.compare(input.password, user.passwordHash))) {
     throw new AppError(401, "INVALID_CREDENTIALS", "Email or password is incorrect");
   }
   if (!user.isActive) throw new AppError(403, "ACCOUNT_DISABLED", "This account has been disabled");
-  await attachGuestHistory(user);
+  if (user.role === "customer") await attachGuestHistory(user);
   return { user, ...(await issueSession(user, userAgent)) };
 }
 
@@ -99,7 +99,7 @@ export async function rotateRefreshToken(token, userAgent) {
   } catch {
     throw new AppError(401, "INVALID_REFRESH_TOKEN", "Your session has expired");
   }
-  const user = await User.findById(payload.sub).select("+sessions");
+  const user = await User.findById(payload.sub).select("+sessions +sessionVersion");
   const tokenHash = hashToken(token);
   if (!user || !user.isActive || !user.sessions.some((session) => session.tokenHash === tokenHash)) {
     throw new AppError(401, "INVALID_REFRESH_TOKEN", "Your session has expired");

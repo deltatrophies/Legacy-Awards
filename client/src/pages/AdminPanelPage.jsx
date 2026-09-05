@@ -53,6 +53,7 @@ const settingsTemplate = {
   mapUrl: "",
   instagramUrl: "",
   facebookUrl: "",
+  salesAssignmentMode: "manual",
 };
 
 const sections = [
@@ -62,6 +63,7 @@ const sections = [
   ["coupons", "Coupons"],
   ["inquiries", "Inquiries"],
   ["orders", "Orders"],
+  ["team", "Sales Team"],
   ["settings", "Settings"],
 ];
 
@@ -130,6 +132,7 @@ export default function AdminPanelPage() {
   const [quotes, setQuotes] = useState([]);
   const [orders, setOrders] = useState([]);
   const [coupons, setCoupons] = useState([]);
+  const [team, setTeam] = useState([]);
   const [settings, setSettings] = useState(settingsTemplate);
   const [loading, setLoading] = useState(true);
   const [notice, setNotice] = useState("");
@@ -143,7 +146,7 @@ export default function AdminPanelPage() {
     setLoading(true);
     setError("");
     try {
-      const [summaryData, categoryData, inquiryData, quoteData, orderData, couponData, settingsData] = await Promise.all([
+      const [summaryData, categoryData, inquiryData, quoteData, orderData, couponData, settingsData, teamData] = await Promise.all([
         adminApi.summary(),
         categoryApi.adminList(),
         adminApi.listInquiries(),
@@ -151,6 +154,7 @@ export default function AdminPanelPage() {
         adminApi.listOrders(),
         adminApi.listCoupons(),
         adminApi.getSettings(),
+        adminApi.listTeam(),
       ]);
       setSummary(summaryData);
       setCategories(categoryData || []);
@@ -159,6 +163,7 @@ export default function AdminPanelPage() {
       setOrders(orderData || []);
       setCoupons(couponData || []);
       setSettings({ ...settingsTemplate, ...(settingsData || {}) });
+      setTeam(teamData || []);
     } catch (requestError) {
       setError(requestError.message || "Could not load admin data.");
     } finally {
@@ -293,6 +298,14 @@ export default function AdminPanelPage() {
               detailType={detailType}
               orders={orders}
               quotes={quotes}
+              team={team}
+            />
+          ) : null}
+          {!loading && activeSection === "team" ? (
+            <TeamManager
+              members={team}
+              onError={fail}
+              onSaved={() => { announce("Sales team updated."); refreshAll(); }}
             />
           ) : null}
           {!loading && activeSection === "settings" ? (
@@ -317,6 +330,9 @@ function Dashboard({ summary }) {
     ["New inquiries", counts.newInquiries || 0],
     ["Pending orders", counts.pendingOrders || 0],
     ["Total orders", counts.totalOrders || 0],
+    ["Active salespeople", counts.activeSales || 0],
+    ["Unassigned leads", counts.unassignedQuotes || 0],
+    ["Follow-ups due", counts.overdueFollowUps || 0],
   ];
 
   return (
@@ -1128,7 +1144,7 @@ function InquiryDetail({ inquiry, onBack, onStatus }) {
   );
 }
 
-function OrderManager({ orders, quotes, detailType, detailId, onUpdated, onError }) {
+function OrderManager({ orders, quotes, team, detailType, detailId, onUpdated, onError }) {
   const [activeView, setActiveView] = useState("quotes");
   const [detailRecord, setDetailRecord] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
@@ -1136,14 +1152,14 @@ function OrderManager({ orders, quotes, detailType, detailId, onUpdated, onError
   const decodedDetailId = detailId ? decodeURIComponent(detailId) : "";
   const listQuote = detailType === "quote" ? quotes.find((quote) => [getId(quote), quote.reference].includes(decodedDetailId)) : null;
   const listOrder = detailType === "paid" ? orders.find((order) => [getId(order), order.reference].includes(decodedDetailId)) : null;
-  const selectedQuote = listQuote || (detailType === "quote" ? detailRecord : null);
-  const selectedOrder = listOrder || (detailType === "paid" ? detailRecord : null);
+  const selectedQuote = (detailType === "quote" ? detailRecord : null) || listQuote;
+  const selectedOrder = (detailType === "paid" ? detailRecord : null) || listOrder;
   const relatedPaidOrder = selectedQuote
     ? orders.find((order) => String(order.quote?._id || order.quote || "") === String(getId(selectedQuote) || ""))
     : selectedOrder;
 
   useEffect(() => {
-    if (!detailType || !decodedDetailId || listQuote || listOrder) {
+    if (!detailType || !decodedDetailId) {
       setDetailRecord(null);
       return undefined;
     }
@@ -1155,7 +1171,7 @@ function OrderManager({ orders, quotes, detailType, detailId, onUpdated, onError
       .catch(onError)
       .finally(() => { if (mounted) setDetailLoading(false); });
     return () => { mounted = false; };
-  }, [decodedDetailId, detailType, listOrder, listQuote, onError]);
+  }, [decodedDetailId, detailType, onError]);
 
   const updateStatus = async (order, fulfillmentStatus) => {
     try {
@@ -1188,6 +1204,20 @@ function OrderManager({ orders, quotes, detailType, detailId, onUpdated, onError
     }
   };
 
+  const assignQuote = async (quote, assigneeId) => {
+    try {
+      await adminApi.assignQuote(getId(quote), assigneeId);
+      onUpdated();
+    } catch (requestError) { onError(requestError); }
+  };
+
+  const assignOrder = async (order, assigneeId) => {
+    try {
+      await adminApi.assignOrder(getId(order), assigneeId);
+      onUpdated();
+    } catch (requestError) { onError(requestError); }
+  };
+
   if (detailType) {
     const record = detailType === "quote" ? selectedQuote : selectedOrder;
     if (detailLoading) {
@@ -1216,6 +1246,8 @@ function OrderManager({ orders, quotes, detailType, detailId, onUpdated, onError
         onOrderStatus={updateStatus}
         onManualPayment={confirmManualPayment}
         onQuoteStatus={updateQuoteStatus}
+        team={team}
+        onAssign={detailType === "quote" ? assignQuote : assignOrder}
       />
     );
   }
@@ -1267,6 +1299,10 @@ function OrderManager({ orders, quotes, detailType, detailId, onUpdated, onError
                   <small>{quote.customer?.phone || ""}{quote.customer?.email ? ` · ${quote.customer.email}` : ""}</small>
                 </div>
                 <div className="admin-order-total">{formatMoney(quote.total)}</div>
+                <select aria-label={`Assign ${quote.reference}`} value={quote.assignedTo?.id || quote.assignedTo?._id || ""} onClick={(event) => event.stopPropagation()} onChange={(event) => assignQuote(quote, event.target.value)}>
+                  <option value="">Unassigned</option>
+                  {team.filter((member) => member.isActive).map((member) => <option key={member.id} value={member.id}>{member.firstName} {member.lastName}</option>)}
+                </select>
                 <select value={quote.status} onClick={(event) => event.stopPropagation()} onChange={(event) => updateQuoteStatus(quote, event.target.value)}>
                   {quoteStatuses.filter((status) => status !== "accepted" || quote.status === "accepted").map((status) => <option key={status} value={status}>{status}</option>)}
                 </select>
@@ -1297,6 +1333,10 @@ function OrderManager({ orders, quotes, detailType, detailId, onUpdated, onError
                 </div>
                 <div className="admin-order-total">{formatMoney(order.total)}</div>
                 <span className={`admin-status-pill ${order.paymentStatus === "paid" ? "is-active" : "is-inactive"}`}>{order.paymentStatus || "pending"}</span>
+                <select aria-label={`Assign ${order.reference}`} value={order.assignedTo?.id || order.assignedTo?._id || ""} onClick={(event) => event.stopPropagation()} onChange={(event) => assignOrder(order, event.target.value)}>
+                  <option value="">Unassigned</option>
+                  {team.filter((member) => member.isActive).map((member) => <option key={member.id} value={member.id}>{member.firstName} {member.lastName}</option>)}
+                </select>
                 <select value={order.fulfillmentStatus} onClick={(event) => event.stopPropagation()} onChange={(event) => updateStatus(order, event.target.value)}>
                   {orderStatuses.map((status) => <option key={status} value={status}>{status}</option>)}
                 </select>
@@ -1309,7 +1349,7 @@ function OrderManager({ orders, quotes, detailType, detailId, onUpdated, onError
   );
 }
 
-function OrderDetail({ kind, quote, order, onBack, onManualPayment, onQuoteStatus, onOrderStatus }) {
+function OrderDetail({ kind, quote, order, onBack, onManualPayment, onQuoteStatus, onOrderStatus, onAssign, team = [] }) {
   const record = kind === "quote" ? quote : order;
   const customer = record.customer || {};
   const items = record.items || [];
@@ -1323,6 +1363,9 @@ function OrderDetail({ kind, quote, order, onBack, onManualPayment, onQuoteStatu
     paymentMethod: record.paymentMethod || "pending",
     customerNotes: record.customerNotes || "",
     internalNotes: record.internalNotes || "",
+    priority: record.priority || "normal",
+    followUpAt: toLocalDateTimeInput(record.followUpAt),
+    lostReason: record.lostReason || "",
   }));
   const [savingQuote, setSavingQuote] = useState(false);
 
@@ -1337,6 +1380,9 @@ function OrderDetail({ kind, quote, order, onBack, onManualPayment, onQuoteStatu
       paymentMethod: record.paymentMethod || "pending",
       customerNotes: record.customerNotes || "",
       internalNotes: record.internalNotes || "",
+      priority: record.priority || "normal",
+      followUpAt: toLocalDateTimeInput(record.followUpAt),
+      lostReason: record.lostReason || "",
     });
   }, [
     isQuote,
@@ -1345,6 +1391,9 @@ function OrderDetail({ kind, quote, order, onBack, onManualPayment, onQuoteStatu
     record.expiresAt,
     record.id,
     record.internalNotes,
+    record.priority,
+    record.followUpAt,
+    record.lostReason,
     record.paymentMethod,
     record.reference,
     record.status,
@@ -1413,6 +1462,9 @@ function OrderDetail({ kind, quote, order, onBack, onManualPayment, onQuoteStatu
         expiresAt: quoteForm.expiresAt ? new Date(quoteForm.expiresAt).toISOString() : undefined,
         customerNotes: quoteForm.customerNotes,
         internalNotes: quoteForm.internalNotes,
+        priority: quoteForm.priority,
+        followUpAt: quoteForm.followUpAt ? new Date(quoteForm.followUpAt).toISOString() : null,
+        lostReason: quoteForm.lostReason,
       });
       if (updated) setQuoteForm((current) => ({ ...current, status: updated.status || submittedStatus }));
     } finally {
@@ -1431,6 +1483,10 @@ function OrderDetail({ kind, quote, order, onBack, onManualPayment, onQuoteStatu
           <span>{formatDate(record.createdAt)}</span>
         </div>
         <div className="admin-detail-actions">
+          <select aria-label={`Assign ${record.reference}`} value={record.assignedTo?.id || record.assignedTo?._id || ""} onChange={(event) => onAssign(record, event.target.value)}>
+            <option value="">Unassigned</option>
+            {team.filter((member) => member.isActive).map((member) => <option key={member.id} value={member.id}>{member.firstName} {member.lastName}</option>)}
+          </select>
           {isQuote && !quoteLocked ? (
             <select value={record.status} onChange={(event) => onQuoteStatus(record, event.target.value)}>
               {quoteStatuses.filter((status) => status !== "accepted" || record.status === "accepted").map((status) => <option key={status} value={status}>{status}</option>)}
@@ -1465,6 +1521,7 @@ function OrderDetail({ kind, quote, order, onBack, onManualPayment, onQuoteStatu
             <div><dt>Subtotal</dt><dd>{formatMoney(record.subtotal)}</dd></div>
             <div><dt>Discount</dt><dd>{formatMoney(record.discount)}</dd></div>
             <div><dt>Total</dt><dd>{formatMoney(record.total)}</dd></div>
+            <div><dt>Assigned to</dt><dd>{record.assignedTo ? `${record.assignedTo.firstName || ""} ${record.assignedTo.lastName || ""}`.trim() || record.assignedTo.email : "Unassigned queue"}</dd></div>
             {isQuote && !quoteLocked ? <div><dt>Expires</dt><dd>{formatDate(record.expiresAt)}</dd></div> : null}
             {isQuote && paymentFinalized ? <div><dt>{paymentPaid ? "Paid at" : "Payment"}</dt><dd>{paymentPaid ? formatDate(record.paidAt) : "Refunded"}</dd></div> : null}
             {!isQuote ? <div><dt>Payment</dt><dd>{record.paymentStatus || "-"}</dd></div> : null}
@@ -1560,12 +1617,15 @@ function OrderDetail({ kind, quote, order, onBack, onManualPayment, onQuoteStatu
           <div className="admin-form-grid">
             <Field label="Status"><select value={quoteForm.status} onChange={(event) => setQuoteField("status", event.target.value)}>{quoteStatuses.filter((status) => status !== "accepted" || record.status === "accepted").map((status) => <option key={status} value={status}>{status}</option>)}</select></Field>
             <Field label="Quote valid until"><input required step="60" type="datetime-local" value={quoteForm.expiresAt} onChange={(event) => setQuoteField("expiresAt", event.target.value)} /></Field>
+            <Field label="Priority"><select value={quoteForm.priority} onChange={(event) => setQuoteField("priority", event.target.value)}><option value="low">Low</option><option value="normal">Normal</option><option value="high">High</option><option value="urgent">Urgent</option></select></Field>
+            <Field label="Follow-up"><input step="60" type="datetime-local" value={quoteForm.followUpAt} onChange={(event) => setQuoteField("followUpAt", event.target.value)} /></Field>
             <Field label="Subtotal"><input min="0" type="number" value={quoteForm.subtotal} onChange={(event) => setQuoteField("subtotal", event.target.value)} /></Field>
             <Field label="Discount"><input min="0" type="number" value={quoteForm.discount} onChange={(event) => setQuoteField("discount", event.target.value)} /></Field>
             <Field label="Total"><input min="0" type="number" value={quoteForm.total} onChange={(event) => setQuoteField("total", event.target.value)} /></Field>
           </div>
           <Field label="Customer note (optional)"><textarea rows="3" value={quoteForm.customerNotes} onChange={(event) => setQuoteField("customerNotes", event.target.value)} placeholder="Optional message shown with the quotation" /></Field>
           <Field label="Internal note"><textarea rows="3" value={quoteForm.internalNotes} onChange={(event) => setQuoteField("internalNotes", event.target.value)} placeholder="Only visible to admin" /></Field>
+          {quoteForm.status === "cancelled" ? <Field label="Lost / cancellation reason"><textarea rows="2" value={quoteForm.lostReason} onChange={(event) => setQuoteField("lostReason", event.target.value)} /></Field> : null}
           <button className="admin-primary-button" disabled={savingQuote} type="submit">{savingQuote ? "Sending quotation..." : ["submitted", "reviewing"].includes(quoteForm.status) ? "Save & send quotation" : "Save quote details"}</button>
         </form>
       ) : null}
@@ -1594,8 +1654,35 @@ function OrderDetail({ kind, quote, order, onBack, onManualPayment, onQuoteStatu
           </div>
         ) : <p className="admin-empty">No item details found.</p>}
       </section>
+      <section className="admin-detail-card">
+        <div className="admin-section-heading"><div><p className="admin-eyebrow">Immutable team history</p><h3>Activity timeline</h3></div><span>{record.activity?.length || 0} events</span></div>
+        {record.activity?.length ? <ol className="sales-activity-list">{record.activity.map((entry) => <li key={entry.id || `${entry.type}-${entry.createdAt}`}><span aria-hidden="true" /><div><strong>{entry.message}</strong><small>{entry.actorName || "System"} · {formatDate(entry.createdAt)}</small></div></li>)}</ol> : <p className="admin-empty">No recorded activity yet.</p>}
+      </section>
     </section>
   );
+}
+
+function TeamManager({ members, onSaved, onError }) {
+  const empty = { firstName: "", lastName: "", email: "", phone: "", jobTitle: "Sales Executive", role: "sales", password: "" };
+  const [form, setForm] = useState(empty);
+  const [saving, setSaving] = useState(false);
+  const [passwords, setPasswords] = useState({});
+  const set = (key, value) => setForm((current) => ({ ...current, [key]: value }));
+  const createMember = async (event) => {
+    event.preventDefault(); setSaving(true);
+    try {
+      await adminApi.createTeamMember(form);
+      setForm(empty);
+      onSaved();
+    } catch (requestError) { onError(requestError); } finally { setSaving(false); }
+  };
+  const updateMember = async (member, input) => {
+    setSaving(true);
+    try { await adminApi.updateTeamMember(member.id, input); onSaved(); return true; }
+    catch (requestError) { onError(requestError); return false; }
+    finally { setSaving(false); }
+  };
+  return <section className="admin-workspace admin-team-workspace"><form className="admin-form-panel" onSubmit={createMember}><div className="admin-section-heading"><div><p className="admin-eyebrow">Individual secure access</p><h2>Add sales team member</h2></div></div><p className="admin-muted">Never share one login. Every quote, assignment and payment action is tied to this individual account.</p><div className="admin-form-grid"><Field label="First name"><input required value={form.firstName} onChange={(event) => set("firstName", event.target.value)} /></Field><Field label="Last name"><input required value={form.lastName} onChange={(event) => set("lastName", event.target.value)} /></Field><Field label="Email"><input autoComplete="off" required type="email" value={form.email} onChange={(event) => set("email", event.target.value)} /></Field><Field label="Phone"><input value={form.phone} onChange={(event) => set("phone", event.target.value)} /></Field><Field label="Job title"><input value={form.jobTitle} onChange={(event) => set("jobTitle", event.target.value)} /></Field><Field label="Access level"><select value={form.role} onChange={(event) => set("role", event.target.value)}><option value="sales">Sales Executive</option><option value="sales_manager">Sales Manager</option></select></Field><Field label="Temporary password"><input autoComplete="new-password" minLength="10" required type="password" value={form.password} onChange={(event) => set("password", event.target.value)} /></Field></div><button className="admin-primary-button" disabled={saving} type="submit">{saving ? "Creating..." : "Create sales account"}</button></form><section className="admin-table-panel"><div className="admin-section-heading"><div><p className="admin-eyebrow">Ownership and workload</p><h2>Sales team</h2></div><span>{members.filter((member) => member.isActive).length} active</span></div>{members.length ? <div className="sales-team-grid">{members.map((member) => <article className={`sales-team-card ${member.isActive ? "" : "is-disabled"}`} key={member.id}><div className="sales-team-avatar">{member.firstName?.[0]}{member.lastName?.[0]}</div><div className="sales-team-copy"><h3>{member.firstName} {member.lastName}</h3><p>{member.jobTitle || "Sales Executive"}</p><small>{member.email}{member.phone ? ` · ${member.phone}` : ""}</small></div><div className="sales-team-load"><span><strong>{member.assignedQuotes}</strong> active leads</span><span><strong>{member.openOrders}</strong> open orders</span></div><div className="sales-team-actions"><select disabled={saving} value={member.role} onChange={(event) => updateMember(member, { role: event.target.value })}><option value="sales">Sales Executive</option><option value="sales_manager">Sales Manager</option></select><button className="admin-secondary-button" disabled={saving} type="button" onClick={() => updateMember(member, { isActive: !member.isActive })}>{member.isActive ? "Disable account" : "Enable account"}</button></div><div className="sales-password-reset"><input aria-label={`New password for ${member.firstName}`} minLength="10" placeholder="New password" type="password" value={passwords[member.id] || ""} onChange={(event) => setPasswords((current) => ({ ...current, [member.id]: event.target.value }))} /><button disabled={saving || !(passwords[member.id]?.length >= 10)} type="button" onClick={async () => { if (await updateMember(member, { password: passwords[member.id] })) setPasswords((current) => ({ ...current, [member.id]: "" })); }}>Reset password</button></div>{member.lastLoginAt ? <small>Last login: {formatDate(member.lastLoginAt)}</small> : <small>Not signed in yet</small>}</article>)}</div> : <p className="admin-empty">No sales accounts yet.</p>}</section></section>;
 }
 
 function SettingsManager({ settings, onSaved, onError }) {
@@ -1625,6 +1712,7 @@ function SettingsManager({ settings, onSaved, onError }) {
         mapUrl: form.mapUrl || "",
         instagramUrl: form.instagramUrl || "",
         facebookUrl: form.facebookUrl || "",
+        salesAssignmentMode: form.salesAssignmentMode || "manual",
         customPricing,
       };
       const nextSettings = await adminApi.updateSettings(payload);
@@ -1640,6 +1728,7 @@ function SettingsManager({ settings, onSaved, onError }) {
     <form className="admin-form-panel admin-settings-form" onSubmit={submit}>
       <h2>Contact and site settings</h2>
       <div className="admin-form-grid">
+        <Field label="New quote assignment"><select value={form.salesAssignmentMode || "manual"} onChange={(event) => set("salesAssignmentMode", event.target.value)}><option value="manual">Manual / open queue</option><option value="round_robin">Automatic round-robin</option></select></Field>
         <Field label="Business name"><input required value={form.businessName} onChange={(event) => set("businessName", event.target.value)} /></Field>
         <Field label="Email"><input required type="email" value={form.email} onChange={(event) => set("email", event.target.value)} /></Field>
         <Field label="Phone"><input value={form.phone} onChange={(event) => set("phone", event.target.value)} /></Field>

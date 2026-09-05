@@ -6,6 +6,9 @@ import { Product } from "../products/product.model.js";
 import { Settings } from "../settings/settings.model.js";
 import { Coupon } from "./coupon.model.js";
 import { Quote } from "./quote.model.js";
+import { User } from "../auth/user.model.js";
+import { SalesAssignmentCursor } from "../sales/salesAssignment.model.js";
+import { logger } from "../../config/logger.js";
 
 export const defaultCustomPricing = {
   tip: { classic: 300, star: 360, flame: 520 },
@@ -145,6 +148,34 @@ async function calculateDiscount(code, subtotal) {
   return { discount: Math.min(discount, subtotal), couponCode: coupon.code };
 }
 
+export async function applyAutomaticAssignment(quote) {
+  try {
+    const settings = await Settings.findOne({ key: "site" }).select("salesAssignmentMode").lean();
+    if (settings?.salesAssignmentMode !== "round_robin") return quote;
+    const salespeople = await User.find({ role: "sales", isActive: true }).select("_id firstName lastName").sort({ _id: 1 }).lean();
+    if (!salespeople.length) return quote;
+    const cursor = await SalesAssignmentCursor.findOneAndUpdate(
+      { key: "quotes" },
+      { $inc: { sequence: 1 }, $setOnInsert: { key: "quotes" } },
+      { new: true, upsert: true, setDefaultsOnInsert: true },
+    );
+    const assignee = salespeople[(cursor.sequence - 1) % salespeople.length];
+    quote.assignedTo = assignee._id;
+    quote.assignedAt = new Date();
+    quote.activity = [...(quote.activity || []), {
+      type: "lead_auto_assigned",
+      message: `Automatically assigned to ${assignee.firstName} ${assignee.lastName}.`,
+      actorName: "Round-robin assignment",
+      actorRole: "system",
+      createdAt: new Date(),
+    }].slice(-200);
+    await quote.save();
+  } catch (error) {
+    logger.warn({ quoteReference: quote.reference, error: error.message }, "Automatic sales assignment failed; quote remains in the open queue");
+  }
+  return quote;
+}
+
 export async function validateCoupon(code, subtotal) {
   const coupon = await calculateDiscount(code, subtotal);
   return {
@@ -174,11 +205,19 @@ export async function createQuote(input, userId) {
     ...coupon,
     total: subtotal - coupon.discount,
     expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+    activity: [{
+      type: "quote_submitted",
+      message: "Customer submitted a quote request.",
+      actorName: input.customer.name,
+      actorRole: "customer",
+      createdAt: new Date(),
+    }],
   };
 
   for (let attempt = 0; attempt < 4; attempt += 1) {
     try {
       const quote = await Quote.create({ ...quoteInput, reference: createReference("LAQ") });
+      await applyAutomaticAssignment(quote);
       return { quote, accessToken, created: true };
     } catch (error) {
       if (error?.code !== 11000) throw error;
@@ -195,7 +234,7 @@ export async function createQuote(input, userId) {
 export async function getPublicQuote(reference, accessToken) {
   if (!accessToken) throw new AppError(401, "QUOTE_TOKEN_REQUIRED", "A quote access token is required");
   const accessTokenHash = hashAccessToken(accessToken);
-  const quote = await Quote.findOne({ reference }).select("+accessTokenHash");
+  const quote = await Quote.findOne({ reference }).select("+accessTokenHash +activity");
   if (!quote || quote.accessTokenHash !== accessTokenHash) {
     throw new AppError(404, "QUOTE_NOT_FOUND", "Quote was not found");
   }

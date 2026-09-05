@@ -229,6 +229,9 @@ export const paymentApi = {
 
 export const adminApi = {
   summary: () => apiRequest("/admin/summary"),
+  listTeam: () => apiRequest("/admin/team"),
+  createTeamMember: (input) => apiRequest("/admin/team", { method: "POST", body: JSON.stringify(input) }),
+  updateTeamMember: (id, input) => apiRequest(`/admin/team/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify(input) }),
   listInquiries: () => apiRequest("/inquiries?limit=100"),
   getInquiry: (id) => apiRequest(`/inquiries/${encodeURIComponent(id)}`),
   updateInquiry: (id, input) => apiRequest(`/inquiries/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify(input) }),
@@ -239,10 +242,20 @@ export const adminApi = {
     notifyOrderStatusChanged();
     return quote;
   },
+  async assignQuote(id, assigneeId) {
+    const quote = await apiRequest(`/quotes/${encodeURIComponent(id)}/assignment`, { method: "PATCH", body: JSON.stringify({ assigneeId: assigneeId || null }) });
+    notifyOrderStatusChanged();
+    return quote;
+  },
   listOrders: () => apiRequest("/orders?limit=100"),
   getOrder: (id) => apiRequest(`/orders/${encodeURIComponent(id)}`),
   async updateOrder(id, input) {
     const order = await apiRequest(`/orders/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify(input) });
+    notifyOrderStatusChanged();
+    return order;
+  },
+  async assignOrder(id, assigneeId) {
+    const order = await apiRequest(`/orders/${encodeURIComponent(id)}/assignment`, { method: "PATCH", body: JSON.stringify({ assigneeId: assigneeId || null }) });
     notifyOrderStatusChanged();
     return order;
   },
@@ -251,6 +264,45 @@ export const adminApi = {
   listCoupons: () => apiRequest("/quotes/coupons?limit=100"),
   createCoupon: (input) => apiRequest("/quotes/coupons", { method: "POST", body: JSON.stringify(input) }),
   updateCoupon: (id, input) => apiRequest(`/quotes/coupons/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify(input) }),
+};
+
+export const salesApi = {
+  summary: () => apiRequest("/sales/summary"),
+  team: () => apiRequest("/sales/team"),
+  listQuotes: (view = "all") => apiRequest(`/quotes?limit=100&pipeline=open&view=${encodeURIComponent(view)}`),
+  getQuote: (id) => apiRequest(`/quotes/${encodeURIComponent(id)}`),
+  async claimQuote(id) {
+    const quote = await apiRequest(`/quotes/${encodeURIComponent(id)}/claim`, { method: "POST" });
+    notifyOrderStatusChanged();
+    return quote;
+  },
+  async assignQuote(id, assigneeId) {
+    const quote = await apiRequest(`/quotes/${encodeURIComponent(id)}/assignment`, { method: "PATCH", body: JSON.stringify({ assigneeId: assigneeId || null }) });
+    notifyOrderStatusChanged();
+    return quote;
+  },
+  async updateQuote(id, input) {
+    const quote = await apiRequest(`/quotes/${encodeURIComponent(id)}/status`, { method: "PATCH", body: JSON.stringify(input) });
+    notifyOrderStatusChanged();
+    return quote;
+  },
+  listOrders: (view = "all") => apiRequest(`/orders?limit=100&view=${encodeURIComponent(view)}`),
+  getOrder: (id) => apiRequest(`/orders/${encodeURIComponent(id)}`),
+  async claimOrder(id) {
+    const order = await apiRequest(`/orders/${encodeURIComponent(id)}/claim`, { method: "POST" });
+    notifyOrderStatusChanged();
+    return order;
+  },
+  async assignOrder(id, assigneeId) {
+    const order = await apiRequest(`/orders/${encodeURIComponent(id)}/assignment`, { method: "PATCH", body: JSON.stringify({ assigneeId: assigneeId || null }) });
+    notifyOrderStatusChanged();
+    return order;
+  },
+  async updateOrder(id, input) {
+    const order = await apiRequest(`/orders/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify(input) });
+    notifyOrderStatusChanged();
+    return order;
+  },
 };
 
 export const inquiryApi = {

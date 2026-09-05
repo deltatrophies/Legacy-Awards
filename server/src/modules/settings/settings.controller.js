@@ -13,6 +13,7 @@ const defaultSettings = {
   instagramUrl: "",
   facebookUrl: "",
   customPricing: undefined,
+  salesAssignmentMode: "manual",
 };
 
 const serialize = (settings) => ({
@@ -26,6 +27,7 @@ const serialize = (settings) => ({
   instagramUrl: settings.instagramUrl || "",
   facebookUrl: settings.facebookUrl || "",
   customPricing: settings.customPricing,
+  salesAssignmentMode: settings.salesAssignmentMode || "manual",
   updatedAt: settings.updatedAt,
 });
 

@@ -9,6 +9,7 @@ export function AuthProvider({ children }) {
   const [sessionUser, setSessionUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const isAdminRoute = location.pathname.startsWith("/admin");
+  const isSalesRoute = location.pathname.startsWith("/sales");
 
   useEffect(() => {
     if (!hasStoredAuthSession()) {
@@ -27,8 +28,9 @@ export function AuthProvider({ children }) {
   const user = useMemo(() => {
     if (!sessionUser) return null;
     if (isAdminRoute) return sessionUser.role === "admin" ? sessionUser : null;
-    return sessionUser.role === "admin" ? null : sessionUser;
-  }, [isAdminRoute, sessionUser]);
+    if (isSalesRoute) return ["sales", "sales_manager", "staff", "admin"].includes(sessionUser.role) ? sessionUser : null;
+    return sessionUser.role === "customer" ? sessionUser : null;
+  }, [isAdminRoute, isSalesRoute, sessionUser]);
 
   const value = useMemo(() => ({
     user,
@@ -36,7 +38,7 @@ export function AuthProvider({ children }) {
     loading,
     isAuthenticated: Boolean(user),
     async login(credentials, options = {}) {
-      const scope = options.scope || (isAdminRoute ? "admin" : "customer");
+      const scope = options.scope || (isAdminRoute ? "admin" : isSalesRoute ? "sales" : "customer");
       const nextUser = await authApi.login(credentials);
       if (scope === "admin" && nextUser.role !== "admin") {
         await authApi.logout().catch(() => { });
@@ -47,6 +49,16 @@ export function AuthProvider({ children }) {
         await authApi.logout().catch(() => { });
         setSessionUser(null);
         throw new Error("Admin accounts must use the admin login page.");
+      }
+      if (scope === "sales" && !["sales", "sales_manager", "staff", "admin"].includes(nextUser.role)) {
+        await authApi.logout().catch(() => { });
+        setSessionUser(null);
+        throw new Error("This account is not allowed to access the sales workspace.");
+      }
+      if (scope === "customer" && ["sales", "sales_manager", "staff"].includes(nextUser.role)) {
+        await authApi.logout().catch(() => { });
+        setSessionUser(null);
+        throw new Error("Team accounts must use the sales login page.");
       }
       setSessionUser(nextUser);
       return nextUser;
@@ -70,7 +82,7 @@ export function AuthProvider({ children }) {
       await authApi.logout();
       setSessionUser(null);
     },
-  }), [isAdminRoute, loading, sessionUser, user]);
+  }), [isAdminRoute, isSalesRoute, loading, sessionUser, user]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

@@ -65,7 +65,14 @@ export const updateQuoteSchema = z.object({
   paymentMethod: z.enum(["pending", "razorpay", "whatsapp"]).optional(),
   internalNotes: z.string().max(5000).optional(),
   customerNotes: z.string().trim().max(2000).optional(),
+  priority: z.enum(["low", "normal", "high", "urgent"]).optional(),
+  followUpAt: z.union([z.coerce.date(), z.null()]).optional(),
+  lostReason: z.string().trim().max(500).optional(),
 }).strict().refine((value) => Object.keys(value).length > 0, { message: "At least one field is required" });
+
+export const assignQuoteSchema = z.object({
+  assigneeId: z.union([z.string().regex(/^[a-f0-9]{24}$/i), z.null()]),
+}).strict();
 
 export const couponSchema = z.object({
   code: z.string().trim().min(2).max(40).regex(/^[a-zA-Z0-9_-]+$/).transform((value) => value.toUpperCase()),

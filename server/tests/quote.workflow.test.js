@@ -35,6 +35,7 @@ describe("quote decision workflow", () => {
     expect(quote.customerDecisionAt).toBe(acceptedAt);
     expect(quote.salesContactRequestedAt).toBe(requestedAt);
     expect(quote.salesContactChannel).toBe("call");
+    expect(quote.activity.map((entry) => entry.type)).toEqual(["sales_contact_requested", "sales_contact_requested", "customer_accepted"]);
   });
 
   it("allows payment routing only after customer acceptance", () => {

@@ -24,6 +24,8 @@ const EnquiriesPage = lazy(() => import("../pages/EnquiriesPage.jsx"));
 const WishlistPage = lazy(() => import("../pages/WishlistPage.jsx"));
 const AdminLoginPage = lazy(() => import("../pages/AdminLoginPage.jsx"));
 const AdminPanelPage = lazy(() => import("../pages/AdminPanelPage.jsx"));
+const SalesLoginPage = lazy(() => import("../pages/SalesLoginPage.jsx"));
+const SalesPanelPage = lazy(() => import("../pages/SalesPanelPage.jsx"));
 
 const pageTransition = {
   duration: 0.2,
@@ -96,10 +98,27 @@ function AdminRoutes({ location }) {
   );
 }
 
-export default function AppRoutes() {
-  const location = useLocation();
-  const isAdminRoute = location.pathname.startsWith("/admin");            
-  return isAdminRoute ? <AdminRoutes location={location} /> : <PublicRoutes location={location} />;
+function SalesRoutes({ location }) {
+  return (
+    <Suspense fallback={<PageSkeleton />}>
+      <AnimatePresence initial={false}>
+        <Routes location={location} key={location.pathname}>
+          <Route path="/sales" element={<Navigate to="/sales/dashboard" replace />} />
+          <Route path="/sales/login" element={<AdminPage><SalesLoginPage /></AdminPage>} />
+          <Route path="/sales/:section/:detailId" element={<AdminPage><SalesPanelPage /></AdminPage>} />
+          <Route path="/sales/:section" element={<AdminPage><SalesPanelPage /></AdminPage>} />
+        </Routes>
+      </AnimatePresence>
+    </Suspense>
+  );
 }
 
+export default function AppRoutes() {
+  const location = useLocation();
+  const isAdminRoute = location.pathname.startsWith("/admin");
+  const isSalesRoute = location.pathname.startsWith("/sales");
+  if (isAdminRoute) return <AdminRoutes location={location} />;
+  if (isSalesRoute) return <SalesRoutes location={location} />;
+  return <PublicRoutes location={location} />;
+}
 

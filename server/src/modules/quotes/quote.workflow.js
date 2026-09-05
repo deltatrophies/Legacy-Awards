@@ -16,6 +16,13 @@ export async function acceptCustomerQuote(quote, now = new Date()) {
   quote.status = "accepted";
   quote.customerDecision = "accepted";
   quote.customerDecisionAt = now;
+  quote.activity = [...(quote.activity || []), {
+    type: "customer_accepted",
+    message: "Customer accepted the quotation.",
+    actorName: quote.customer?.name || "Customer",
+    actorRole: "customer",
+    createdAt: now,
+  }].slice(-200);
   await quote.save();
   return quote;
 }
@@ -31,6 +38,13 @@ export async function requestCustomerSalesContact(quote, channel, now = new Date
     quote.salesContactChannel = channel;
     quote.salesContactChannelSelectedAt = now;
   }
+  quote.activity = [...(quote.activity || []), {
+    type: "sales_contact_requested",
+    message: channel ? `Customer requested sales contact by ${channel === "call" ? "phone" : "WhatsApp"}.` : "Customer requested help from the sales team.",
+    actorName: quote.customer?.name || "Customer",
+    actorRole: "customer",
+    createdAt: now,
+  }].slice(-200);
   await quote.save();
   return quote;
 }

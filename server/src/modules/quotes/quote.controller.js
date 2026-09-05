@@ -5,6 +5,9 @@ import { Quote } from "./quote.model.js";
 import { Coupon } from "./coupon.model.js";
 import * as quoteService from "./quote.service.js";
 import { acceptCustomerQuote, prepareAdminQuoteUpdate, requestCustomerSalesContact } from "./quote.workflow.js";
+import { User } from "../auth/user.model.js";
+import { Order } from "../orders/order.model.js";
+import { activityEntry, addDocumentActivity, assertSalesRecordAccess, isAssignmentManager, salesVisibilityFilter } from "../../common/utils/salesAccess.js";
 
 const getRequestEstimate = (quote) => {
   if (quote.requestEstimate != null) return quote.requestEstimate;
@@ -12,7 +15,15 @@ const getRequestEstimate = (quote) => {
   return itemEstimate || quote.total || 0;
 };
 
-const serialize = (quote, accessToken) => ({
+const serializePerson = (person) => person ? ({
+  id: String(person._id || person),
+  firstName: person.firstName || "",
+  lastName: person.lastName || "",
+  email: person.email || "",
+  role: person.role || "",
+}) : null;
+
+const serialize = (quote, accessToken, { internal = false } = {}) => ({
   id: quote._id.toString(),
   reference: quote.reference,
   ...(accessToken ? { accessToken } : {}),
@@ -35,8 +46,23 @@ const serialize = (quote, accessToken) => ({
   paymentStatus: quote.paymentStatus || "unpaid",
   paidAt: quote.paidAt,
   orderReference: quote.orderReference || "",
-  internalNotes: quote.internalNotes || "",
   customerNotes: quote.customerNotes || "",
+  ...(internal ? {
+    internalNotes: quote.internalNotes || "",
+    assignedTo: serializePerson(quote.assignedTo),
+    assignedAt: quote.assignedAt,
+    priority: quote.priority || "normal",
+    followUpAt: quote.followUpAt,
+    lostReason: quote.lostReason || "",
+    activity: (quote.activity || []).slice().reverse().map((entry) => ({
+      id: String(entry._id || ""),
+      type: entry.type,
+      message: entry.message,
+      actorName: entry.actorName || "System",
+      actorRole: entry.actorRole || "system",
+      createdAt: entry.createdAt,
+    })),
+  } : {}),
   createdAt: quote.createdAt,
   updatedAt: quote.updatedAt,
 });
@@ -100,38 +126,52 @@ export async function getMine(req, res) {
 }
 
 export async function acceptMine(req, res) {
-  const quote = await Quote.findOne({ _id: req.params.id, user: req.auth.userId });
+  const quote = await Quote.findOne({ _id: req.params.id, user: req.auth.userId }).select("+activity");
   if (!quote) throw new AppError(404, "QUOTE_NOT_FOUND", "Quote was not found");
   return sendData(res, serialize(await acceptCustomerQuote(quote)));
 }
 
 export async function contactSalesMine(req, res) {
-  const quote = await Quote.findOne({ _id: req.params.id, user: req.auth.userId });
+  const quote = await Quote.findOne({ _id: req.params.id, user: req.auth.userId }).select("+activity");
   if (!quote) throw new AppError(404, "QUOTE_NOT_FOUND", "Quote was not found");
   return sendData(res, serialize(await requestCustomerSalesContact(quote, req.body.channel)));
 }
 
 export async function listAdmin(req, res) {
   const { page, limit, skip } = paginationFrom(req.query);
-  const filter = req.query.status ? { status: req.query.status } : {};
+  const clauses = [];
+  if (req.query.status) clauses.push({ status: req.query.status });
+  if (req.query.priority) clauses.push({ priority: req.query.priority });
+  if (req.query.pipeline === "open") clauses.push({ status: { $nin: ["expired", "cancelled"] }, paymentStatus: { $nin: ["paid", "refunded"] } });
+  const visibility = salesVisibilityFilter(req.auth, req.query.view);
+  if (Object.keys(visibility).length) clauses.push(visibility);
+  if (isAssignmentManager(req.auth.role) && req.query.assignedTo) {
+    if (req.query.assignedTo !== "unassigned" && !/^[a-f0-9]{24}$/i.test(req.query.assignedTo)) {
+      throw new AppError(422, "INVALID_ASSIGNEE", "Assigned salesperson filter is invalid");
+    }
+    clauses.push(req.query.assignedTo === "unassigned" ? { assignedTo: null } : { assignedTo: req.query.assignedTo });
+  }
+  const filter = clauses.length ? { $and: clauses } : {};
   const [quotes, total] = await Promise.all([
-    Quote.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit),
+    Quote.find(filter).populate("assignedTo", "firstName lastName email role").sort({ createdAt: -1 }).skip(skip).limit(limit),
     Quote.countDocuments(filter),
   ]);
-  return sendData(res, quotes.map((quote) => serialize(quote)), 200, paginationMeta(total, page, limit));
+  return sendData(res, quotes.map((quote) => serialize(quote, undefined, { internal: true })), 200, paginationMeta(total, page, limit));
 }
 
 export async function getAdmin(req, res) {
   const query = /^[a-f0-9]{24}$/i.test(req.params.id) ? { _id: req.params.id } : { reference: req.params.id };
-  const quote = await Quote.findOne(query).select("+internalNotes");
+  const quote = await Quote.findOne(query).select("+internalNotes +activity").populate("assignedTo", "firstName lastName email role");
   if (!quote) throw new AppError(404, "QUOTE_NOT_FOUND", "Quote was not found");
-  return sendData(res, serialize(quote));
+  assertSalesRecordAccess(quote, req.auth, { allowUnassignedRead: true });
+  return sendData(res, serialize(quote, undefined, { internal: true }));
 }
 
 export async function updateQuote(req, res) {
   const input = { ...req.body };
-  const current = await Quote.findById(req.params.id);
+  const current = await Quote.findById(req.params.id).select("+internalNotes +activity");
   if (!current) throw new AppError(404, "QUOTE_NOT_FOUND", "Quote was not found");
+  assertSalesRecordAccess(current, req.auth);
   const update = prepareAdminQuoteUpdate(current, input);
   if (update.subtotal != null || update.discount != null || update.total != null) {
     const subtotal = update.subtotal ?? current.subtotal;
@@ -140,9 +180,82 @@ export async function updateQuote(req, res) {
     update.discount = discount;
     update.total = update.total ?? Math.max(subtotal - discount, 0);
   }
-  const quote = await Quote.findByIdAndUpdate(req.params.id, update, { new: true, runValidators: true }).select("+internalNotes");
+  Object.assign(current, update);
+  const changed = Object.keys(update).filter((key) => key !== "internalNotes").join(", ") || "internal notes";
+  addDocumentActivity(current, req.auth, "quote_updated", `Updated ${changed}.`);
+  await current.save();
+  await current.populate("assignedTo", "firstName lastName email role");
+  return sendData(res, serialize(current, undefined, { internal: true }));
+}
+
+export async function claimQuote(req, res) {
+  const query = /^[a-f0-9]{24}$/i.test(req.params.id) ? { _id: req.params.id } : { reference: req.params.id };
+  const existing = await Quote.findOne(query).select("assignedTo status paymentStatus");
+  if (!existing) throw new AppError(404, "QUOTE_NOT_FOUND", "Quote was not found");
+  if (["expired", "cancelled"].includes(existing.status) || ["paid", "refunded"].includes(existing.paymentStatus)) {
+    throw new AppError(409, "LEAD_FINALIZED", "This lead is already finalized and cannot be claimed");
+  }
+  if (String(existing.assignedTo || "") === String(req.auth.userId)) {
+    const ownQuote = await Quote.findById(existing._id).select("+internalNotes +activity").populate("assignedTo", "firstName lastName email role");
+    return sendData(res, serialize(ownQuote, undefined, { internal: true }));
+  }
+  if (existing.assignedTo) throw new AppError(409, "LEAD_ALREADY_ASSIGNED", "Another sales executive has already claimed this lead");
+
+  const entry = activityEntry(req.auth, "lead_claimed", `${req.auth.user.firstName} ${req.auth.user.lastName} claimed this lead.`);
+  const quote = await Quote.findOneAndUpdate(
+    { _id: existing._id, assignedTo: null },
+    {
+      $set: { assignedTo: req.auth.userId, assignedBy: req.auth.userId, assignedAt: new Date() },
+      $push: { activity: { $each: [entry], $slice: -200 } },
+    },
+    { new: true, runValidators: true },
+  ).select("+internalNotes +activity").populate("assignedTo", "firstName lastName email role");
+  if (!quote) throw new AppError(409, "LEAD_ALREADY_ASSIGNED", "Another sales executive has already claimed this lead");
+  return sendData(res, serialize(quote, undefined, { internal: true }));
+}
+
+export async function assignQuote(req, res) {
+  const query = /^[a-f0-9]{24}$/i.test(req.params.id) ? { _id: req.params.id } : { reference: req.params.id };
+  const quote = await Quote.findOne(query).select("+internalNotes +activity");
   if (!quote) throw new AppError(404, "QUOTE_NOT_FOUND", "Quote was not found");
-  return sendData(res, serialize(quote));
+  let assignee = null;
+  if (req.body.assigneeId) {
+    assignee = await User.findOne({ _id: req.body.assigneeId, role: { $in: ["sales", "sales_manager", "staff"] }, isActive: true });
+    if (!assignee) throw new AppError(422, "INVALID_ASSIGNEE", "Choose an active sales team member");
+  }
+  const previousId = String(quote.assignedTo || "");
+  const nextId = String(assignee?._id || "");
+  if (previousId === nextId) {
+    await quote.populate("assignedTo", "firstName lastName email role");
+    return sendData(res, serialize(quote, undefined, { internal: true }));
+  }
+  quote.assignedTo = assignee?._id || undefined;
+  quote.assignedBy = req.auth.userId;
+  quote.assignedAt = assignee ? new Date() : undefined;
+  addDocumentActivity(
+    quote,
+    req.auth,
+    assignee ? "lead_assigned" : "lead_unassigned",
+    assignee ? `Assigned to ${assignee.firstName} ${assignee.lastName}.` : "Returned to the unassigned lead queue.",
+  );
+  await quote.save();
+  if (quote.convertedOrder) {
+    await Order.updateOne(
+      { _id: quote.convertedOrder },
+      assignee
+        ? {
+          $set: { assignedTo: assignee._id, assignedBy: req.auth.userId, assignedAt: new Date() },
+          $push: { activity: { $each: [{ ...activityEntry(req.auth, "quote_owner_synced", `Order ownership synced from quotation ${quote.reference}.`), metadata: undefined }], $slice: -200 } },
+        }
+        : {
+          $unset: { assignedTo: 1, assignedAt: 1 },
+          $set: { assignedBy: req.auth.userId },
+          $push: { activity: { $each: [{ ...activityEntry(req.auth, "quote_owner_synced", `Order ownership cleared from quotation ${quote.reference}.`), metadata: undefined }], $slice: -200 } },
+        },
+    );
+  }
+  await quote.populate("assignedTo", "firstName lastName email role");
+  return sendData(res, serialize(quote, undefined, { internal: true }));
 }
 
 export async function getCustomPricing(_req, res) {

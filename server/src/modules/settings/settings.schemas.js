@@ -35,4 +35,5 @@ export const updateSettingsSchema = z.object({
   instagramUrl: z.string().trim().max(1000).optional().default(""),
   facebookUrl: z.string().trim().max(1000).optional().default(""),
   customPricing: customPricingSchema.optional(),
+  salesAssignmentMode: z.enum(["manual", "round_robin"]).optional().default("manual"),
 }).strict();

@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { adminRouter } from "../modules/admin/admin.routes.js";
+import { salesRouter } from "../modules/sales/sales.routes.js";
 import { authRouter } from "../modules/auth/auth.routes.js";
 import { categoryRouter } from "../modules/categories/category.routes.js";
 import { inquiryRouter } from "../modules/inquiries/inquiry.routes.js";
@@ -13,6 +14,7 @@ import { uploadRouter } from "../modules/uploads/upload.routes.js";
 export const apiRouter = Router();
 
 apiRouter.use("/admin", adminRouter);
+apiRouter.use("/sales", salesRouter);
 apiRouter.use("/auth", authRouter);
 apiRouter.use("/categories", categoryRouter);
 apiRouter.use("/products", productRouter);

@@ -3,7 +3,7 @@ import { asyncHandler } from "../../common/middleware/asyncHandler.js";
 import { authenticate, authorize, optionalAuthenticate } from "../../common/middleware/auth.js";
 import { validate } from "../../common/middleware/validate.js";
 import * as controller from "./quote.controller.js";
-import { contactSalesSchema, couponSchema, createQuoteSchema, trackQuoteSchema, updateCouponSchema, updateQuoteSchema, validateCouponSchema } from "./quote.schemas.js";
+import { assignQuoteSchema, contactSalesSchema, couponSchema, createQuoteSchema, trackQuoteSchema, updateCouponSchema, updateQuoteSchema, validateCouponSchema } from "./quote.schemas.js";
 
 export const quoteRouter = Router();
 
@@ -21,6 +21,8 @@ quoteRouter.post("/mine/:id/contact-sales", authenticate, validate(contactSalesS
 quoteRouter.get("/coupons", authenticate, authorize("admin"), asyncHandler(controller.listCoupons));
 quoteRouter.post("/coupons", authenticate, authorize("admin"), validate(couponSchema), asyncHandler(controller.createCoupon));
 quoteRouter.patch("/coupons/:id", authenticate, authorize("admin"), validate(updateCouponSchema), asyncHandler(controller.updateCoupon));
-quoteRouter.get("/", authenticate, authorize("staff", "admin"), asyncHandler(controller.listAdmin));
-quoteRouter.get("/:id", authenticate, authorize("staff", "admin"), asyncHandler(controller.getAdmin));
-quoteRouter.patch("/:id/status", authenticate, authorize("staff", "admin"), validate(updateQuoteSchema), asyncHandler(controller.updateQuote));
+quoteRouter.get("/", authenticate, authorize("sales", "sales_manager", "staff", "admin"), asyncHandler(controller.listAdmin));
+quoteRouter.post("/:id/claim", authenticate, authorize("sales", "sales_manager", "staff"), asyncHandler(controller.claimQuote));
+quoteRouter.patch("/:id/assignment", authenticate, authorize("sales_manager", "staff", "admin"), validate(assignQuoteSchema), asyncHandler(controller.assignQuote));
+quoteRouter.get("/:id", authenticate, authorize("sales", "sales_manager", "staff", "admin"), asyncHandler(controller.getAdmin));
+quoteRouter.patch("/:id/status", authenticate, authorize("sales", "sales_manager", "staff", "admin"), validate(updateQuoteSchema), asyncHandler(controller.updateQuote));

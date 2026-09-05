@@ -21,11 +21,28 @@ const customerSchema = new mongoose.Schema({
   notes: { type: String, trim: true },
 }, { _id: false });
 
+const activitySchema = new mongoose.Schema({
+  type: { type: String, required: true, maxlength: 80 },
+  message: { type: String, required: true, maxlength: 500 },
+  actor: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+  actorName: { type: String, trim: true, maxlength: 140 },
+  actorRole: { type: String, trim: true, maxlength: 40 },
+  metadata: mongoose.Schema.Types.Mixed,
+  createdAt: { type: Date, default: Date.now },
+}, { _id: true });
+
 const quoteSchema = new mongoose.Schema({
   reference: { type: String, required: true, unique: true, index: true },
   idempotencyKey: { type: String, unique: true, sparse: true, select: false },
   accessTokenHash: { type: String, required: true, select: false },
   user: { type: mongoose.Schema.Types.ObjectId, ref: "User", index: true },
+  assignedTo: { type: mongoose.Schema.Types.ObjectId, ref: "User", index: true },
+  assignedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+  assignedAt: Date,
+  priority: { type: String, enum: ["low", "normal", "high", "urgent"], default: "normal", index: true },
+  followUpAt: { type: Date, index: true },
+  lostReason: { type: String, trim: true, maxlength: 500 },
+  activity: { type: [activitySchema], default: [], select: false },
   customer: { type: customerSchema, required: true },
   items: { type: [quoteItemSchema], required: true },
   requestEstimate: { type: Number, min: 0, immutable: true },

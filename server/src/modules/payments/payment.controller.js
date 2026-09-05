@@ -36,7 +36,7 @@ export async function reconcile(req, res) {
 }
 
 export async function confirmManual(req, res) {
-  const result = await paymentService.confirmManualPayment(req.params.quoteId, req.auth.userId);
+  const result = await paymentService.confirmManualPayment(req.params.quoteId, req.auth);
   return sendData(res, {
     paymentStatus: "paid",
     orderReference: result.order.reference,

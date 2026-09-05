@@ -14,9 +14,12 @@ const userSchema = new mongoose.Schema({
   avatarUrl: { type: String, trim: true, maxlength: 1000 },
   avatarPublicId: { type: String, trim: true, maxlength: 300 },
   passwordHash: { type: String, required: true, select: false },
-  role: { type: String, enum: ["customer", "staff", "admin"], default: "customer", index: true },
+  role: { type: String, enum: ["customer", "sales", "sales_manager", "staff", "admin"], default: "customer", index: true },
+  phone: { type: String, trim: true, maxlength: 20 },
+  jobTitle: { type: String, trim: true, maxlength: 100 },
   isActive: { type: Boolean, default: true },
   sessions: { type: [sessionSchema], default: [], select: false },
+  sessionVersion: { type: Number, default: 0, select: false },
   lastLoginAt: Date,
 }, { timestamps: true, versionKey: false });
 
@@ -28,6 +31,9 @@ userSchema.methods.toSafeObject = function toSafeObject() {
     email: this.email,
     avatarUrl: this.avatarUrl,
     role: this.role,
+    phone: this.phone || "",
+    jobTitle: this.jobTitle || "",
+    isActive: this.isActive,
     createdAt: this.createdAt,
   };
 };
