@@ -1138,6 +1138,9 @@ function OrderManager({ orders, quotes, detailType, detailId, onUpdated, onError
   const listOrder = detailType === "paid" ? orders.find((order) => [getId(order), order.reference].includes(decodedDetailId)) : null;
   const selectedQuote = listQuote || (detailType === "quote" ? detailRecord : null);
   const selectedOrder = listOrder || (detailType === "paid" ? detailRecord : null);
+  const relatedPaidOrder = selectedQuote
+    ? orders.find((order) => String(order.quote?._id || order.quote || "") === String(getId(selectedQuote) || ""))
+    : selectedOrder;
 
   useEffect(() => {
     if (!detailType || !decodedDetailId || listQuote || listOrder) {
@@ -1196,7 +1199,7 @@ function OrderManager({ orders, quotes, detailType, detailId, onUpdated, onError
     return (
       <OrderDetail
         kind={detailType}
-        order={selectedOrder}
+        order={relatedPaidOrder}
         quote={selectedQuote}
         onBack={() => navigate("/admin/orders")}
         onOrderStatus={updateStatus}
@@ -1243,7 +1246,9 @@ function OrderManager({ orders, quotes, detailType, detailId, onUpdated, onError
                 <div className="admin-order-main">
                   <strong>{quote.reference}</strong>
                   <small>{formatDate(quote.createdAt)} · {quote.items?.length || 0} item{quote.items?.length === 1 ? "" : "s"}</small>
-                  {quote.customerDecision && quote.customerDecision !== "pending" ? <span className={`admin-decision-label is-${quote.customerDecision}`}>{quote.customerDecision === "accepted" ? "Customer accepted" : "Sales contact requested"}</span> : null}
+                  {quote.paymentStatus === "paid"
+                    ? <span className="admin-decision-label is-paid">Payment received{quote.orderReference ? ` · ${quote.orderReference}` : ""}</span>
+                    : quote.customerDecision && quote.customerDecision !== "pending" ? <span className={`admin-decision-label is-${quote.customerDecision}`}>{quote.customerDecision === "accepted" ? "Customer accepted" : "Sales contact requested"}</span> : null}
                 </div>
                 <div className="admin-order-customer">
                   <strong>{quote.customer?.name || "Customer"}</strong>
@@ -1337,6 +1342,9 @@ function OrderDetail({ kind, quote, order, onBack, onQuoteStatus, onOrderStatus 
 
   const customerAccepted = isQuote && (record.customerDecision === "accepted" || record.status === "accepted");
   const salesRequested = isQuote && record.customerDecision === "sales_requested";
+  const paymentFinalized = isQuote && ["paid", "refunded"].includes(record.paymentStatus);
+  const paymentPaid = paymentFinalized && record.paymentStatus === "paid";
+  const paidOrderReference = order?.reference || record.orderReference || "";
   const customerWhatsApp = customerWhatsAppUrl(customer, record.reference);
   const customerCallNumber = customerContactNumber(customer.phone);
 
@@ -1394,23 +1402,23 @@ function OrderDetail({ kind, quote, order, onBack, onQuoteStatus, onOrderStatus 
 
       <header className="admin-detail-hero">
         <div>
-          <p className="admin-eyebrow">{isQuote ? "Quote request" : "Paid order"}</p>
+          <p className="admin-eyebrow">{paymentFinalized ? (paymentPaid ? "Payment complete · confirmed order" : "Payment refunded") : isQuote ? "Quote request" : "Paid order"}</p>
           <h2>{record.reference}</h2>
           <span>{formatDate(record.createdAt)}</span>
         </div>
         <div className="admin-detail-actions">
-          {isQuote ? (
+          {isQuote && !paymentFinalized ? (
             <select value={record.status} onChange={(event) => onQuoteStatus(record, event.target.value)}>
               {quoteStatuses.filter((status) => status !== "accepted" || record.status === "accepted").map((status) => <option key={status} value={status}>{status}</option>)}
             </select>
-          ) : (
+          ) : !isQuote ? (
             <>
               <span className={`admin-status-pill ${record.paymentStatus === "paid" ? "is-active" : "is-inactive"}`}>{record.paymentStatus || "pending"}</span>
               <select value={record.fulfillmentStatus} onChange={(event) => onOrderStatus(record, event.target.value)}>
                 {orderStatuses.map((status) => <option key={status} value={status}>{status}</option>)}
               </select>
             </>
-          )}
+          ) : <span className={`admin-status-pill ${paymentPaid ? "is-active" : "is-inactive"}`}>{paymentPaid ? "Paid & converted" : "Refunded"}</span>}
         </div>
       </header>
 
@@ -1433,7 +1441,10 @@ function OrderDetail({ kind, quote, order, onBack, onQuoteStatus, onOrderStatus 
             <div><dt>Subtotal</dt><dd>{formatMoney(record.subtotal)}</dd></div>
             <div><dt>Discount</dt><dd>{formatMoney(record.discount)}</dd></div>
             <div><dt>Total</dt><dd>{formatMoney(record.total)}</dd></div>
-            {isQuote ? <div><dt>Expires</dt><dd>{formatDate(record.expiresAt)}</dd></div> : <div><dt>Payment</dt><dd>{record.paymentStatus || "-"}</dd></div>}
+            {isQuote && !paymentFinalized ? <div><dt>Expires</dt><dd>{formatDate(record.expiresAt)}</dd></div> : null}
+            {isQuote && paymentFinalized ? <div><dt>{paymentPaid ? "Paid at" : "Payment"}</dt><dd>{paymentPaid ? formatDate(record.paidAt) : "Refunded"}</dd></div> : null}
+            {!isQuote ? <div><dt>Payment</dt><dd>{record.paymentStatus || "-"}</dd></div> : null}
+            {isQuote && paymentFinalized ? <div><dt>Order reference</dt><dd>{paidOrderReference || "Creating order record..."}</dd></div> : null}
             {isQuote ? <div><dt>Customer decision</dt><dd>{record.customerDecision === "accepted" || record.status === "accepted" ? "Quotation accepted" : record.customerDecision === "sales_requested" ? "Wants sales assistance" : "Waiting for customer"}</dd></div> : null}
             {isQuote && record.salesContactRequestedAt ? <div><dt>Sales requested</dt><dd>{formatDate(record.salesContactRequestedAt)}</dd></div> : null}
             {isQuote && record.salesContactChannel ? <div><dt>Contact channel</dt><dd>{record.salesContactChannel === "whatsapp" ? "WhatsApp" : "Phone call"}</dd></div> : null}
@@ -1442,7 +1453,24 @@ function OrderDetail({ kind, quote, order, onBack, onQuoteStatus, onOrderStatus 
         </section>
       </div>
 
-      {isQuote && (salesRequested || customerAccepted) ? (
+      {paymentFinalized ? (
+        <section className={`admin-detail-card admin-payment-confirmation ${paymentPaid ? "is-paid" : "is-refunded"}`}>
+          <div className="admin-payment-confirmation__icon" aria-hidden="true">{paymentPaid ? "✓" : "↺"}</div>
+          <div className="admin-payment-confirmation__copy">
+            <p className="admin-eyebrow">{paymentPaid ? "Payment verified · order created" : "Payment update"}</p>
+            <h3>{paymentPaid ? "This quotation is now a confirmed paid order" : "This payment has been refunded"}</h3>
+            <span>{paymentPaid
+              ? `${formatMoney(record.total)} received${record.paidAt ? ` on ${formatDate(record.paidAt)}` : ""}. Quote pricing and payment controls are now locked.`
+              : "The quotation remains locked. Continue any fulfillment or refund follow-up from the order record."}</span>
+          </div>
+          <div className="admin-payment-confirmation__actions">
+            {paidOrderReference ? <Link to={`/admin/orders/paid/${encodeURIComponent(paidOrderReference)}`}>Open paid order</Link> : <span>Order record is syncing…</span>}
+            {order?.fulfillmentStatus ? <small>Fulfillment: {order.fulfillmentStatus}</small> : null}
+          </div>
+        </section>
+      ) : null}
+
+      {isQuote && !paymentFinalized && (salesRequested || customerAccepted) ? (
         <section className={`admin-detail-card admin-customer-decision is-${customerAccepted ? "accepted" : "sales"}`}>
           <div>
             <p className="admin-eyebrow">Customer activity · auto-updated</p>
@@ -1479,7 +1507,7 @@ function OrderDetail({ kind, quote, order, onBack, onQuoteStatus, onOrderStatus 
         </section>
       ) : null}
 
-      {isQuote ? (
+      {isQuote && !paymentFinalized ? (
         <form className="admin-detail-card admin-quote-editor" onSubmit={saveQuote}>
           <div className="admin-section-heading">
             <div>

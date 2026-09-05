@@ -66,4 +66,11 @@ describe("quote decision workflow", () => {
     expect(() => prepareAdminQuoteUpdate(quote, { paymentMethod: "whatsapp" })).toThrowError(/cannot change/i);
     expect(prepareAdminQuoteUpdate(quote, { customerNotes: "Payment received soon" }).customerNotes).toBe("Payment received soon");
   });
+
+  it("freezes customer-visible quote fields after payment but keeps private notes available", () => {
+    const paidQuote = quoteFixture({ status: "accepted", customerDecision: "accepted", paymentMethod: "razorpay", paymentStatus: "paid" });
+    expect(() => prepareAdminQuoteUpdate(paidQuote, { expiresAt: new Date("2031-01-01") })).toThrowError(/locked/i);
+    expect(() => prepareAdminQuoteUpdate(paidQuote, { customerNotes: "Changed" })).toThrowError(/locked/i);
+    expect(prepareAdminQuoteUpdate(paidQuote, { internalNotes: "Production note" }).internalNotes).toBe("Production note");
+  });
 });

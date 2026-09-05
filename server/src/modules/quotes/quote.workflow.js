@@ -33,6 +33,12 @@ export async function requestCustomerSalesContact(quote, channel, now = new Date
 
 export function prepareAdminQuoteUpdate(current, input, now = new Date()) {
   const update = { ...input };
+  if (["paid", "refunded"].includes(current?.paymentStatus)) {
+    const changesFinalizedQuote = Object.keys(update).some((key) => key !== "internalNotes");
+    if (changesFinalizedQuote) {
+      throw new AppError(409, "QUOTE_FINALIZED", "A paid quotation is locked; manage the confirmed order instead");
+    }
+  }
   const includesQuotedPrice = update.subtotal != null || update.discount != null || update.total != null;
   const changesPaymentRoute = update.paymentMethod != null && update.paymentMethod !== current?.paymentMethod;
   if (["processing", "paid", "refunded"].includes(current?.paymentStatus) && (includesQuotedPrice || changesPaymentRoute)) {

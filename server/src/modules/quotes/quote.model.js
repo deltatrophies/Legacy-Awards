@@ -44,6 +44,8 @@ const quoteSchema = new mongoose.Schema({
   paymentMethodSelectedAt: Date,
   paymentStatus: { type: String, enum: ["unpaid", "processing", "paid", "failed", "refunded"], default: "unpaid", index: true },
   paidAt: Date,
+  convertedOrder: { type: mongoose.Schema.Types.ObjectId, ref: "Order" },
+  orderReference: String,
   internalNotes: { type: String, select: false },
   customerNotes: { type: String, trim: true, default: "" },
 }, { timestamps: true, versionKey: false });

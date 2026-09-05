@@ -34,6 +34,7 @@ const serialize = (quote, accessToken) => ({
   paymentMethodSelectedAt: quote.paymentMethodSelectedAt,
   paymentStatus: quote.paymentStatus || "unpaid",
   paidAt: quote.paidAt,
+  orderReference: quote.orderReference || "",
   internalNotes: quote.internalNotes || "",
   customerNotes: quote.customerNotes || "",
   createdAt: quote.createdAt,
@@ -129,11 +130,8 @@ export async function getAdmin(req, res) {
 
 export async function updateQuote(req, res) {
   const input = { ...req.body };
-  let current;
-  if (input.subtotal != null || input.discount != null || input.total != null || input.paymentMethod != null || input.status === "accepted") {
-    current = await Quote.findById(req.params.id);
-    if (!current) throw new AppError(404, "QUOTE_NOT_FOUND", "Quote was not found");
-  }
+  const current = await Quote.findById(req.params.id);
+  if (!current) throw new AppError(404, "QUOTE_NOT_FOUND", "Quote was not found");
   const update = prepareAdminQuoteUpdate(current, input);
   if (update.subtotal != null || update.discount != null || update.total != null) {
     const subtotal = update.subtotal ?? current.subtotal;

@@ -857,6 +857,11 @@
   color: #1f6b45;
 }
 
+.admin-decision-label.is-paid {
+  background: #1f6b45;
+  color: #fff;
+}
+
 .admin-order-total {
   justify-self: end;
 }
@@ -965,6 +970,87 @@
 .admin-customer-decision.is-accepted {
   border-left-color: #1f6b45;
   background: rgba(31, 107, 69, .06);
+}
+
+.admin-payment-confirmation {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+  border-left: 5px solid #1f6b45;
+  background: linear-gradient(135deg, rgba(31, 107, 69, .09), #fffdf9 70%);
+}
+
+.admin-payment-confirmation.is-refunded {
+  border-left-color: #9a6817;
+  background: linear-gradient(135deg, rgba(181, 139, 42, .11), #fffdf9 70%);
+}
+
+.admin-payment-confirmation__icon {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #1f6b45;
+  color: #fff;
+  font-size: 24px;
+  font-weight: 900;
+}
+
+.admin-payment-confirmation.is-refunded .admin-payment-confirmation__icon {
+  background: #9a6817;
+}
+
+.admin-payment-confirmation__copy {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+.admin-payment-confirmation__copy strong {
+  color: #2f2925;
+  font-size: 18px;
+}
+
+.admin-payment-confirmation__copy span {
+  color: #6f6258;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.admin-payment-confirmation__actions {
+  display: grid;
+  justify-items: end;
+  gap: 7px;
+}
+
+.admin-payment-confirmation__actions a,
+.admin-payment-confirmation__actions > span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 16px;
+  border-radius: 999px;
+  background: #1f6b45;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: .06em;
+  text-decoration: none;
+  text-transform: uppercase;
+}
+
+.admin-payment-confirmation__actions > span {
+  background: #ded7ce;
+  color: #5e544c;
+}
+
+.admin-payment-confirmation__actions small {
+  color: #6f6258;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: capitalize;
 }
 
 .admin-customer-decision > div:first-child {
@@ -1531,6 +1617,15 @@
 @media (max-width: 700px) {
   .admin-customer-decision {
     display: grid;
+  }
+
+  .admin-payment-confirmation {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .admin-payment-confirmation__actions {
+    grid-column: 1 / -1;
+    justify-items: stretch;
   }
 
   .admin-customer-contact-actions a,

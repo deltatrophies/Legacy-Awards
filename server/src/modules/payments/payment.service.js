@@ -119,7 +119,7 @@ async function ensureOrder(payment) {
   );
   await Quote.updateOne(
     { _id: fullPayment.quote._id, paymentStatus: { $ne: "refunded" } },
-    { $set: { paymentStatus: "paid", paidAt } },
+    { $set: { paymentStatus: "paid", paidAt, convertedOrder: order._id, orderReference: order.reference } },
   );
   return order;
 }
