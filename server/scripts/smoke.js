@@ -61,6 +61,7 @@ try {
     { firstName: "Smoke", lastName: "Sales A", email: `smoke-sales-a-${nonce}@example.com`, role: "sales" },
     { firstName: "Smoke", lastName: "Sales B", email: `smoke-sales-b-${nonce}@example.com`, role: "sales" },
     { firstName: "Smoke", lastName: "Manager", email: `smoke-manager-${nonce}@example.com`, role: "sales_manager" },
+    { firstName: "Smoke", lastName: "Admin", email: `smoke-admin-${nonce}@example.com`, role: "admin" },
   ];
   const teamUsers = [];
   for (const input of teamInputs) {
@@ -73,7 +74,24 @@ try {
     if (response.status !== 200) throw new Error(`Sales login failed (${response.status})`);
     return response.body.data.accessToken;
   };
-  const [salesAToken, salesBToken, managerToken] = await Promise.all(teamUsers.map(loginTeamUser));
+  const [salesAToken, salesBToken, managerToken, adminToken] = await Promise.all(teamUsers.map(loginTeamUser));
+
+  const createdThroughAdmin = await request(app)
+    .post("/api/v1/admin/team")
+    .set("authorization", `Bearer ${adminToken}`)
+    .send({
+      firstName: "Created",
+      lastName: "Through Admin",
+      email: `smoke-admin-created-${nonce}@example.com`,
+      password: teamPassword,
+      role: "sales",
+      phone: "+91 99999 99999",
+      jobTitle: "Sales Executive",
+    });
+  if (createdThroughAdmin.status !== 201 || createdThroughAdmin.body.data.role !== "sales") {
+    throw new Error(`Admin sales-account creation failed (${createdThroughAdmin.status}): ${JSON.stringify(createdThroughAdmin.body)}`);
+  }
+  createdTeamUserIds.push(createdThroughAdmin.body.data.id);
 
   // A round-robin setting may be enabled locally; isolate this smoke quote in the open queue.
   await Quote.updateOne({ _id: createdQuoteId }, { $unset: { assignedTo: 1, assignedBy: 1, assignedAt: 1 } });
@@ -111,10 +129,10 @@ try {
   }
 
   const managerTeam = await request(app).get("/api/v1/sales/team").set("authorization", `Bearer ${managerToken}`);
-  if (managerTeam.status !== 200 || managerTeam.body.data.length < 3) throw new Error("Sales manager team visibility check failed");
+  if (managerTeam.status !== 200 || managerTeam.body.data.length < 4) throw new Error("Sales manager team visibility check failed");
 
   if (cloudinaryEnabled) await retry(() => cloudinary.api.ping());
-  process.stdout.write("Smoke checks passed: health, auth, catalog, idempotency, atomic sales claiming, manager assignment, ownership privacy, audit trail, Cloudinary.\n");
+  process.stdout.write("Smoke checks passed: health, auth, admin team creation, catalog, idempotency, atomic sales claiming, manager assignment, ownership privacy, audit trail, Cloudinary.\n");
 } finally {
   if (createdQuoteId) await Quote.deleteOne({ _id: createdQuoteId });
   if (createdUserId) await User.deleteOne({ _id: createdUserId });

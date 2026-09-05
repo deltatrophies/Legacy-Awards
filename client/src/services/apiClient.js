@@ -69,7 +69,12 @@ export async function apiRequest(path, options = {}, allowRefresh = true, includ
   if (response.status === 204) return null;
   const payload = await response.json().catch(() => null);
   if (!response.ok) {
-    throw new ApiError(payload?.error?.message || "The request could not be completed", response.status, payload?.error?.code, payload?.error?.details);
+    const details = Array.isArray(payload?.error?.details) ? payload.error.details : [];
+    const detailMessage = details
+      .map((detail) => `${detail.field ? `${detail.field}: ` : ""}${detail.message}`)
+      .filter(Boolean)
+      .join(" · ");
+    throw new ApiError(detailMessage || payload?.error?.message || "The request could not be completed", response.status, payload?.error?.code, details);
   }
   return includeMeta ? { data: payload.data, meta: payload.meta || {} } : payload.data;
 }
