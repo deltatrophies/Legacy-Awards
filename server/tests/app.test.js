@@ -44,4 +44,16 @@ describe("HTTP application", () => {
     expect(response.status).toBe(401);
     expect(response.body.error.code).toBe("AUTH_REQUIRED");
   });
+
+  it("protects manual payment confirmation from guests", async () => {
+    const response = await request(app).post("/api/v1/payments/manual/507f1f77bcf86cd799439011/confirm");
+    expect(response.status).toBe(401);
+    expect(response.body.error.code).toBe("AUTH_REQUIRED");
+  });
+
+  it("validates payment reconciliation references", async () => {
+    const response = await request(app).post("/api/v1/payments/reconcile").send({ quoteReference: "" });
+    expect(response.status).toBe(422);
+    expect(response.body.error.code).toBe("VALIDATION_ERROR");
+  });
 });

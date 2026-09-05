@@ -215,6 +215,16 @@ export const paymentApi = {
     notifyOrderStatusChanged();
     return result;
   },
+  reconcile: (quoteReference, quoteToken) => apiRequest("/payments/reconcile", {
+    method: "POST",
+    headers: { "x-quote-token": quoteToken || "" },
+    body: JSON.stringify({ quoteReference }),
+  }),
+  async confirmManual(quoteId) {
+    const result = await apiRequest(`/payments/manual/${encodeURIComponent(quoteId)}/confirm`, { method: "POST" });
+    notifyOrderStatusChanged();
+    return result;
+  },
 };
 
 export const adminApi = {

@@ -38,15 +38,21 @@ try {
   const me = await request(app).get("/api/v1/auth/me").set("authorization", `Bearer ${accessToken}`);
   if (me.status !== 200 || me.body.data.id !== createdUserId) throw new Error("Authenticated user check failed");
 
-  const quote = await request(app).post("/api/v1/quotes").set("authorization", `Bearer ${accessToken}`).send({
+  const quotePayload = {
+    idempotencyKey: randomUUID(),
     customer: { name: "Smoke Test", phone: "+91 9999999999", email: "smoke@example.com", preference: "Email" },
     items: [{ kind: "catalog", productId: catalog.body.data[0].id, quantity: catalog.body.data[0].minOrder }],
-  });
+  };
+  const quote = await request(app).post("/api/v1/quotes").set("authorization", `Bearer ${accessToken}`).send(quotePayload);
   if (quote.status !== 201) throw new Error(`Quote check failed (${quote.status}): ${JSON.stringify(quote.body)}`);
   createdQuoteId = quote.body.data.id;
+  const repeatedQuote = await request(app).post("/api/v1/quotes").set("authorization", `Bearer ${accessToken}`).send(quotePayload);
+  if (repeatedQuote.status !== 200 || repeatedQuote.body.data.id !== createdQuoteId) {
+    throw new Error("Quote idempotency check failed");
+  }
 
   if (cloudinaryEnabled) await retry(() => cloudinary.api.ping());
-  process.stdout.write("Smoke checks passed: health, auth, MongoDB catalog, quote pricing, Cloudinary credentials.\n");
+  process.stdout.write("Smoke checks passed: health, auth, MongoDB catalog, idempotent quote pricing, Cloudinary credentials.\n");
 } finally {
   if (createdQuoteId) await Quote.deleteOne({ _id: createdQuoteId });
   if (createdUserId) await User.deleteOne({ _id: createdUserId });

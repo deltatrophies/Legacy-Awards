@@ -27,4 +27,10 @@ describe("custom quote pricing", () => {
     expect(item.design.bulkDiscountRate).toBe(10);
     expect(item.lineTotal).toBe(105300);
   });
+
+  it("includes delivery priority in the authoritative custom price", () => {
+    const item = calculateCustomItem({ ...design, delivery: "express" }, 1);
+    expect(item.unitPrice).toBe(1430);
+    expect(item.lineTotal).toBe(1430);
+  });
 });

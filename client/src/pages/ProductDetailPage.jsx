@@ -7,6 +7,14 @@ import { readStorage, writeStorage } from "../utils/storage.js";
 import { optimizedImage, responsiveImageProps } from "../utils/cloudinaryImage.js";
 import "../styles/pages/commerce.css";
 
+const MAX_QUANTITY = 10000;
+
+function normalizeQuantity(value, minimum = 1) {
+  const quantity = Math.floor(Number(value));
+  if (!Number.isFinite(quantity)) return minimum;
+  return Math.min(MAX_QUANTITY, Math.max(minimum, quantity));
+}
+
 export default function ProductDetailPage() {
   const { slug } = useParams();
   const navigate = useNavigate();
@@ -66,19 +74,23 @@ export default function ProductDetailPage() {
       return;
     }
     const cart = readStorage("cart", []);
-    const existing = cart.find((item) => item.id === product.id);
-    const next = existing ? cart.map((item) => item.id === product.id ? { ...item, qty: item.qty + qty } : item) : [...cart, { ...product, qty }];
+    const safeCart = Array.isArray(cart) ? cart : [];
+    const existing = safeCart.find((item) => item.id === product.id);
+    const next = existing
+      ? safeCart.map((item) => item.id === product.id ? { ...item, qty: normalizeQuantity(Number(item.qty) + qty, product.minOrder) } : item)
+      : [...safeCart, { ...product, qty: normalizeQuantity(qty, product.minOrder) }];
     writeStorage("cart", next);
     navigate("/cart");
   };
   const changeQuantity = (value) => {
-    const nextQuantity = Number(value) || product.minOrder;
-    if (nextQuantity < product.minOrder) {
+    const requestedQuantity = Math.floor(Number(value));
+    if (!Number.isFinite(requestedQuantity) || requestedQuantity < product.minOrder) {
       setQuantityNotice(`Minimum order is ${product.minOrder} unit${product.minOrder > 1 ? "s" : ""} for this product.`);
       setQty(product.minOrder);
       return;
     }
-    setQty(nextQuantity);
+    if (requestedQuantity > MAX_QUANTITY) setQuantityNotice(`Maximum quantity per quote item is ${MAX_QUANTITY.toLocaleString("en-IN")}.`);
+    setQty(normalizeQuantity(requestedQuantity, product.minOrder));
   };
 
   return (
@@ -140,7 +152,7 @@ export default function ProductDetailPage() {
           <div className="detail-purchase-panel">
             <label className="detail-qty-field">
               <span>Quantity</span>
-              <input type="number" min={product.minOrder} value={qty} onChange={(event) => changeQuantity(event.target.value)} />
+              <input type="number" min={product.minOrder} max={MAX_QUANTITY} step="1" value={qty} onChange={(event) => changeQuantity(event.target.value)} />
             </label>
             <div className="detail-actions">
               <button className="primary-command" onClick={addToQuote}>Add to Quote Cart</button>

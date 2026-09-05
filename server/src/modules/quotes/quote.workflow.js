@@ -1,6 +1,9 @@
 import { AppError } from "../../common/errors/AppError.js";
 
 export function ensureCustomerActionable(quote, now = new Date()) {
+  if (["paid", "refunded"].includes(quote.paymentStatus)) {
+    throw new AppError(409, "QUOTE_FINALIZED", "This quotation has already been finalized");
+  }
   if (!["quoted", "accepted"].includes(quote.status)) {
     throw new AppError(409, "QUOTE_NOT_READY", "This quote is not ready for a customer decision yet");
   }
@@ -8,6 +11,7 @@ export function ensureCustomerActionable(quote, now = new Date()) {
 }
 
 export async function acceptCustomerQuote(quote, now = new Date()) {
+  if (quote.status === "accepted" && quote.customerDecision === "accepted") return quote;
   ensureCustomerActionable(quote, now);
   quote.status = "accepted";
   quote.customerDecision = "accepted";
@@ -33,10 +37,12 @@ export async function requestCustomerSalesContact(quote, channel, now = new Date
 
 export function prepareAdminQuoteUpdate(current, input, now = new Date()) {
   const update = { ...input };
-  if (["paid", "refunded"].includes(current?.paymentStatus)) {
-    const changesFinalizedQuote = Object.keys(update).some((key) => key !== "internalNotes");
-    if (changesFinalizedQuote) {
-      throw new AppError(409, "QUOTE_FINALIZED", "A paid quotation is locked; manage the confirmed order instead");
+  if (["processing", "paid", "refunded"].includes(current?.paymentStatus)) {
+    const changesLockedQuote = Object.keys(update).some((key) => key !== "internalNotes");
+    if (changesLockedQuote) {
+      throw new AppError(409, "QUOTE_FINALIZED", current.paymentStatus === "processing"
+        ? "Online payment has started; only private notes can be changed"
+        : "A paid quotation is locked; manage the confirmed order instead");
     }
   }
   const includesQuotedPrice = update.subtotal != null || update.discount != null || update.total != null;

@@ -36,7 +36,8 @@ export default function Navbar() {
 
   useEffect(() => {
     const updateCartQuantity = () => {
-      const quantity = readStorage("cart", []).reduce((sum, item) => sum + (Number(item.qty) || 1), 0);
+      const stored = readStorage("cart", []);
+      const quantity = (Array.isArray(stored) ? stored : []).reduce((sum, item) => sum + (Number(item?.qty) || 1), 0);
       setCartQuantity(quantity);
     };
     updateCartQuantity();

@@ -8,15 +8,27 @@ import { quoteApi, uploadArtwork } from "../services/apiClient.js";
 import "../styles/pages/custom-react.css";
 
 const steps = ["Choose Parts", "Size & Finish", "Text & Logo", "Quantity & Packaging", "Review"];
+const MAX_QUANTITY = 10000;
+
+const storedArray = (key) => {
+  const value = readStorage(key, []);
+  return Array.isArray(value) ? value : [];
+};
+
+const normalizeDesign = (value) => ({
+  ...blankDesign,
+  ...(value || {}),
+  quantity: Math.min(MAX_QUANTITY, Math.max(1, Math.floor(Number(value?.quantity)) || 1)),
+});
 
 export default function CustomPage() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const editId = params.get("design");
-  const stored = readStorage("savedDesigns", []).find((item) => item.id === editId) || readStorage("cart", []).find((item) => item.designId === editId)?.design;
-  const [design, setDesign] = useState(stored ? { ...blankDesign, ...stored } : blankDesign);
+  const stored = storedArray("savedDesigns").find((item) => item.id === editId) || storedArray("cart").find((item) => item.designId === editId)?.design;
+  const [design, setDesign] = useState(() => normalizeDesign(stored));
   const [step, setStep] = useState(0);
-  const [saved, setSaved] = useState(() => readStorage("savedDesigns", []));
+  const [saved, setSaved] = useState(() => storedArray("savedDesigns"));
   const [pricingConfig, setPricingConfig] = useState(defaultCustomPricing);
   const [notice, setNotice] = useState("");
   useEffect(() => {
@@ -43,8 +55,8 @@ export default function CustomPage() {
   const set = (key, value) => setDesign((current) => ({ ...current, [key]: value }));
   useEffect(() => {
     if (!editId) return;
-    const item = readStorage("savedDesigns", []).find((entry) => entry.id === editId) || readStorage("cart", []).find((entry) => entry.designId === editId)?.design;
-    if (item) setDesign({ ...blankDesign, ...item });
+    const item = storedArray("savedDesigns").find((entry) => entry.id === editId) || storedArray("cart").find((entry) => entry.designId === editId)?.design;
+    if (item) setDesign(normalizeDesign(item));
   }, [editId]);
   const selected = useMemo(() => ({
     tip: customOptions.tips.find((item) => item.id === design.tip), body: customOptions.bodies.find((item) => item.id === design.body), base: customOptions.bases.find((item) => item.id === design.base), size: customOptions.sizes.find((item) => item.id === design.size), finish: customOptions.finishes.find((item) => item.id === design.finish),
@@ -57,6 +69,7 @@ export default function CustomPage() {
       { label: "Finish", value: pricingConfig.finish[design.finish] || 0 },
       { label: "Engraving", value: pricingConfig.branding[design.branding] || 0 },
       { label: "Packaging", value: pricingConfig.packaging[design.packaging] || 0 },
+      { label: "Delivery", value: pricingConfig.delivery[design.delivery] || 0 },
     ];
     const unit = Math.round(lines.reduce((sum, line) => sum + line.value, 0) * (pricingConfig.size[design.size] || 1));
     const discountRate = [...(pricingConfig.bulkDiscounts || [])]
@@ -66,7 +79,7 @@ export default function CustomPage() {
     return { lines, quantity: design.quantity, discountRate, discount, total: subtotal - discount, perPiece: Math.round((subtotal - discount) / design.quantity) };
   }, [design, pricingConfig]);
   const persistDesign = (forceNew = false) => { const id = forceNew || !editId ? `DES-${Date.now()}` : editId; const entry = { ...design, id, name: design.text.split("\n")[0] || "Custom Trophy", savedAt: new Date().toISOString() }; const next = [...saved.filter((item) => item.id !== id), entry]; setSaved(next); writeStorage("savedDesigns", next); setNotice("Design saved on this device."); return entry; };
-  const addToCart = () => { const item = persistDesign(); const cart = readStorage("cart", []); const cartItem = { id: `custom-${item.id}`, designId: item.id, name: "Custom Fusion Trophy", tag: "Custom design", description: `${selected.tip.name}, ${selected.body.name}, ${selected.base.name}`, price: pricing.perPiece, qty: design.quantity, image: selected.tip.image, design: item }; writeStorage("cart", [...cart.filter((old) => old.designId !== item.id), cartItem]); navigate("/cart"); };
+  const addToCart = () => { const item = persistDesign(); const cart = storedArray("cart"); const cartItem = { id: `custom-${item.id}`, designId: item.id, name: "Custom Fusion Trophy", tag: "Custom design", description: `${selected.tip.name}, ${selected.body.name}, ${selected.base.name}`, price: pricing.perPiece, qty: design.quantity, image: selected.tip.image, design: item }; writeStorage("cart", [...cart.filter((old) => old.designId !== item.id), cartItem]); navigate("/cart"); };
   const downloadPreview = async () => {
     const load = (src) => new Promise((resolve, reject) => { const image = new Image(); image.onload = () => resolve(image); image.onerror = reject; image.src = src; });
     const canvas = document.createElement("canvas"); canvas.width = 900; canvas.height = 1000; const ctx = canvas.getContext("2d");
@@ -90,7 +103,7 @@ export default function CustomPage() {
         {step === 0 && <><h2>Choose trophy parts</h2><h3>Tip style</h3>{cards("tip",customOptions.tips)}<h3>Body style</h3>{cards("body",customOptions.bodies)}<h3>Base style</h3>{cards("base",customOptions.bases)}<h3>Start from a template</h3><div className="preset-list">{designPresets.map((preset) => <button type="button" key={preset.name} onClick={() => setDesign((current) => ({ ...current, ...preset }))}>{preset.name}</button>)}</div></>}
         {step === 1 && <><h2>Choose size and finish</h2><div className="choice-grid"><div><h3>Size</h3>{customOptions.sizes.map((item) => <button type="button" className={`choice-row ${design.size === item.id ? "active" : ""}`} onClick={() => set("size",item.id)} key={item.id}><span>{item.name}</span><strong>{pricingConfig.size[item.id] || item.multiplier}x</strong></button>)}</div><div><h3>Finish</h3>{customOptions.finishes.map((item) => <button type="button" className={`choice-row ${design.finish === item.id ? "active" : ""}`} onClick={() => set("finish",item.id)} key={item.id}><span className="finish-dot" style={{background:item.color}} />{item.name}<strong>+ Rs. {pricingConfig.finish[item.id] ?? item.price}</strong></button>)}</div></div><label className="form-field">Branding method<select value={design.branding} onChange={(e)=>set("branding",e.target.value)}><option value="laser">Laser engraving</option><option value="uv">UV colour print</option><option value="plate">Metal name plate</option><option value="crystal">3D crystal etch</option></select></label></>}
         {step === 2 && <><h2>Add text and logo</h2><label className="form-field">Award text<textarea value={design.text} onChange={(e)=>set("text",e.target.value)} rows="4" /></label><div className="form-grid"><label className="form-field">Font<select value={design.font} onChange={(e)=>set("font",e.target.value)}><option value="classic">Classic</option><option value="modern">Modern</option><option value="bold">Bold</option><option value="script">Script</option></select></label><label className="form-field">Alignment<select value={design.align} onChange={(e)=>set("align",e.target.value)}><option>left</option><option>center</option><option>right</option></select></label><label className="form-field">Text position<select value={design.textPosition} onChange={(e)=>set("textPosition",e.target.value)}><option value="top">Top plate</option><option value="center">Center plate</option><option value="base">Base plate</option></select></label><label className="form-field">Text colour<input type="color" value={design.textColor} onChange={(e)=>set("textColor",e.target.value)} /></label></div><label className="range-field">Text size <input type="range" min="11" max="26" value={design.textSize} onChange={(e)=>set("textSize",Number(e.target.value))} /><output>{design.textSize}px</output></label><label className="form-field">Upload logo<input type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" onChange={(e)=>uploadLogo(e.target.files[0])} /></label><label className="range-field">Logo size <input type="range" min="36" max="130" value={design.logoSize} onChange={(e)=>set("logoSize",Number(e.target.value))} /><output>{design.logoSize}px</output></label>{notice && <p className="success-message">{notice}</p>}</>}
-        {step === 3 && <><h2>Quantity and packaging</h2><p style={{ margin: "-10px 0 18px", color: "#716b61", lineHeight: 1.65 }}>Final contact, notes and delivery preferences are collected once in your cart.</p><div className="form-grid"><label className="form-field">Quantity<input type="number" min="1" value={design.quantity} onChange={(e)=>set("quantity",Math.max(1,Number(e.target.value)||1))} /></label><label className="form-field">Packaging<select value={design.packaging} onChange={(e)=>set("packaging",e.target.value)}><option value="standard">Standard safe pack</option><option value="gift">Premium gift box</option><option value="velvet">Velvet presentation case</option></select></label></div></>}
+        {step === 3 && <><h2>Quantity and packaging</h2><p style={{ margin: "-10px 0 18px", color: "#716b61", lineHeight: 1.65 }}>Final contact details and order notes are collected once in your cart.</p><div className="form-grid"><label className="form-field">Quantity<input type="number" min="1" max={MAX_QUANTITY} step="1" value={design.quantity} onChange={(e)=>set("quantity",Math.min(MAX_QUANTITY,Math.max(1,Math.floor(Number(e.target.value))||1)))} /></label><label className="form-field">Packaging<select value={design.packaging} onChange={(e)=>set("packaging",e.target.value)}><option value="standard">Standard safe pack</option><option value="gift">Premium gift box</option><option value="velvet">Velvet presentation case</option></select></label><label className="form-field">Delivery priority<select value={design.delivery} onChange={(e)=>set("delivery",e.target.value)}><option value="standard">Standard delivery</option><option value="priority">Priority delivery</option><option value="express">Express delivery</option></select></label></div></>}
         {step === 4 && <><h2>Review your design</h2><div className="review-list"><div><span>Parts</span><strong>{selected.tip.name}, {selected.body.name}, {selected.base.name}</strong></div><div><span>Finish and size</span><strong>{selected.finish.name}, {selected.size.name}</strong></div><div><span>Branding</span><strong>{design.branding}</strong></div><div><span>Quantity & packaging</span><strong>{design.quantity} pcs, {design.packaging}</strong></div></div><PriceBreakdown pricing={pricing} /><div className="review-actions"><button type="button" onClick={() => persistDesign()}>Save Design</button><button type="button" onClick={downloadPreview}>Download Preview</button><button type="button" className="primary" onClick={addToCart}>Add to Quote Cart</button></div>{notice && <p className="success-message">{notice}</p>}</>}
         <div className="wizard-nav"><button type="button" disabled={step===0} onClick={()=>setStep(step-1)}>Previous</button>{step<4 && <button type="button" className="primary" onClick={()=>setStep(step+1)}>Continue</button>}</div>
       </section><aside><CustomPreview design={design} options={selected} onLogoMove={(x,y)=>setDesign((current)=>({...current,logoX:x,logoY:y}))} />{step!==4 && <PriceBreakdown pricing={pricing} />}</aside></div>

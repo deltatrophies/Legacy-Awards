@@ -26,3 +26,19 @@ export async function webhook(req, res) {
   await paymentService.processWebhook(req.body, req.get("x-razorpay-signature"), req.get("x-razorpay-event-id"));
   return res.status(204).send();
 }
+
+export async function reconcile(req, res) {
+  const result = await paymentService.reconcilePayment(req.body.quoteReference, req.get("x-quote-token"), req.auth?.userId);
+  return sendData(res, {
+    paymentStatus: result.payment?.status || result.paymentStatus || "unpaid",
+    orderReference: result.order?.reference || "",
+  });
+}
+
+export async function confirmManual(req, res) {
+  const result = await paymentService.confirmManualPayment(req.params.quoteId, req.auth.userId);
+  return sendData(res, {
+    paymentStatus: "paid",
+    orderReference: result.order.reference,
+  });
+}

@@ -1,6 +1,6 @@
 import { createHmac } from "node:crypto";
 import { describe, expect, it } from "vitest";
-import { nextPaymentStatus, validateGatewayPayment, verifyCheckoutSignature } from "../src/modules/payments/payment.service.js";
+import { nextPaymentStatus, selectRecoverableGatewayPayment, validateGatewayPayment, verifyCheckoutSignature } from "../src/modules/payments/payment.service.js";
 
 describe("payment security helpers", () => {
   it("verifies checkout signatures using the server-owned order id", () => {
@@ -25,5 +25,14 @@ describe("payment security helpers", () => {
     expect(nextPaymentStatus("captured", "refunded")).toBe("refunded");
     expect(nextPaymentStatus("refunded", "captured")).toBe("refunded");
     expect(nextPaymentStatus("created", "refunded")).toBe("refunded");
+  });
+
+  it("recovers captured payments before authorized attempts and ignores failed attempts", () => {
+    const authorized = { id: "pay_authorized", status: "authorized" };
+    const captured = { id: "pay_captured", status: "captured" };
+    expect(selectRecoverableGatewayPayment([{ id: "pay_failed", status: "failed" }, authorized, captured])).toBe(captured);
+    expect(selectRecoverableGatewayPayment([authorized])).toBe(authorized);
+    expect(selectRecoverableGatewayPayment([{ status: "failed" }])).toBeNull();
+    expect(selectRecoverableGatewayPayment()).toBeNull();
   });
 });

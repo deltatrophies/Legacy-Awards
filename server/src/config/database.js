@@ -3,6 +3,7 @@ import { env } from "./env.js";
 import { logger } from "./logger.js";
 import { Order } from "../modules/orders/order.model.js";
 import { ensurePaymentIndexes } from "../modules/payments/payment.model.js";
+import { Quote } from "../modules/quotes/quote.model.js";
 
 mongoose.set("strictQuery", true);
 
@@ -23,7 +24,7 @@ export async function connectDatabase() {
   // These uniqueness constraints are part of payment correctness, so production
   // creates them explicitly even though general automatic indexing is disabled.
   try {
-    await Promise.all([ensurePaymentIndexes(), Order.createIndexes()]);
+    await Promise.all([ensurePaymentIndexes(), Order.createIndexes(), Quote.createIndexes()]);
   } catch (error) {
     await mongoose.disconnect().catch(() => {});
     throw error;

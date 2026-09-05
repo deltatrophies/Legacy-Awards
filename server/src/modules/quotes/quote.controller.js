@@ -57,7 +57,7 @@ const serializeCoupon = (coupon) => ({
 
 export async function create(req, res) {
   const result = await quoteService.createQuote(req.body, req.auth?.userId);
-  return sendData(res, serialize(result.quote, result.accessToken), 201);
+  return sendData(res, serialize(result.quote, result.accessToken), result.created === false ? 200 : 201);
 }
 
 export async function track(req, res) {

@@ -1,6 +1,7 @@
-import { createHash, randomBytes } from "node:crypto";
+import { createHash, createHmac, randomBytes } from "node:crypto";
 import { AppError } from "../../common/errors/AppError.js";
 import { createReference } from "../../common/utils/identifiers.js";
+import { env } from "../../config/env.js";
 import { Product } from "../products/product.model.js";
 import { Settings } from "../settings/settings.model.js";
 import { Coupon } from "./coupon.model.js";
@@ -30,6 +31,9 @@ const labels = {
 };
 
 const hashAccessToken = (accessToken) => createHash("sha256").update(accessToken).digest("hex");
+const createAccessToken = (idempotencyKey) => idempotencyKey
+  ? createHmac("sha256", env.JWT_ACCESS_SECRET).update(`quote-access:${idempotencyKey}`).digest("hex")
+  : randomBytes(24).toString("hex");
 
 function normalizePhone(value = "") {
   return String(value).replace(/\D/g, "").replace(/^91(?=\d{10}$)/, "");
@@ -151,12 +155,16 @@ export async function validateCoupon(code, subtotal) {
 }
 
 export async function createQuote(input, userId) {
+  const accessToken = createAccessToken(input.idempotencyKey);
+  if (input.idempotencyKey) {
+    const existing = await Quote.findOne({ idempotencyKey: input.idempotencyKey });
+    if (existing) return { quote: existing, accessToken, created: false };
+  }
   const items = await resolveItems(input.items);
   const subtotal = items.reduce((sum, item) => sum + item.lineTotal, 0);
   const coupon = await calculateDiscount(input.couponCode, subtotal);
-  const accessToken = randomBytes(24).toString("hex");
-  const quote = await Quote.create({
-    reference: createReference("LAQ"),
+  const quoteInput = {
+    idempotencyKey: input.idempotencyKey,
     accessTokenHash: hashAccessToken(accessToken),
     user: userId,
     customer: input.customer,
@@ -166,8 +174,22 @@ export async function createQuote(input, userId) {
     ...coupon,
     total: subtotal - coupon.discount,
     expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-  });
-  return { quote, accessToken };
+  };
+
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    try {
+      const quote = await Quote.create({ ...quoteInput, reference: createReference("LAQ") });
+      return { quote, accessToken, created: true };
+    } catch (error) {
+      if (error?.code !== 11000) throw error;
+      if (input.idempotencyKey) {
+        const existing = await Quote.findOne({ idempotencyKey: input.idempotencyKey });
+        if (existing) return { quote: existing, accessToken, created: false };
+      }
+      if (!error?.keyPattern?.reference || attempt === 3) throw error;
+    }
+  }
+  throw new AppError(500, "QUOTE_CREATION_FAILED", "The quote request could not be created");
 }
 
 export async function getPublicQuote(reference, accessToken) {

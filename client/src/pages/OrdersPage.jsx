@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
 import { createWhatsAppUrl } from "../config/business.js";
@@ -87,6 +87,7 @@ export default function OrdersPage() {
   const [busyQuote, setBusyQuote] = useState("");
   const [activeTab, setActiveTab] = useState("quotes");
   const [businessContact, setBusinessContact] = useState({ businessName: "Legacy Awards", phone: "", whatsapp: "" });
+  const reconciliationTimes = useRef(new Map());
 
   useEffect(() => {
     document.title = "My Orders - Legacy Awards";
@@ -104,30 +105,46 @@ export default function OrdersPage() {
   const loadHistory = async () => {
     try {
       setHistoryError("");
-      const [quoteResult, orderResult, publicQuoteResult] = await Promise.allSettled([
+      const legacyQuote = readStorage("lastQuote", null);
+      const storedGuestQuotes = readStorage("guestQuotes", []);
+      const publicSources = [legacyQuote, ...(Array.isArray(storedGuestQuotes) ? storedGuestQuotes : [])]
+        .filter((quote, index, list) => {
+          const reference = quote?.reference || quote?.id;
+          return quote?.accessToken && reference && list.findIndex((entry) => (entry?.reference || entry?.id) === reference) === index;
+        })
+        .slice(0, 20);
+      const results = await Promise.allSettled([
         user ? quoteApi.mine() : Promise.resolve([]),
         user ? orderApi.mine() : Promise.resolve([]),
-        lastQuote?.accessToken && (lastQuote.reference || lastQuote.id)
-          ? quoteApi.public(lastQuote.reference || lastQuote.id, lastQuote.accessToken)
-          : Promise.resolve(null),
+        ...publicSources.map((quote) => quoteApi.public(quote.reference || quote.id, quote.accessToken)),
       ]);
+      const [quoteResult, orderResult] = results;
+      const publicQuoteResults = results.slice(2);
 
       let nextQuotes = quoteResult.status === "fulfilled" ? quoteResult.value || [] : [];
       let nextOrders = orderResult.status === "fulfilled" ? orderResult.value || [] : [];
+      const freshPublicQuotes = publicQuoteResults.flatMap((result, index) => result.status === "fulfilled" && result.value
+        ? [{ ...result.value, id: result.value.reference, accessToken: publicSources[index].accessToken }]
+        : []);
 
-      if (publicQuoteResult.status === "fulfilled" && publicQuoteResult.value) {
-        const freshQuote = { ...publicQuoteResult.value, id: publicQuoteResult.value.reference, accessToken: lastQuote.accessToken };
-        setFallbackQuote(freshQuote);
-        writeStorage("lastQuote", freshQuote);
-        nextQuotes = [freshQuote, ...nextQuotes.filter((quote) => quote.reference !== freshQuote.reference)];
+      if (freshPublicQuotes.length) {
+        const refreshedByReference = new Map(freshPublicQuotes.map((quote) => [quote.reference, quote]));
+        const persistedQuotes = publicSources.map((quote) => refreshedByReference.get(quote.reference || quote.id) || quote).slice(0, 20);
+        setFallbackQuote(persistedQuotes[0]);
+        writeStorage("guestQuotes", persistedQuotes);
+        writeStorage("lastQuote", persistedQuotes[0]);
+        const publicReferences = new Set(freshPublicQuotes.map((quote) => quote.reference));
+        nextQuotes = [...freshPublicQuotes, ...nextQuotes.filter((quote) => !publicReferences.has(quote.reference))];
       } else if (quoteResult.status === "rejected" && orderResult.status === "rejected") {
         throw quoteResult.reason || orderResult.reason;
       }
 
-      const publicQuote = publicQuoteResult.status === "fulfilled" ? publicQuoteResult.value : null;
-      if (!user && publicQuote?.paymentStatus === "paid" && lastQuote?.accessToken) {
-        const publicOrder = await orderApi.publicByQuote(publicQuote.reference, lastQuote.accessToken).catch(() => null);
-        if (publicOrder) nextOrders = [publicOrder, ...nextOrders.filter((order) => order.reference !== publicOrder.reference)];
+      const paidPublicQuotes = freshPublicQuotes.filter((quote) => quote.paymentStatus === "paid");
+      if (paidPublicQuotes.length) {
+        const publicOrderResults = await Promise.allSettled(paidPublicQuotes.map((quote) => orderApi.publicByQuote(quote.reference, quote.accessToken)));
+        const publicOrders = publicOrderResults.flatMap((result) => result.status === "fulfilled" && result.value ? [result.value] : []);
+        const publicOrderReferences = new Set(publicOrders.map((order) => order.reference));
+        nextOrders = [...publicOrders, ...nextOrders.filter((order) => !publicOrderReferences.has(order.reference))];
       }
 
       setQuotes(nextQuotes);
@@ -161,6 +178,27 @@ export default function OrdersPage() {
       window.removeEventListener("storage", refreshOnStorage);
     };
   }, [user]);
+
+  useEffect(() => {
+    const now = Date.now();
+    const pendingQuotes = quotes
+      .filter((item) => item.paymentMethod === "razorpay" && item.paymentStatus === "processing")
+      .filter((item) => now - (reconciliationTimes.current.get(item.reference || item.id) || 0) >= 60_000)
+      .slice(0, 5);
+    if (!pendingQuotes.length) return undefined;
+    pendingQuotes.forEach((quote) => reconciliationTimes.current.set(quote.reference || quote.id, now));
+    let active = true;
+    Promise.allSettled(pendingQuotes.map((quote) => paymentApi.reconcile(quote.reference || quote.id, quote.accessToken || "")))
+      .then((results) => {
+        if (!active) return;
+        const recovered = results.find((result) => result.status === "fulfilled" && result.value?.orderReference);
+        if (!recovered) return;
+        setHistoryNotice(`Payment recovered securely. Paid order ${recovered.value.orderReference} is ready.`);
+        setActiveTab("orders");
+        loadHistory();
+      });
+    return () => { active = false; };
+  }, [quotes]);
 
   const visibleQuotes = useMemo(() => {
     if (quotes.length || !fallbackQuote) return quotes;
@@ -409,7 +447,10 @@ function TabEmpty({ text, title }) {
 function HistoryCard({ busy = false, onAccept, onContactSales, onOpenPaymentWhatsApp, onPay, record, type }) {
   const [showSalesChoices, setShowSalesChoices] = useState(record.customerDecision === "sales_requested");
   const items = record.items || [];
-  const quoteExpired = type === "quote" && record.status !== "accepted" && record.expiresAt && new Date(record.expiresAt) <= new Date();
+  const quoteExpired = type === "quote"
+    && !["processing", "paid"].includes(record.paymentStatus)
+    && record.expiresAt
+    && new Date(record.expiresAt) <= new Date();
   const status = type === "quote" ? (quoteExpired ? "expired" : record.status) : record.fulfillmentStatus;
   const label = type === "quote" ? "Quote request" : "Paid order";
   const statusLabel = type === "quote" ? "Quote status" : "Order status";
@@ -445,7 +486,7 @@ function HistoryCard({ busy = false, onAccept, onContactSales, onOpenPaymentWhat
       <div className="order-metrics">
         <div><span>Items</span><strong>{items.length}</strong></div>
         <div><span>{type === "quote" ? "Request estimate" : "Total"}</span><strong>{formatPrice(type === "quote" ? requestEstimate : record.total || 0)}</strong></div>
-        <div><span>{type === "quote" ? "Preference" : "Payment"}</span><strong>{type === "quote" ? record.customer?.preference || "WhatsApp" : record.paymentStatus || "Pending"}</strong></div>
+        <div><span>{type === "quote" ? "Preference" : "Payment"}</span><strong>{type === "quote" ? record.customer?.preference || "WhatsApp" : `${record.paymentStatus || "Pending"}${record.paymentProvider ? ` · ${record.paymentProvider === "manual" ? "WhatsApp" : "Razorpay"}` : ""}`}</strong></div>
       </div>
       {type === "quote" && !customerAccepted && record.customerDecision !== "sales_requested" ? <p className="order-status-note">{quoteStatusCopy[status] || "We will keep this request updated here."}</p> : null}
       {hasAdminQuote || customerAccepted ? (
@@ -485,6 +526,11 @@ function HistoryCard({ busy = false, onAccept, onContactSales, onOpenPaymentWhat
                 <>
                   <strong>Payment confirmed</strong>
                   <p>Your paid order has been created and is available in the Paid Orders tab.</p>
+                </>
+              ) : quoteExpired ? (
+                <>
+                  <strong>Quotation expired</strong>
+                  <p>Please contact our team or submit a fresh request before making payment.</p>
                 </>
               ) : record.paymentMethod === "whatsapp" ? (
                 <>

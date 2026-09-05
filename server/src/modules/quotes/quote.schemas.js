@@ -29,6 +29,7 @@ const itemSchema = z.discriminatedUnion("kind", [
 ]);
 
 export const createQuoteSchema = z.object({
+  idempotencyKey: z.string().uuid().optional(),
   customer: z.object({
     name: z.string().trim().min(2).max(120),
     phone: z.string().trim().regex(/^\+?[0-9 ]{10,16}$/),

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { formatPrice } from "../data/products.js";
 import { readStorage, writeStorage } from "../utils/storage.js";
@@ -7,10 +7,30 @@ import { useAuth } from "../context/AuthContext.jsx";
 import "../styles/pages/quote.css";
 import "../styles/pages/cart-modern.css";
 
+const MAX_QUANTITY = 10000;
+
+function normalizeQuantity(value, minimum = 1) {
+  const quantity = Math.floor(Number(value));
+  if (!Number.isFinite(quantity)) return minimum;
+  return Math.min(MAX_QUANTITY, Math.max(minimum, quantity));
+}
+
+function createIdempotencyKey() {
+  if (typeof crypto.randomUUID === "function") return crypto.randomUUID();
+  const bytes = crypto.getRandomValues(new Uint8Array(16));
+  bytes[6] = (bytes[6] & 0x0f) | 0x40;
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+  const hex = [...bytes].map((byte) => byte.toString(16).padStart(2, "0"));
+  return `${hex.slice(0, 4).join("")}-${hex.slice(4, 6).join("")}-${hex.slice(6, 8).join("")}-${hex.slice(8, 10).join("")}-${hex.slice(10).join("")}`;
+}
+
 export default function CartPage() {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
-  const [items, setItems] = useState(() => readStorage("cart", []));
+  const [items, setItems] = useState(() => {
+    const stored = readStorage("cart", []);
+    return Array.isArray(stored) ? stored.filter((item) => item?.id) : [];
+  });
   const [coupon, setCoupon] = useState("");
   const [couponApplied, setCouponApplied] = useState(null);
   const [couponLoading, setCouponLoading] = useState(false);
@@ -18,6 +38,7 @@ export default function CartPage() {
   const [error, setError] = useState("");
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
+  const submissionRef = useRef(null);
   const [customer, setCustomer] = useState({ name: "", phone: "", email: "", organization: "", notes: "", preference: "WhatsApp" });
   useEffect(() => {
     document.title = "Quote Cart - Legacy Awards";
@@ -37,7 +58,7 @@ export default function CartPage() {
   const changeQty = (id, qty) => {
     setCouponApplied(null);
     setCouponMessage("");
-    updateItems(items.map((item) => item.id === id ? { ...item, qty: Math.max(Number(item.minOrder) || 1, qty) } : item));
+    updateItems(items.map((item) => item.id === id ? { ...item, qty: normalizeQuantity(qty, Number(item.minOrder) || 1) } : item));
   };
   const setCustomerField = (field, value) => {
     setCustomer((current) => ({ ...current, [field]: value }));
@@ -98,6 +119,7 @@ export default function CartPage() {
     }
   };
   const submit = async () => {
+    if (submitting || !items.length) return;
     const validationErrors = validateCustomer();
     if (Object.keys(validationErrors).length) {
       setErrors(validationErrors);
@@ -108,11 +130,20 @@ export default function CartPage() {
     setSubmitting(true); setError("");
     try {
       const payloadItems = items.map((item) => item.design
-        ? { kind: "custom", quantity: Number(item.qty) || 1, design: item.design }
-        : { kind: "catalog", productId: item.id, quantity: Number(item.qty) || 1 });
-      const data = await quoteApi.create({ customer, items: payloadItems, couponCode: couponApplied ? couponApplied.code : "" });
+        ? { kind: "custom", quantity: normalizeQuantity(item.qty), design: item.design }
+        : { kind: "catalog", productId: item.id, quantity: normalizeQuantity(item.qty, Number(item.minOrder) || 1) });
+      const payload = { customer, items: payloadItems, couponCode: couponApplied ? couponApplied.code : "" };
+      const fingerprint = JSON.stringify(payload);
+      if (submissionRef.current?.fingerprint !== fingerprint) {
+        submissionRef.current = { fingerprint, idempotencyKey: createIdempotencyKey() };
+      }
+      const data = await quoteApi.create({ ...payload, idempotencyKey: submissionRef.current.idempotencyKey });
       writeStorage("lastQuote", { ...data, id: data.reference });
+      const storedQuotes = readStorage("guestQuotes", []);
+      const guestQuotes = Array.isArray(storedQuotes) ? storedQuotes : [];
+      writeStorage("guestQuotes", [{ ...data, id: data.reference }, ...guestQuotes.filter((quote) => quote.reference !== data.reference)].slice(0, 20));
       writeStorage("cart", []);
+      submissionRef.current = null;
       navigate("/quote-success");
     } catch (requestError) {
       setError(requestError.message || "We could not submit your quote. Please try again.");
@@ -174,7 +205,7 @@ export default function CartPage() {
                       <small>{formatPrice(item.price)} each</small>
                       <div className="quantity-control" aria-label={`Quantity for ${item.name}`}>
                         <button type="button" onClick={() => changeQty(item.id, quantity - 1)} disabled={quantity <= minimum} aria-label={`Decrease ${item.name} quantity`}>−</button>
-                        <input type="number" min={minimum} value={quantity} onChange={(event) => changeQty(item.id, Number(event.target.value) || minimum)} aria-label={`${item.name} quantity`} />
+                        <input type="number" min={minimum} max={MAX_QUANTITY} step="1" value={quantity} onChange={(event) => changeQty(item.id, event.target.value)} aria-label={`${item.name} quantity`} />
                         <button type="button" onClick={() => changeQty(item.id, quantity + 1)} aria-label={`Increase ${item.name} quantity`}>+</button>
                       </div>
                       {minimum > 1 && <em>Minimum {minimum}</em>}

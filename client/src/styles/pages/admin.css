@@ -985,6 +985,12 @@
   background: linear-gradient(135deg, rgba(181, 139, 42, .11), #fffdf9 70%);
 }
 
+.admin-payment-confirmation.is-processing {
+  grid-template-columns: auto minmax(0, 1fr);
+  border-left-color: #a16b0b;
+  background: linear-gradient(135deg, rgba(181, 139, 42, .12), #fffdf9 70%);
+}
+
 .admin-payment-confirmation__icon {
   display: grid;
   place-items: center;
@@ -999,6 +1005,10 @@
 
 .admin-payment-confirmation.is-refunded .admin-payment-confirmation__icon {
   background: #9a6817;
+}
+
+.admin-payment-confirmation.is-processing .admin-payment-confirmation__icon {
+  background: #a16b0b;
 }
 
 .admin-payment-confirmation__copy {
@@ -1102,6 +1112,11 @@
   border-color: #1f6b45;
   background: #1f6b45;
   color: #fff;
+}
+
+.admin-customer-contact-actions .is-manual-confirm {
+  border-color: #1f6b45;
+  background: #1f6b45;
 }
 
 .admin-customer-contact-actions .is-reset {

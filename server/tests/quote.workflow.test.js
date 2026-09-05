@@ -62,9 +62,11 @@ describe("quote decision workflow", () => {
 
   it("locks pricing and payment routing after online payment starts", () => {
     const quote = quoteFixture({ status: "accepted", customerDecision: "accepted", paymentMethod: "razorpay", paymentStatus: "processing" });
-    expect(() => prepareAdminQuoteUpdate(quote, { total: 5000 })).toThrowError(/cannot change/i);
-    expect(() => prepareAdminQuoteUpdate(quote, { paymentMethod: "whatsapp" })).toThrowError(/cannot change/i);
-    expect(prepareAdminQuoteUpdate(quote, { customerNotes: "Payment received soon" }).customerNotes).toBe("Payment received soon");
+    expect(() => prepareAdminQuoteUpdate(quote, { total: 5000 })).toThrowError(/payment has started/i);
+    expect(() => prepareAdminQuoteUpdate(quote, { paymentMethod: "whatsapp" })).toThrowError(/payment has started/i);
+    expect(() => prepareAdminQuoteUpdate(quote, { status: "cancelled" })).toThrowError(/payment has started/i);
+    expect(() => prepareAdminQuoteUpdate(quote, { customerNotes: "Changed during checkout" })).toThrowError(/payment has started/i);
+    expect(prepareAdminQuoteUpdate(quote, { internalNotes: "Customer is paying" }).internalNotes).toBe("Customer is paying");
   });
 
   it("freezes customer-visible quote fields after payment but keeps private notes available", () => {
@@ -72,5 +74,16 @@ describe("quote decision workflow", () => {
     expect(() => prepareAdminQuoteUpdate(paidQuote, { expiresAt: new Date("2031-01-01") })).toThrowError(/locked/i);
     expect(() => prepareAdminQuoteUpdate(paidQuote, { customerNotes: "Changed" })).toThrowError(/locked/i);
     expect(prepareAdminQuoteUpdate(paidQuote, { internalNotes: "Production note" }).internalNotes).toBe("Production note");
+  });
+
+  it("blocks late customer actions after a quote is paid or refunded", () => {
+    expect(() => ensureCustomerActionable(quoteFixture({ paymentStatus: "paid" }))).toThrowError(/finalized/i);
+    expect(() => ensureCustomerActionable(quoteFixture({ paymentStatus: "refunded" }))).toThrowError(/finalized/i);
+  });
+
+  it("treats repeat customer acceptance as idempotent", async () => {
+    const quote = quoteFixture({ status: "accepted", customerDecision: "accepted", customerDecisionAt: new Date("2029-01-01") });
+    await expect(acceptCustomerQuote(quote, new Date("2031-01-01"))).resolves.toBe(quote);
+    expect(quote.save).not.toHaveBeenCalled();
   });
 });

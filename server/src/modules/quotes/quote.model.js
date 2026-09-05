@@ -23,6 +23,7 @@ const customerSchema = new mongoose.Schema({
 
 const quoteSchema = new mongoose.Schema({
   reference: { type: String, required: true, unique: true, index: true },
+  idempotencyKey: { type: String, unique: true, sparse: true, select: false },
   accessTokenHash: { type: String, required: true, select: false },
   user: { type: mongoose.Schema.Types.ObjectId, ref: "User", index: true },
   customer: { type: customerSchema, required: true },

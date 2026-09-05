@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, Navigate, NavLink, useLocation, useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
-import { adminApi, catalogApi, categoryApi, ORDER_STATUS_CHANGED_EVENT, ORDER_STATUS_CHANGED_STORAGE_KEY, uploadProductImage } from "../services/apiClient.js";
+import { adminApi, catalogApi, categoryApi, ORDER_STATUS_CHANGED_EVENT, ORDER_STATUS_CHANGED_STORAGE_KEY, paymentApi, uploadProductImage } from "../services/apiClient.js";
 import { squareThumbnail } from "../utils/cloudinaryImage.js";
 import "../styles/pages/admin.css";
 
@@ -1177,6 +1177,17 @@ function OrderManager({ orders, quotes, detailType, detailId, onUpdated, onError
     }
   };
 
+  const confirmManualPayment = async (quote) => {
+    try {
+      const result = await paymentApi.confirmManual(getId(quote));
+      onUpdated();
+      return result;
+    } catch (requestError) {
+      onError(requestError);
+      return null;
+    }
+  };
+
   if (detailType) {
     const record = detailType === "quote" ? selectedQuote : selectedOrder;
     if (detailLoading) {
@@ -1203,6 +1214,7 @@ function OrderManager({ orders, quotes, detailType, detailId, onUpdated, onError
         quote={selectedQuote}
         onBack={() => navigate("/admin/orders")}
         onOrderStatus={updateStatus}
+        onManualPayment={confirmManualPayment}
         onQuoteStatus={updateQuoteStatus}
       />
     );
@@ -1297,7 +1309,7 @@ function OrderManager({ orders, quotes, detailType, detailId, onUpdated, onError
   );
 }
 
-function OrderDetail({ kind, quote, order, onBack, onQuoteStatus, onOrderStatus }) {
+function OrderDetail({ kind, quote, order, onBack, onManualPayment, onQuoteStatus, onOrderStatus }) {
   const record = kind === "quote" ? quote : order;
   const customer = record.customer || {};
   const items = record.items || [];
@@ -1342,7 +1354,9 @@ function OrderDetail({ kind, quote, order, onBack, onQuoteStatus, onOrderStatus 
 
   const customerAccepted = isQuote && (record.customerDecision === "accepted" || record.status === "accepted");
   const salesRequested = isQuote && record.customerDecision === "sales_requested";
+  const paymentProcessing = isQuote && record.paymentStatus === "processing";
   const paymentFinalized = isQuote && ["paid", "refunded"].includes(record.paymentStatus);
+  const quoteLocked = paymentProcessing || paymentFinalized;
   const paymentPaid = paymentFinalized && record.paymentStatus === "paid";
   const paidOrderReference = order?.reference || record.orderReference || "";
   const customerWhatsApp = customerWhatsAppUrl(customer, record.reference);
@@ -1363,6 +1377,16 @@ function OrderDetail({ kind, quote, order, onBack, onQuoteStatus, onOrderStatus 
         if (chatWindow) chatWindow.location.assign(customerWhatsApp);
         else window.open(customerWhatsApp, "_blank", "noopener,noreferrer");
       }
+    } finally {
+      setSavingQuote(false);
+    }
+  };
+
+  const markManualPaymentPaid = async () => {
+    if (!window.confirm(`Confirm that ${formatMoney(record.total)} has been received for ${record.reference}? This will create a paid order.`)) return;
+    setSavingQuote(true);
+    try {
+      await onManualPayment(record);
     } finally {
       setSavingQuote(false);
     }
@@ -1402,12 +1426,12 @@ function OrderDetail({ kind, quote, order, onBack, onQuoteStatus, onOrderStatus 
 
       <header className="admin-detail-hero">
         <div>
-          <p className="admin-eyebrow">{paymentFinalized ? (paymentPaid ? "Payment complete · confirmed order" : "Payment refunded") : isQuote ? "Quote request" : "Paid order"}</p>
+          <p className="admin-eyebrow">{paymentProcessing ? "Secure payment in progress" : paymentFinalized ? (paymentPaid ? "Payment complete · confirmed order" : "Payment refunded") : isQuote ? "Quote request" : "Paid order"}</p>
           <h2>{record.reference}</h2>
           <span>{formatDate(record.createdAt)}</span>
         </div>
         <div className="admin-detail-actions">
-          {isQuote && !paymentFinalized ? (
+          {isQuote && !quoteLocked ? (
             <select value={record.status} onChange={(event) => onQuoteStatus(record, event.target.value)}>
               {quoteStatuses.filter((status) => status !== "accepted" || record.status === "accepted").map((status) => <option key={status} value={status}>{status}</option>)}
             </select>
@@ -1418,7 +1442,7 @@ function OrderDetail({ kind, quote, order, onBack, onQuoteStatus, onOrderStatus 
                 {orderStatuses.map((status) => <option key={status} value={status}>{status}</option>)}
               </select>
             </>
-          ) : <span className={`admin-status-pill ${paymentPaid ? "is-active" : "is-inactive"}`}>{paymentPaid ? "Paid & converted" : "Refunded"}</span>}
+          ) : <span className={`admin-status-pill ${paymentPaid ? "is-active" : "is-inactive"}`}>{paymentProcessing ? "Payment in progress" : paymentPaid ? "Paid & converted" : "Refunded"}</span>}
         </div>
       </header>
 
@@ -1441,9 +1465,10 @@ function OrderDetail({ kind, quote, order, onBack, onQuoteStatus, onOrderStatus 
             <div><dt>Subtotal</dt><dd>{formatMoney(record.subtotal)}</dd></div>
             <div><dt>Discount</dt><dd>{formatMoney(record.discount)}</dd></div>
             <div><dt>Total</dt><dd>{formatMoney(record.total)}</dd></div>
-            {isQuote && !paymentFinalized ? <div><dt>Expires</dt><dd>{formatDate(record.expiresAt)}</dd></div> : null}
+            {isQuote && !quoteLocked ? <div><dt>Expires</dt><dd>{formatDate(record.expiresAt)}</dd></div> : null}
             {isQuote && paymentFinalized ? <div><dt>{paymentPaid ? "Paid at" : "Payment"}</dt><dd>{paymentPaid ? formatDate(record.paidAt) : "Refunded"}</dd></div> : null}
             {!isQuote ? <div><dt>Payment</dt><dd>{record.paymentStatus || "-"}</dd></div> : null}
+            {!isQuote ? <div><dt>Payment via</dt><dd>{record.paymentProvider === "manual" ? "WhatsApp / manual" : record.paymentProvider === "razorpay" ? "Razorpay" : "-"}</dd></div> : null}
             {isQuote && paymentFinalized ? <div><dt>Order reference</dt><dd>{paidOrderReference || "Creating order record..."}</dd></div> : null}
             {isQuote ? <div><dt>Customer decision</dt><dd>{record.customerDecision === "accepted" || record.status === "accepted" ? "Quotation accepted" : record.customerDecision === "sales_requested" ? "Wants sales assistance" : "Waiting for customer"}</dd></div> : null}
             {isQuote && record.salesContactRequestedAt ? <div><dt>Sales requested</dt><dd>{formatDate(record.salesContactRequestedAt)}</dd></div> : null}
@@ -1452,6 +1477,17 @@ function OrderDetail({ kind, quote, order, onBack, onQuoteStatus, onOrderStatus 
           </dl>
         </section>
       </div>
+
+      {paymentProcessing ? (
+        <section className="admin-detail-card admin-payment-confirmation is-processing">
+          <div className="admin-payment-confirmation__icon" aria-hidden="true">…</div>
+          <div className="admin-payment-confirmation__copy">
+            <p className="admin-eyebrow">Secure checkout started</p>
+            <h3>Waiting for Razorpay payment confirmation</h3>
+            <span>Pricing, quote status and payment routing are temporarily locked so the amount cannot change during checkout. The order will appear automatically after verification.</span>
+          </div>
+        </section>
+      ) : null}
 
       {paymentFinalized ? (
         <section className={`admin-detail-card admin-payment-confirmation ${paymentPaid ? "is-paid" : "is-refunded"}`}>
@@ -1470,7 +1506,7 @@ function OrderDetail({ kind, quote, order, onBack, onQuoteStatus, onOrderStatus 
         </section>
       ) : null}
 
-      {isQuote && !paymentFinalized && (salesRequested || customerAccepted) ? (
+      {isQuote && !quoteLocked && (salesRequested || customerAccepted) ? (
         <section className={`admin-detail-card admin-customer-decision is-${customerAccepted ? "accepted" : "sales"}`}>
           <div>
             <p className="admin-eyebrow">Customer activity · auto-updated</p>
@@ -1488,6 +1524,11 @@ function OrderDetail({ kind, quote, order, onBack, onQuoteStatus, onOrderStatus 
                 <button className={quoteForm.paymentMethod === "whatsapp" ? "active" : "is-secondary"} disabled={savingQuote} type="button" onClick={() => choosePaymentMethod("whatsapp")}>
                   {quoteForm.paymentMethod === "whatsapp" ? "Open WhatsApp payment" : "Use WhatsApp payment"}
                 </button>
+                {quoteForm.paymentMethod === "whatsapp" ? (
+                  <button className="is-manual-confirm" disabled={savingQuote} type="button" onClick={markManualPaymentPaid}>
+                    {savingQuote ? "Confirming…" : "Mark payment received"}
+                  </button>
+                ) : null}
                 {quoteForm.paymentMethod !== "pending" ? <button className="is-reset" disabled={savingQuote} type="button" onClick={() => choosePaymentMethod("pending")}>Clear selection</button> : null}
               </>
             ) : (
@@ -1507,7 +1548,7 @@ function OrderDetail({ kind, quote, order, onBack, onQuoteStatus, onOrderStatus 
         </section>
       ) : null}
 
-      {isQuote && !paymentFinalized ? (
+      {isQuote && !quoteLocked ? (
         <form className="admin-detail-card admin-quote-editor" onSubmit={saveQuote}>
           <div className="admin-section-heading">
             <div>

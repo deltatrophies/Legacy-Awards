@@ -49,6 +49,45 @@ function buildOrderSnapshot(quote) {
   };
 }
 
+async function upsertPaidOrder({ quote, snapshot, paymentProvider, gatewayPaymentId, paidAt, paymentId, manualPaymentConfirmedBy }) {
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      return await Order.findOneAndUpdate(
+        { quote: quote._id },
+        {
+          $setOnInsert: {
+            reference: createReference("LAO"),
+            quote: quote._id,
+            user: snapshot.user,
+            customer: snapshot.customer,
+            items: snapshot.items,
+            subtotal: snapshot.subtotal,
+            discount: snapshot.discount,
+            total: snapshot.total,
+            currency: snapshot.currency,
+            fulfillmentStatus: "pending",
+          },
+          $set: {
+            paymentStatus: "paid",
+            paymentProvider,
+            paidAt,
+            ...(gatewayPaymentId ? { gatewayPaymentId } : {}),
+            ...(paymentId ? { payment: paymentId } : {}),
+            ...(manualPaymentConfirmedBy ? { manualPaymentConfirmedBy, manualPaymentConfirmedAt: paidAt } : {}),
+          },
+        },
+        { new: true, upsert: true, runValidators: true },
+      );
+    } catch (error) {
+      if (error?.code !== 11000) throw error;
+      const existing = await Order.findOne({ quote: quote._id });
+      if (existing) return existing;
+      if (attempt === 2) throw error;
+    }
+  }
+  throw new AppError(500, "ORDER_CREATION_FAILED", "The paid order could not be created");
+}
+
 function storedGatewayOrderIds(payment) {
   return new Set([payment.razorpayOrderId, ...(payment.razorpayOrderIds || [])].filter(Boolean));
 }
@@ -84,6 +123,13 @@ export function nextPaymentStatus(current, incoming) {
   return incoming;
 }
 
+export function selectRecoverableGatewayPayment(items = []) {
+  const payments = Array.isArray(items) ? items : [];
+  return payments.find((item) => item?.status === "captured")
+    || payments.find((item) => item?.status === "authorized")
+    || null;
+}
+
 async function ensureOrder(payment) {
   if (payment.status !== "captured") {
     throw new AppError(409, "PAYMENT_NOT_CAPTURED", "The payment must be captured before creating an order");
@@ -92,36 +138,49 @@ async function ensureOrder(payment) {
   if (!fullPayment?.quote) throw new AppError(404, "QUOTE_NOT_FOUND", "Quote was not found for this payment");
   const snapshot = fullPayment.orderSnapshot || buildOrderSnapshot(fullPayment.quote);
   const paidAt = fullPayment.capturedAt || fullPayment.verifiedAt || new Date();
-  const order = await Order.findOneAndUpdate(
-    { quote: fullPayment.quote._id },
-    {
-      $setOnInsert: {
-        reference: createReference("LAO"),
-        quote: fullPayment.quote._id,
-        user: snapshot.user,
-        customer: snapshot.customer,
-        items: snapshot.items,
-        subtotal: snapshot.subtotal,
-        discount: snapshot.discount,
-        total: snapshot.total,
-        currency: snapshot.currency,
-        fulfillmentStatus: "pending",
-      },
-      $set: {
-        paymentStatus: "paid",
-        paymentProvider: "razorpay",
-        gatewayPaymentId: fullPayment.razorpayPaymentId,
-        paidAt,
-        payment: fullPayment._id,
-      },
-    },
-    { new: true, upsert: true, runValidators: true },
-  );
+  const order = await upsertPaidOrder({
+    quote: fullPayment.quote,
+    snapshot,
+    paymentProvider: "razorpay",
+    gatewayPaymentId: fullPayment.razorpayPaymentId,
+    paidAt,
+    paymentId: fullPayment._id,
+  });
   await Quote.updateOne(
     { _id: fullPayment.quote._id, paymentStatus: { $ne: "refunded" } },
     { $set: { paymentStatus: "paid", paidAt, convertedOrder: order._id, orderReference: order.reference } },
   );
   return order;
+}
+
+export async function confirmManualPayment(quoteId, confirmedBy) {
+  const quote = await Quote.findById(quoteId);
+  if (!quote) throw new AppError(404, "QUOTE_NOT_FOUND", "Quote was not found");
+  if (quote.paymentStatus === "refunded") {
+    throw new AppError(409, "PAYMENT_REFUNDED", "This order has been refunded and cannot be marked paid again");
+  }
+  const customerAccepted = quote.customerDecision === "accepted"
+    || (quote.status === "accepted" && !quote.customerDecisionAt);
+  if (quote.status !== "accepted" || !customerAccepted) {
+    throw new AppError(409, "QUOTE_NOT_ACCEPTED", "The customer must accept the quotation before manual payment can be confirmed");
+  }
+  if (quote.paymentMethod !== "whatsapp") {
+    throw new AppError(409, "MANUAL_PAYMENT_NOT_SELECTED", "WhatsApp/manual payment is not selected for this quotation");
+  }
+
+  const paidAt = quote.paidAt || new Date();
+  const order = await upsertPaidOrder({
+    quote,
+    snapshot: buildOrderSnapshot(quote),
+    paymentProvider: "manual",
+    paidAt,
+    manualPaymentConfirmedBy: confirmedBy,
+  });
+  await Quote.updateOne(
+    { _id: quote._id, paymentStatus: { $ne: "refunded" } },
+    { $set: { paymentStatus: "paid", paidAt, convertedOrder: order._id, orderReference: order.reference } },
+  );
+  return { quote, order };
 }
 
 async function getPayableQuote(reference, quoteToken, userId) {
@@ -220,13 +279,11 @@ export async function createPaymentOrder(reference, quoteToken, userId) {
     const order = await ensureOrder(initialization.payment);
     return { payment: initialization.payment, keyId: env.RAZORPAY_KEY_ID, alreadyPaid: true, order };
   }
-  if (quote.expiresAt <= new Date()) {
-    if (initialization.acquired) {
-      await Payment.updateOne(
-        { _id: initialization.payment._id, initializationKey: initialization.payment.initializationKey },
-        { $set: { status: "failed", failureCode: "QUOTE_EXPIRED", failureReason: "Quote expired before checkout" }, $unset: { initializationKey: 1 } },
-      );
-    }
+  if (quote.expiresAt <= new Date() && initialization.acquired) {
+    const failureUpdate = await Payment.updateOne(
+      { _id: initialization.payment._id, initializationKey: initialization.payment.initializationKey },
+      { $set: { status: "failed", failureCode: "QUOTE_EXPIRED", failureReason: "Quote expired before checkout" }, $unset: { initializationKey: 1 } },
+    );
     throw new AppError(410, "QUOTE_EXPIRED", "This quote has expired");
   }
   await Quote.updateOne({ _id: quote._id, paymentStatus: { $nin: ["paid", "refunded"] } }, { $set: { paymentStatus: "processing" } });
@@ -264,7 +321,11 @@ export async function createPaymentOrder(reference, quoteToken, userId) {
         $unset: { initializationKey: 1, initializationStartedAt: 1 },
       },
     );
-    await Quote.updateOne({ _id: quote._id, paymentStatus: { $nin: ["paid", "refunded"] } }, { $set: { paymentStatus: "failed" } });
+    if (failureUpdate.modifiedCount) {
+      await Quote.updateOne({ _id: quote._id, paymentStatus: { $nin: ["paid", "refunded"] } }, { $set: { paymentStatus: "failed" } });
+    } else {
+      throw new AppError(409, "PAYMENT_INITIALIZING", "A newer checkout attempt is already being prepared; please retry in a moment");
+    }
     if (error instanceof AppError) throw error;
     throw new AppError(502, "PAYMENT_GATEWAY_UNAVAILABLE", "Secure checkout could not be prepared. Please try again");
   }
@@ -349,6 +410,33 @@ export async function verifyCheckout(input, quoteToken, userId) {
 
   const gatewayPayment = await fetchCapturedPayment(input.razorpay_payment_id, payment);
   validateGatewayPayment(gatewayPayment, payment, serverOrderId);
+  return markCaptured(payment, gatewayPayment);
+}
+
+export async function reconcilePayment(reference, quoteToken, userId) {
+  if (!razorpayEnabled) throw new AppError(503, "PAYMENTS_NOT_CONFIGURED", "Online payments are not configured");
+  const quote = await getPayableQuote(reference, quoteToken, userId);
+  const payment = await Payment.findOne({ quote: quote._id });
+  if (!payment) return { paymentStatus: quote.paymentStatus || "unpaid" };
+  if (payment.status === "captured") return { payment, order: await ensureOrder(payment) };
+  if (payment.status === "refunded" || !payment.razorpayOrderId) return { payment };
+
+  let collection;
+  try {
+    collection = await razorpay.orders.fetchPayments(payment.razorpayOrderId);
+  } catch (error) {
+    const details = gatewayErrorDetails(error);
+    logger.warn({ quoteReference: reference, gatewayCode: details.code }, "Could not reconcile Razorpay payment status");
+    throw new AppError(502, "PAYMENT_STATUS_UNAVAILABLE", "Payment status could not be refreshed. Please try again shortly");
+  }
+
+  let gatewayPayment = selectRecoverableGatewayPayment(collection?.items);
+  if (!gatewayPayment) return { payment };
+  validateGatewayPayment(gatewayPayment, payment, payment.razorpayOrderId);
+  if (gatewayPayment.status === "authorized") {
+    gatewayPayment = await fetchCapturedPayment(gatewayPayment.id, payment);
+    validateGatewayPayment(gatewayPayment, payment, payment.razorpayOrderId);
+  }
   return markCaptured(payment, gatewayPayment);
 }
 

@@ -16,6 +16,8 @@ const orderSchema = new mongoose.Schema({
   paidAt: Date,
   fulfillmentStatus: { type: String, enum: ["pending", "artwork", "production", "ready", "shipped", "delivered", "cancelled"], default: "pending", index: true },
   payment: { type: mongoose.Schema.Types.ObjectId, ref: "Payment" },
+  manualPaymentConfirmedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+  manualPaymentConfirmedAt: Date,
 }, { timestamps: true, versionKey: false });
 
 export const Order = mongoose.model("Order", orderSchema);
