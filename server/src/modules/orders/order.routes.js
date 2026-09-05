@@ -6,6 +6,7 @@ import * as controller from "./order.controller.js";
 import { updateOrderSchema } from "./order.schemas.js";
 
 export const orderRouter = Router();
+orderRouter.get("/public/by-quote/:reference", asyncHandler(controller.getPublicByQuote));
 orderRouter.get("/mine", authenticate, asyncHandler(controller.listMine));
 orderRouter.get("/mine/:id", authenticate, asyncHandler(controller.getMine));
 

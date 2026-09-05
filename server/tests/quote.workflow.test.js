@@ -59,4 +59,11 @@ describe("quote decision workflow", () => {
     expect(update.status).toBe("quoted");
     expect(update.customerNotes).toBe("");
   });
+
+  it("locks pricing and payment routing after online payment starts", () => {
+    const quote = quoteFixture({ status: "accepted", customerDecision: "accepted", paymentMethod: "razorpay", paymentStatus: "processing" });
+    expect(() => prepareAdminQuoteUpdate(quote, { total: 5000 })).toThrowError(/cannot change/i);
+    expect(() => prepareAdminQuoteUpdate(quote, { paymentMethod: "whatsapp" })).toThrowError(/cannot change/i);
+    expect(prepareAdminQuoteUpdate(quote, { customerNotes: "Payment received soon" }).customerNotes).toBe("Payment received soon");
+  });
 });

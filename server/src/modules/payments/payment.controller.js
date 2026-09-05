@@ -7,8 +7,11 @@ export async function create(req, res) {
     keyId: result.keyId,
     gatewayOrderId: result.payment.razorpayOrderId,
     amount: result.payment.amount,
+    amountMinor: result.payment.amountMinor || Math.round(result.payment.amount * 100),
     currency: result.payment.currency,
-  }, 201);
+    alreadyPaid: Boolean(result.alreadyPaid),
+    orderReference: result.order?.reference,
+  }, result.alreadyPaid ? 200 : 201);
 }
 
 export async function verify(req, res) {
@@ -20,6 +23,6 @@ export async function verify(req, res) {
 }
 
 export async function webhook(req, res) {
-  await paymentService.processWebhook(req.body, req.get("x-razorpay-signature"), JSON.parse(req.body.toString("utf8")));
+  await paymentService.processWebhook(req.body, req.get("x-razorpay-signature"), req.get("x-razorpay-event-id"));
   return res.status(204).send();
 }

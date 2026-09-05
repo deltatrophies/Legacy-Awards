@@ -89,6 +89,8 @@ app.get("/api/health", (_req, res) => res.json({ success: true, data: { status: 
 app.use("/api/v1/auth/login", sensitiveLimiter);
 app.use("/api/v1/auth/register", sensitiveLimiter);
 app.use("/api/v1/uploads", sensitiveLimiter);
+app.use("/api/v1/payments/orders", sensitiveLimiter);
+app.use("/api/v1/payments/verify", sensitiveLimiter);
 app.use("/api/v1", apiLimiter, databaseAvailability, apiRouter);
 
 if (isProduction) {

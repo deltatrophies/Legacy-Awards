@@ -195,6 +195,9 @@ export const quoteApi = {
 export const orderApi = {
   mine: () => apiRequest("/orders/mine?limit=100"),
   getMine: (id) => apiRequest(`/orders/mine/${encodeURIComponent(id)}`),
+  publicByQuote: (reference, accessToken) => apiRequest(`/orders/public/by-quote/${encodeURIComponent(reference)}`, {
+    headers: { "x-quote-token": accessToken || "" },
+  }, false),
 };
 
 export const paymentApi = {
@@ -202,12 +205,16 @@ export const paymentApi = {
     method: "POST",
     headers: { "x-quote-token": quoteToken || "" },
     body: JSON.stringify({ quoteReference }),
-  }, false),
-  verify: (input, quoteToken) => apiRequest("/payments/verify", {
-    method: "POST",
-    headers: { "x-quote-token": quoteToken || "" },
-    body: JSON.stringify(input),
-  }, false),
+  }),
+  async verify(input, quoteToken) {
+    const result = await apiRequest("/payments/verify", {
+      method: "POST",
+      headers: { "x-quote-token": quoteToken || "" },
+      body: JSON.stringify(input),
+    });
+    notifyOrderStatusChanged();
+    return result;
+  },
 };
 
 export const adminApi = {

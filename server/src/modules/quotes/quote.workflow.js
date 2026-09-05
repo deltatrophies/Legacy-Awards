@@ -34,6 +34,10 @@ export async function requestCustomerSalesContact(quote, channel, now = new Date
 export function prepareAdminQuoteUpdate(current, input, now = new Date()) {
   const update = { ...input };
   const includesQuotedPrice = update.subtotal != null || update.discount != null || update.total != null;
+  const changesPaymentRoute = update.paymentMethod != null && update.paymentMethod !== current?.paymentMethod;
+  if (["processing", "paid", "refunded"].includes(current?.paymentStatus) && (includesQuotedPrice || changesPaymentRoute)) {
+    throw new AppError(409, "PAYMENT_ALREADY_STARTED", "Price and payment method cannot change after online payment has started");
+  }
   if (includesQuotedPrice && ["submitted", "reviewing"].includes(update.status)) update.status = "quoted";
 
   if (update.status === "accepted" && current?.status !== "accepted" && current?.customerDecision !== "accepted") {

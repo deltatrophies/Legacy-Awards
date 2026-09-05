@@ -42,6 +42,8 @@ const quoteSchema = new mongoose.Schema({
   salesContactChannelSelectedAt: Date,
   paymentMethod: { type: String, enum: ["pending", "razorpay", "whatsapp"], default: "pending", index: true },
   paymentMethodSelectedAt: Date,
+  paymentStatus: { type: String, enum: ["unpaid", "processing", "paid", "failed", "refunded"], default: "unpaid", index: true },
+  paidAt: Date,
   internalNotes: { type: String, select: false },
   customerNotes: { type: String, trim: true, default: "" },
 }, { timestamps: true, versionKey: false });

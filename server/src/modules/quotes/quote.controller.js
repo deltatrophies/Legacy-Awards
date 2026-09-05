@@ -32,6 +32,8 @@ const serialize = (quote, accessToken) => ({
   salesContactChannelSelectedAt: quote.salesContactChannelSelectedAt,
   paymentMethod: quote.paymentMethod || "pending",
   paymentMethodSelectedAt: quote.paymentMethodSelectedAt,
+  paymentStatus: quote.paymentStatus || "unpaid",
+  paidAt: quote.paidAt,
   internalNotes: quote.internalNotes || "",
   customerNotes: quote.customerNotes || "",
   createdAt: quote.createdAt,

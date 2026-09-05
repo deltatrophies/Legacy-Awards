@@ -4,8 +4,49 @@ import { useAuth } from "../context/AuthContext.jsx";
 import { createWhatsAppUrl } from "../config/business.js";
 import { readStorage, writeStorage } from "../utils/storage.js";
 import { formatPrice } from "../data/products.js";
-import { ORDER_STATUS_CHANGED_EVENT, ORDER_STATUS_CHANGED_STORAGE_KEY, orderApi, quoteApi, settingsApi } from "../services/apiClient.js";
+import { ORDER_STATUS_CHANGED_EVENT, ORDER_STATUS_CHANGED_STORAGE_KEY, orderApi, paymentApi, quoteApi, settingsApi } from "../services/apiClient.js";
 import "../styles/pages/account.css";
+
+const RAZORPAY_CHECKOUT_URL = "https://checkout.razorpay.com/v1/checkout.js";
+let razorpayScriptPromise;
+
+function loadRazorpayCheckout() {
+  if (typeof window.Razorpay === "function") return Promise.resolve(window.Razorpay);
+  if (razorpayScriptPromise) return razorpayScriptPromise;
+  razorpayScriptPromise = new Promise((resolve, reject) => {
+    const existing = document.querySelector(`script[src="${RAZORPAY_CHECKOUT_URL}"]`);
+    const script = existing || document.createElement("script");
+    const timer = window.setTimeout(() => {
+      script.remove();
+      reject(new Error("Secure checkout took too long to load. Please try again."));
+    }, 15000);
+    const onLoad = () => {
+      window.clearTimeout(timer);
+      if (typeof window.Razorpay === "function") resolve(window.Razorpay);
+      else {
+        script.remove();
+        reject(new Error("Secure checkout did not initialize"));
+      }
+    };
+    const onError = () => {
+      window.clearTimeout(timer);
+      script.remove();
+      reject(new Error("Secure checkout could not be loaded. Check your connection and try again."));
+    };
+    script.addEventListener("load", onLoad, { once: true });
+    script.addEventListener("error", onError, { once: true });
+    if (!existing) {
+      script.src = RAZORPAY_CHECKOUT_URL;
+      script.async = true;
+      script.dataset.legacyRazorpay = "true";
+      document.head.appendChild(script);
+    }
+  }).catch((error) => {
+    razorpayScriptPromise = undefined;
+    throw error;
+  });
+  return razorpayScriptPromise;
+}
 
 function AccountShell({ children }) {
   return (
@@ -72,7 +113,7 @@ export default function OrdersPage() {
       ]);
 
       let nextQuotes = quoteResult.status === "fulfilled" ? quoteResult.value || [] : [];
-      const nextOrders = orderResult.status === "fulfilled" ? orderResult.value || [] : [];
+      let nextOrders = orderResult.status === "fulfilled" ? orderResult.value || [] : [];
 
       if (publicQuoteResult.status === "fulfilled" && publicQuoteResult.value) {
         const freshQuote = { ...publicQuoteResult.value, id: publicQuoteResult.value.reference, accessToken: lastQuote.accessToken };
@@ -81,6 +122,12 @@ export default function OrdersPage() {
         nextQuotes = [freshQuote, ...nextQuotes.filter((quote) => quote.reference !== freshQuote.reference)];
       } else if (quoteResult.status === "rejected" && orderResult.status === "rejected") {
         throw quoteResult.reason || orderResult.reason;
+      }
+
+      const publicQuote = publicQuoteResult.status === "fulfilled" ? publicQuoteResult.value : null;
+      if (!user && publicQuote?.paymentStatus === "paid" && lastQuote?.accessToken) {
+        const publicOrder = await orderApi.publicByQuote(publicQuote.reference, lastQuote.accessToken).catch(() => null);
+        if (publicOrder) nextOrders = [publicOrder, ...nextOrders.filter((order) => order.reference !== publicOrder.reference)];
       }
 
       setQuotes(nextQuotes);
@@ -182,8 +229,79 @@ export default function OrdersPage() {
     else window.location.assign(url);
   };
 
-  const showOnlinePaymentNotice = () => {
-    setHistoryNotice("Online payment has been selected for this quotation. Secure checkout will be enabled here shortly.");
+  const payOnline = async (quote) => {
+    const quoteReference = quote.reference || quote.id;
+    const quoteToken = quote.accessToken || (lastQuote?.reference === quote.reference ? lastQuote.accessToken : "");
+    setBusyQuote(quoteReference);
+    setHistoryError("");
+    setHistoryNotice("");
+    try {
+      const checkoutOrder = await paymentApi.createOrder(quoteReference, quoteToken);
+      if (checkoutOrder.alreadyPaid) {
+        await loadHistory();
+        setActiveTab("orders");
+        setHistoryNotice(`Payment already confirmed. Order ${checkoutOrder.orderReference || ""} is ready.`.trim());
+        return;
+      }
+
+      const RazorpayCheckout = await loadRazorpayCheckout();
+      const checkoutResponse = await new Promise((resolve, reject) => {
+        let completed = false;
+        const checkout = new RazorpayCheckout({
+          key: checkoutOrder.keyId,
+          amount: checkoutOrder.amountMinor,
+          currency: checkoutOrder.currency,
+          name: businessContact.businessName || "Legacy Awards",
+          description: `Payment for quotation ${quoteReference}`,
+          order_id: checkoutOrder.gatewayOrderId,
+          prefill: {
+            name: quote.customer?.name || user?.name || "",
+            email: quote.customer?.email || user?.email || "",
+            contact: quote.customer?.phone || user?.phone || "",
+          },
+          notes: { quoteReference },
+          theme: { color: "#5c1a1a" },
+          retry: { enabled: true },
+          handler(response) {
+            completed = true;
+            resolve(response);
+          },
+          modal: {
+            ondismiss() {
+              if (!completed) reject(Object.assign(new Error("Payment window closed"), { code: "CHECKOUT_DISMISSED" }));
+            },
+          },
+        });
+        checkout.on("payment.failed", (event) => {
+          const reason = event?.error?.description || "Payment attempt failed. You can retry securely in the checkout window.";
+          setHistoryError(reason);
+        });
+        try {
+          checkout.open();
+        } catch (error) {
+          reject(error);
+        }
+      });
+
+      const result = await paymentApi.verify({
+        quoteReference,
+        razorpay_order_id: checkoutResponse.razorpay_order_id,
+        razorpay_payment_id: checkoutResponse.razorpay_payment_id,
+        razorpay_signature: checkoutResponse.razorpay_signature,
+      }, quoteToken);
+      await loadHistory();
+      setActiveTab("orders");
+      setHistoryError("");
+      setHistoryNotice(`Payment confirmed securely. Paid order ${result.orderReference} has been created.`);
+    } catch (requestError) {
+      if (requestError.code === "CHECKOUT_DISMISSED") {
+        setHistoryNotice("Checkout was closed. If your bank was debited, do not pay again—refresh this page; confirmation updates automatically.");
+      } else {
+        setHistoryError(requestError.message || "Payment could not be completed. Please try again.");
+      }
+    } finally {
+      setBusyQuote("");
+    }
   };
 
   if (loading) return <AccountShell><div className="account-card">Loading orders...</div></AccountShell>;
@@ -237,7 +355,7 @@ export default function OrdersPage() {
                       onAccept={acceptQuote}
                       onContactSales={requestSalesContact}
                       onOpenPaymentWhatsApp={openPaymentWhatsApp}
-                      onPay={showOnlinePaymentNotice}
+                      onPay={payOnline}
                       record={quote}
                       type="quote"
                     />
@@ -296,6 +414,7 @@ function HistoryCard({ busy = false, onAccept, onContactSales, onOpenPaymentWhat
   const label = type === "quote" ? "Quote request" : "Paid order";
   const statusLabel = type === "quote" ? "Quote status" : "Order status";
   const customerAccepted = type === "quote" && (record.customerDecision === "accepted" || status === "accepted");
+  const paymentConfirmed = type === "quote" && record.paymentStatus === "paid";
   const canAccept = type === "quote" && status === "quoted" && !customerAccepted;
   const canContactSales = type === "quote" && status === "quoted" && !customerAccepted;
   const itemEstimate = items.reduce((sum, item) => sum + Number(item.lineTotal || 0), 0);
@@ -362,7 +481,12 @@ function HistoryCard({ busy = false, onAccept, onContactSales, onOpenPaymentWhat
                 </div>
               </div>
               <span>Payment next step</span>
-              {record.paymentMethod === "whatsapp" ? (
+              {paymentConfirmed ? (
+                <>
+                  <strong>Payment confirmed</strong>
+                  <p>Your paid order has been created and is available in the Paid Orders tab.</p>
+                </>
+              ) : record.paymentMethod === "whatsapp" ? (
                 <>
                   <strong>Payment through WhatsApp</strong>
                   <p>Continue on WhatsApp to receive the verified QR or bank details.</p>
@@ -372,7 +496,7 @@ function HistoryCard({ busy = false, onAccept, onContactSales, onOpenPaymentWhat
                 <>
                   <strong>Online payment requested</strong>
                   <p>Your quote is ready for website payment.</p>
-                  <button type="button" onClick={() => onPay(record)}>Pay quoted amount</button>
+                  <button type="button" disabled={busy} onClick={() => onPay(record)}>{busy ? "Opening secure checkout..." : `Pay ${formatPrice(record.total || 0)}`}</button>
                 </>
               ) : (
                 <>

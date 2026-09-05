@@ -1,7 +1,15 @@
 import { AppError } from "../../common/errors/AppError.js";
 import { paginationFrom, paginationMeta } from "../../common/utils/pagination.js";
 import { sendData } from "../../common/utils/response.js";
+import { getPublicQuote } from "../quotes/quote.service.js";
 import { Order } from "./order.model.js";
+
+export async function getPublicByQuote(req, res) {
+  const quote = await getPublicQuote(req.params.reference, req.get("x-quote-token"));
+  const order = await Order.findOne({ quote: quote._id }).lean();
+  if (!order) throw new AppError(404, "ORDER_NOT_FOUND", "A paid order has not been created for this quote yet");
+  return sendData(res, order);
+}
 
 export async function list(req, res) {
   const { page, limit, skip } = paginationFrom(req.query);

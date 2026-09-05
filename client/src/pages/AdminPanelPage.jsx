@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, Navigate, NavLink, useLocation, useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
-import { adminApi, catalogApi, categoryApi, uploadProductImage } from "../services/apiClient.js";
+import { adminApi, catalogApi, categoryApi, ORDER_STATUS_CHANGED_EVENT, ORDER_STATUS_CHANGED_STORAGE_KEY, uploadProductImage } from "../services/apiClient.js";
 import { squareThumbnail } from "../utils/cloudinaryImage.js";
 import "../styles/pages/admin.css";
 
@@ -194,11 +194,18 @@ export default function AdminPanelPage() {
       }
     };
     const timer = window.setInterval(refreshOrderPipeline, 5000);
+    const refreshOnStorage = (event) => {
+      if (event.key === ORDER_STATUS_CHANGED_STORAGE_KEY) refreshOrderPipeline();
+    };
     window.addEventListener("focus", refreshOrderPipeline);
+    window.addEventListener(ORDER_STATUS_CHANGED_EVENT, refreshOrderPipeline);
+    window.addEventListener("storage", refreshOnStorage);
     return () => {
       active = false;
       window.clearInterval(timer);
       window.removeEventListener("focus", refreshOrderPipeline);
+      window.removeEventListener(ORDER_STATUS_CHANGED_EVENT, refreshOrderPipeline);
+      window.removeEventListener("storage", refreshOnStorage);
     };
   }, [activeSection]);
 

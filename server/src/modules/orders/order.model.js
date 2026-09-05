@@ -11,6 +11,9 @@ const orderSchema = new mongoose.Schema({
   total: { type: Number, required: true },
   currency: { type: String, default: "INR" },
   paymentStatus: { type: String, enum: ["pending", "paid", "refunded", "failed"], default: "paid", index: true },
+  paymentProvider: { type: String, enum: ["razorpay", "manual"], default: "razorpay" },
+  gatewayPaymentId: String,
+  paidAt: Date,
   fulfillmentStatus: { type: String, enum: ["pending", "artwork", "production", "ready", "shipped", "delivered", "cancelled"], default: "pending", index: true },
   payment: { type: mongoose.Schema.Types.ObjectId, ref: "Payment" },
 }, { timestamps: true, versionKey: false });

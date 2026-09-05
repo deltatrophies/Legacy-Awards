@@ -82,7 +82,13 @@ Set `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, and `RAZORPAY_WEBHOOK_SECRET`. Con
 https://your-domain.example/api/v1/payments/webhook
 ```
 
-Payments remain unavailable until the credentials are present. A staff member must mark a final quote `accepted` before its payment order can be created.
+For the current Render API, the webhook URL is:
+
+```text
+https://legacy-awards-delta-trophies.onrender.com/api/v1/payments/webhook
+```
+
+Subscribe to `payment.authorized`, `payment.captured`, `payment.failed`, and `payment.refunded`, and enable automatic capture in Razorpay. Payments remain unavailable until the key pair is present. Checkout becomes available only after the customer accepts the final quote and an admin selects online payment. Use Test Mode keys and a Test Mode webhook while validating; replace all three values together for Live Mode.
 
 ## Production
 
