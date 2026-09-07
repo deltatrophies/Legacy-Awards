@@ -59,48 +59,59 @@ export default function SalesPanelPage() {
     }
     if (!quiet) setLoading(true);
     try {
+      const detailRequest = detailId && ["leads", "orders"].includes(section)
+        ? (section === "leads" ? salesApi.getQuote(detailId) : salesApi.getOrder(detailId))
+          .then((data) => ({ data }))
+          .catch((detailError) => ({ error: detailError }))
+        : Promise.resolve(null);
       const results = await Promise.all([
         salesApi.summary(),
         salesApi.listQuotes(view),
         salesApi.listOrders(view),
         canManage ? salesApi.team() : Promise.resolve([]),
+        detailRequest,
       ]);
       setSummary(results[0] || {});
       setQuotes(results[1] || []);
       setOrders(results[2] || []);
       setTeam(results[3] || []);
-      setError("");
+      const detailResult = results[4];
+      if (detailResult?.error) {
+        setDetailRecord(null);
+        if (!quiet) setError(detailResult.error.message || "This record could not be loaded.");
+      } else {
+        setDetailRecord(detailResult?.data ? { kind: section, data: detailResult.data } : null);
+        setError("");
+      }
     } catch (requestError) {
       if (!quiet) setError(requestError.message || "Sales workspace could not be loaded.");
     } finally {
       if (!quiet) setLoading(false);
     }
-  }, [canManage, user, view]);
+  }, [canManage, detailId, section, user, view]);
 
   useEffect(() => { refresh(); }, [refresh]);
-  useEffect(() => {
-    if (!detailId || !["leads", "orders"].includes(section) || !user) {
-      setDetailRecord(null);
-      return undefined;
-    }
-    let active = true;
-    const loader = section === "leads" ? salesApi.getQuote(detailId) : salesApi.getOrder(detailId);
-    loader.then((data) => { if (active) setDetailRecord({ kind: section, data }); }).catch((requestError) => { if (active) setError(requestError.message || "This record could not be loaded."); });
-    return () => { active = false; };
-  }, [detailId, section, user]);
   useEffect(() => { document.title = `${section === "orders" ? "Paid Orders" : section === "leads" ? "Sales Leads" : "Sales Dashboard"} - Legacy Awards`; }, [section]);
   useEffect(() => {
-    const poll = () => { if (!document.hidden) refresh({ quiet: true }); };
-    const timer = window.setInterval(poll, 10_000);
-    const storage = (event) => { if (event.key === ORDER_STATUS_CHANGED_STORAGE_KEY) poll(); };
+    let refreshing = false;
+    const poll = async () => {
+      if (document.hidden || refreshing) return;
+      refreshing = true;
+      try { await refresh({ quiet: true }); } finally { refreshing = false; }
+    };
+    const timer = window.setInterval(poll, 5_000);
+    const storage = (event) => { if (event.key === ORDER_STATUS_CHANGED_STORAGE_KEY) void poll(); };
+    const visibility = () => { if (!document.hidden) void poll(); };
     window.addEventListener("focus", poll);
     window.addEventListener("storage", storage);
     window.addEventListener(ORDER_STATUS_CHANGED_EVENT, poll);
+    document.addEventListener("visibilitychange", visibility);
     return () => {
       window.clearInterval(timer);
       window.removeEventListener("focus", poll);
       window.removeEventListener("storage", storage);
       window.removeEventListener(ORDER_STATUS_CHANGED_EVENT, poll);
+      document.removeEventListener("visibilitychange", visibility);
     };
   }, [refresh]);
 
@@ -111,10 +122,6 @@ export default function SalesPanelPage() {
       setNotice(success);
       window.setTimeout(() => setNotice(""), 3200);
       await refresh({ quiet: true });
-      if (detailId && ["leads", "orders"].includes(section)) {
-        const data = section === "leads" ? await salesApi.getQuote(detailId) : await salesApi.getOrder(detailId);
-        setDetailRecord({ kind: section, data });
-      }
       return true;
     } catch (requestError) {
       setError(requestError.message || "The action could not be completed.");
