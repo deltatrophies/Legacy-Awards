@@ -77,7 +77,7 @@ export async function getOne(req, res) {
   const query = /^[a-f0-9]{24}$/i.test(req.params.id) ? { _id: req.params.id } : { reference: req.params.id };
   const order = await Order.findOne(query).select("+activity").populate("assignedTo", "firstName lastName email role").lean();
   if (!order) throw new AppError(404, "ORDER_NOT_FOUND", "Order was not found");
-  assertSalesRecordAccess(order, req.auth, { allowUnassignedRead: true });
+  assertSalesRecordAccess(order, req.auth);
   return sendData(res, order);
 }
 

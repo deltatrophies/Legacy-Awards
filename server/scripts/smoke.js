@@ -97,17 +97,21 @@ try {
 
   // A round-robin setting may be enabled locally; isolate this smoke quote in the open queue.
   await Quote.updateOne({ _id: createdQuoteId }, { $unset: { assignedTo: 1, assignedBy: 1, assignedAt: 1 } });
-  const openQueue = await request(app).get("/api/v1/quotes?view=unassigned&pipeline=open").set("authorization", `Bearer ${salesAToken}`);
+  const openQueue = await request(app).get("/api/v1/quotes?view=unassigned&pipeline=open").set("authorization", `Bearer ${managerToken}`);
   if (openQueue.status !== 200 || !openQueue.body.data.some((item) => item.id === createdQuoteId)) {
-    throw new Error("Sales open-queue visibility check failed");
+    throw new Error("Manager open-queue visibility check failed");
   }
 
-  const claimResults = await Promise.all([
+  const executiveClaimResults = await Promise.all([
     request(app).post(`/api/v1/quotes/${createdQuoteId}/claim`).set("authorization", `Bearer ${salesAToken}`),
     request(app).post(`/api/v1/quotes/${createdQuoteId}/claim`).set("authorization", `Bearer ${salesBToken}`),
   ]);
-  if (claimResults.filter((response) => response.status === 200).length !== 1 || claimResults.filter((response) => response.status === 409).length !== 1) {
-    throw new Error(`Atomic lead claim check failed (${claimResults.map((response) => response.status).join(", ")})`);
+  if (executiveClaimResults.some((response) => response.status !== 403)) {
+    throw new Error(`Executive self-assignment was not blocked (${executiveClaimResults.map((response) => response.status).join(", ")})`);
+  }
+  const executiveQueue = await request(app).get("/api/v1/quotes?view=unassigned&pipeline=open").set("authorization", `Bearer ${salesAToken}`);
+  if (executiveQueue.status !== 200 || executiveQueue.body.data.some((item) => item.id === createdQuoteId)) {
+    throw new Error("Executive can see an unassigned lead");
   }
 
   const assignment = await request(app)
@@ -186,7 +190,7 @@ try {
   if (managerTeam.status !== 200 || managerTeam.body.data.length < 4) throw new Error("Sales manager team visibility check failed");
 
   if (cloudinaryEnabled) await retry(() => cloudinary.api.ping());
-  process.stdout.write("Smoke checks passed: health, auth, catalog, quote idempotency, atomic claiming, manager assignment, ownership privacy, acceptance, manual payment, paid-order conversion, editor lock, fulfillment, audit trail, Cloudinary.\n");
+  process.stdout.write("Smoke checks passed: health, auth, catalog, quote idempotency, manager-only assignment, executive queue isolation, ownership privacy, acceptance, manual payment, paid-order conversion, editor lock, fulfillment, audit trail, Cloudinary.\n");
 } finally {
   if (createdOrderId) await Order.deleteOne({ _id: createdOrderId });
   if (createdQuoteId) await Quote.deleteOne({ _id: createdQuoteId });

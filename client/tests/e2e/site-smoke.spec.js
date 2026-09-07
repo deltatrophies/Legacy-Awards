@@ -84,16 +84,20 @@ test("main screens do not overflow and the mobile navigation stays usable", asyn
 
 test("sales workspace remains usable at mobile and desktop widths", async ({ page }) => {
   await page.goto("/sales/login");
-  await page.getByLabel("Email").fill("sales1@legacyawards.dev");
-  await page.getByLabel("Password").fill("SalesOne@123");
+  await page.getByLabel("Email").fill("sales3@legacyawards.dev");
+  await page.getByLabel("Password").fill("SalesThree@123");
   await page.getByRole("button", { name: "Open Sales Workspace" }).click();
   await expect(page).toHaveURL(/\/sales\/dashboard$/);
+  await expect(page.getByRole("button", { name: "Unassigned queue" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: /Claim (lead|order)/i })).toHaveCount(0);
 
   for (const viewport of [{ width: 390, height: 844 }, { width: 1440, height: 900 }]) {
     await page.setViewportSize(viewport);
     for (const section of ["dashboard", "leads", "orders"]) {
       await page.goto(`/sales/${section}`);
-      await expect(page.getByRole("heading", { name: section === "orders" ? "Paid Orders" : section[0].toUpperCase() + section.slice(1) })).toBeVisible();
+      await expect(page.getByRole("heading", { level: 1, name: section === "orders" ? "Paid Orders" : section[0].toUpperCase() + section.slice(1), exact: true })).toBeVisible();
+      await expect(page.getByRole("button", { name: "Unassigned queue" })).toHaveCount(0);
+      await expect(page.getByRole("button", { name: /Claim (lead|order)/i })).toHaveCount(0);
       await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(1);
     }
   }

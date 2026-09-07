@@ -163,7 +163,7 @@ export async function getAdmin(req, res) {
   const query = /^[a-f0-9]{24}$/i.test(req.params.id) ? { _id: req.params.id } : { reference: req.params.id };
   const quote = await Quote.findOne(query).select("+internalNotes +activity").populate("assignedTo", "firstName lastName email role");
   if (!quote) throw new AppError(404, "QUOTE_NOT_FOUND", "Quote was not found");
-  assertSalesRecordAccess(quote, req.auth, { allowUnassignedRead: true });
+  assertSalesRecordAccess(quote, req.auth);
   return sendData(res, serialize(quote, undefined, { internal: true }));
 }
 

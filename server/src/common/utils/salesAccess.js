@@ -10,18 +10,17 @@ export const isSalesExecutive = (role) => role === "sales";
 const idOf = (value) => String(value?._id || value || "");
 
 export function salesVisibilityFilter(auth, requestedView = "all") {
+  if (isSalesExecutive(auth?.role)) return { assignedTo: auth.userId };
   if (requestedView === "mine") return { assignedTo: auth.userId };
   if (requestedView === "unassigned") return { assignedTo: null };
-  if (!isSalesExecutive(auth?.role)) return {};
-  return { $or: [{ assignedTo: auth.userId }, { assignedTo: null }] };
+  return {};
 }
 
-export function assertSalesRecordAccess(record, auth, { allowUnassignedRead = false } = {}) {
+export function assertSalesRecordAccess(record, auth) {
   if (!record) return;
   if (!isSalesExecutive(auth?.role)) return;
   const assigneeId = idOf(record.assignedTo);
   if (assigneeId === String(auth.userId)) return;
-  if (!assigneeId && allowUnassignedRead) return;
   throw new AppError(403, "LEAD_NOT_ASSIGNED", "This record is assigned to another sales executive");
 }
 

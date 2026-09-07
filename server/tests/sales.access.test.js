@@ -4,10 +4,10 @@ import { assertSalesRecordAccess, salesVisibilityFilter } from "../src/common/ut
 const alice = { userId: "507f1f77bcf86cd799439011", role: "sales" };
 
 describe("sales ownership access", () => {
-  it("limits an executive to their records and the open queue", () => {
-    expect(salesVisibilityFilter(alice, "all")).toEqual({ $or: [{ assignedTo: alice.userId }, { assignedTo: null }] });
+  it("limits an executive to assigned records in every view", () => {
+    expect(salesVisibilityFilter(alice, "all")).toEqual({ assignedTo: alice.userId });
     expect(salesVisibilityFilter(alice, "mine")).toEqual({ assignedTo: alice.userId });
-    expect(salesVisibilityFilter(alice, "unassigned")).toEqual({ assignedTo: null });
+    expect(salesVisibilityFilter(alice, "unassigned")).toEqual({ assignedTo: alice.userId });
   });
 
   it("allows managers to filter without restricting their all-team view", () => {
@@ -17,9 +17,8 @@ describe("sales ownership access", () => {
     expect(salesVisibilityFilter(manager, "unassigned")).toEqual({ assignedTo: null });
   });
 
-  it("blocks cross-owner writes but permits read-only inspection of the open queue", () => {
+  it("blocks cross-owner and unassigned access for executives", () => {
     expect(() => assertSalesRecordAccess({ assignedTo: alice.userId }, alice)).not.toThrow();
-    expect(() => assertSalesRecordAccess({ assignedTo: null }, alice, { allowUnassignedRead: true })).not.toThrow();
     expect(() => assertSalesRecordAccess({ assignedTo: null }, alice)).toThrow(/assigned to another/i);
     expect(() => assertSalesRecordAccess({ assignedTo: "507f1f77bcf86cd799439099" }, alice)).toThrow(/assigned to another/i);
   });

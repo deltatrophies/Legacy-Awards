@@ -22,7 +22,7 @@ quoteRouter.get("/coupons", authenticate, authorize("admin"), asyncHandler(contr
 quoteRouter.post("/coupons", authenticate, authorize("admin"), validate(couponSchema), asyncHandler(controller.createCoupon));
 quoteRouter.patch("/coupons/:id", authenticate, authorize("admin"), validate(updateCouponSchema), asyncHandler(controller.updateCoupon));
 quoteRouter.get("/", authenticate, authorize("sales", "sales_manager", "staff", "admin"), asyncHandler(controller.listAdmin));
-quoteRouter.post("/:id/claim", authenticate, authorize("sales", "sales_manager", "staff"), asyncHandler(controller.claimQuote));
+quoteRouter.post("/:id/claim", authenticate, authorize("sales_manager", "staff", "admin"), asyncHandler(controller.claimQuote));
 quoteRouter.patch("/:id/assignment", authenticate, authorize("sales_manager", "staff", "admin"), validate(assignQuoteSchema), asyncHandler(controller.assignQuote));
 quoteRouter.get("/:id", authenticate, authorize("sales", "sales_manager", "staff", "admin"), asyncHandler(controller.getAdmin));
 quoteRouter.patch("/:id/status", authenticate, authorize("sales", "sales_manager", "staff", "admin"), validate(updateQuoteSchema), asyncHandler(controller.updateQuote));
