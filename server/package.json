@@ -10,6 +10,7 @@
     "catalog:import-jpg": "node src/database/importJpgCatalog.js",
     "admin:create": "node src/database/createAdmin.js",
     "demo:sales": "node src/database/seedDemoSales.js",
+    "demo:workflow:reset": "node src/database/resetDemoWorkflow.js",
     "smoke": "node scripts/smoke.js",
     "test": "vitest run",
     "test:watch": "vitest"

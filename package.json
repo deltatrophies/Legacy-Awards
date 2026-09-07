@@ -17,6 +17,7 @@
     "seed": "npm run seed --workspace server",
     "admin:create": "npm run admin:create --workspace server",
     "demo:sales": "npm run demo:sales --workspace server",
+    "demo:workflow:reset": "npm run demo:workflow:reset --workspace server",
     "smoke": "npm run smoke --workspace server",
     "test": "npm run test --workspace server",
     "test:watch": "npm run test:watch --workspace server"
