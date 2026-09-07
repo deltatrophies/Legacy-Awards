@@ -7,9 +7,11 @@ import { cloudinaryEnabled } from "../src/config/env.js";
 import { connectDatabase, disconnectDatabase } from "../src/config/database.js";
 import { Quote } from "../src/modules/quotes/quote.model.js";
 import { User } from "../src/modules/auth/user.model.js";
+import { Order } from "../src/modules/orders/order.model.js";
 
 let createdQuoteId;
 let createdUserId;
+let createdOrderId;
 const createdTeamUserIds = [];
 async function retry(task, attempts = 2) {
   let lastError;
@@ -128,12 +130,65 @@ try {
     throw new Error("Customer quote privacy check failed");
   }
 
+  const acceptedQuote = await request(app)
+    .post(`/api/v1/quotes/mine/${createdQuoteId}/accept`)
+    .set("authorization", `Bearer ${accessToken}`);
+  if (acceptedQuote.status !== 200 || acceptedQuote.body.data.status !== "accepted" || acceptedQuote.body.data.customerDecision !== "accepted") {
+    throw new Error(`Customer acceptance check failed (${acceptedQuote.status})`);
+  }
+
+  const manualRoute = await request(app)
+    .patch(`/api/v1/quotes/${createdQuoteId}/status`)
+    .set("authorization", `Bearer ${salesAToken}`)
+    .send({ paymentMethod: "whatsapp" });
+  if (manualRoute.status !== 200 || manualRoute.body.data.paymentMethod !== "whatsapp") {
+    throw new Error(`Manual payment routing check failed (${manualRoute.status})`);
+  }
+
+  const manualPayment = await request(app)
+    .post(`/api/v1/payments/manual/${createdQuoteId}/confirm`)
+    .set("authorization", `Bearer ${salesAToken}`);
+  if (manualPayment.status !== 200 || manualPayment.body.data.paymentStatus !== "paid" || !manualPayment.body.data.orderReference) {
+    throw new Error(`Manual payment confirmation check failed (${manualPayment.status})`);
+  }
+
+  const paidOrder = await Order.findOne({ quote: createdQuoteId });
+  if (!paidOrder || String(paidOrder.assignedTo) !== String(teamUsers[0]._id) || paidOrder.paymentProvider !== "manual") {
+    throw new Error("Paid order ownership/provider check failed");
+  }
+  createdOrderId = paidOrder._id;
+
+  const customerOrders = await request(app).get("/api/v1/orders/mine").set("authorization", `Bearer ${accessToken}`);
+  if (customerOrders.status !== 200 || !customerOrders.body.data.some((item) => item.reference === manualPayment.body.data.orderReference)) {
+    throw new Error("Paid order customer visibility check failed");
+  }
+
+  const crossOwnerOrderRead = await request(app).get(`/api/v1/orders/${createdOrderId}`).set("authorization", `Bearer ${salesBToken}`);
+  if (crossOwnerOrderRead.status !== 403) throw new Error("Cross-owner paid-order access was not blocked");
+
+  const paidQuoteEdit = await request(app)
+    .patch(`/api/v1/quotes/${createdQuoteId}/status`)
+    .set("authorization", `Bearer ${salesAToken}`)
+    .send({ total: 11000 });
+  if (paidQuoteEdit.status !== 409 || paidQuoteEdit.body.error?.code !== "QUOTE_FINALIZED") {
+    throw new Error(`Paid quote editor lock check failed (${paidQuoteEdit.status})`);
+  }
+
+  const fulfillment = await request(app)
+    .patch(`/api/v1/orders/${createdOrderId}`)
+    .set("authorization", `Bearer ${salesAToken}`)
+    .send({ fulfillmentStatus: "artwork" });
+  if (fulfillment.status !== 200 || fulfillment.body.data.fulfillmentStatus !== "artwork") {
+    throw new Error(`Fulfillment update check failed (${fulfillment.status})`);
+  }
+
   const managerTeam = await request(app).get("/api/v1/sales/team").set("authorization", `Bearer ${managerToken}`);
   if (managerTeam.status !== 200 || managerTeam.body.data.length < 4) throw new Error("Sales manager team visibility check failed");
 
   if (cloudinaryEnabled) await retry(() => cloudinary.api.ping());
-  process.stdout.write("Smoke checks passed: health, auth, admin team creation, catalog, idempotency, atomic sales claiming, manager assignment, ownership privacy, audit trail, Cloudinary.\n");
+  process.stdout.write("Smoke checks passed: health, auth, catalog, quote idempotency, atomic claiming, manager assignment, ownership privacy, acceptance, manual payment, paid-order conversion, editor lock, fulfillment, audit trail, Cloudinary.\n");
 } finally {
+  if (createdOrderId) await Order.deleteOne({ _id: createdOrderId });
   if (createdQuoteId) await Quote.deleteOne({ _id: createdQuoteId });
   if (createdUserId) await User.deleteOne({ _id: createdUserId });
   if (createdTeamUserIds.length) await User.deleteMany({ _id: { $in: createdTeamUserIds } });
