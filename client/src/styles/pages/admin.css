@@ -110,6 +110,13 @@
   text-transform: uppercase;
 }
 
+.admin-field > small {
+  color: #766a60;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.5;
+}
+
 .admin-login-form input,
 .admin-field input,
 .admin-field select,

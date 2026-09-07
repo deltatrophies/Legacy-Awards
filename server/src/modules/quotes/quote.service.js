@@ -148,18 +148,44 @@ async function calculateDiscount(code, subtotal) {
   return { discount: Math.min(discount, subtotal), couponCode: coupon.code };
 }
 
+export function nextRoundRobinSalesperson(salespeople, cursor = {}) {
+  if (!salespeople.length) return null;
+  const lastId = String(cursor.lastAssignee?._id || cursor.lastAssignee || "");
+  if (lastId) {
+    const exactIndex = salespeople.findIndex((person) => String(person._id) === lastId);
+    if (exactIndex >= 0) return salespeople[(exactIndex + 1) % salespeople.length];
+    return salespeople.find((person) => String(person._id) > lastId) || salespeople[0];
+  }
+  return salespeople[Number(cursor.sequence || 0) % salespeople.length];
+}
+
+async function reserveNextSalesperson(salespeople) {
+  let cursor = await SalesAssignmentCursor.findOneAndUpdate(
+    { key: "quotes" },
+    { $setOnInsert: { key: "quotes", sequence: 0 } },
+    { new: true, upsert: true, setDefaultsOnInsert: true },
+  );
+  for (let attempt = 0; attempt < 8; attempt += 1) {
+    const assignee = nextRoundRobinSalesperson(salespeople, cursor);
+    const reserved = await SalesAssignmentCursor.findOneAndUpdate(
+      { key: "quotes", sequence: Number(cursor.sequence || 0) },
+      { $inc: { sequence: 1 }, $set: { lastAssignee: assignee._id } },
+      { new: true },
+    );
+    if (reserved) return assignee;
+    cursor = await SalesAssignmentCursor.findOne({ key: "quotes" });
+    if (!cursor) throw new Error("Round-robin cursor disappeared during assignment");
+  }
+  throw new Error("Round-robin assignment contention was too high");
+}
+
 export async function applyAutomaticAssignment(quote) {
   try {
     const settings = await Settings.findOne({ key: "site" }).select("salesAssignmentMode").lean();
     if (settings?.salesAssignmentMode !== "round_robin") return quote;
     const salespeople = await User.find({ role: "sales", isActive: true }).select("_id firstName lastName").sort({ _id: 1 }).lean();
     if (!salespeople.length) return quote;
-    const cursor = await SalesAssignmentCursor.findOneAndUpdate(
-      { key: "quotes" },
-      { $inc: { sequence: 1 }, $setOnInsert: { key: "quotes" } },
-      { new: true, upsert: true, setDefaultsOnInsert: true },
-    );
-    const assignee = salespeople[(cursor.sequence - 1) % salespeople.length];
+    const assignee = await reserveNextSalesperson(salespeople);
     quote.assignedTo = assignee._id;
     quote.assignedAt = new Date();
     quote.activity = [...(quote.activity || []), {

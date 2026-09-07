@@ -1790,7 +1790,7 @@ function SettingsManager({ settings, onSaved, onError }) {
     <form className="admin-form-panel admin-settings-form" onSubmit={submit}>
       <h2>Contact and site settings</h2>
       <div className="admin-form-grid">
-        <Field label="New quote assignment"><select value={form.salesAssignmentMode || "manual"} onChange={(event) => set("salesAssignmentMode", event.target.value)}><option value="manual">Manual / open queue</option><option value="round_robin">Automatic round-robin</option></select></Field>
+        <Field label="New quote assignment"><select value={form.salesAssignmentMode || "manual"} onChange={(event) => set("salesAssignmentMode", event.target.value)}><option value="manual">Manual / open queue</option><option value="round_robin">Automatic round-robin</option></select><small>Manual keeps new leads unassigned. Round-robin sends each new lead to the next active Sales Executive; switching it off pauses the rotation and switching it on resumes fairly from the next person.</small></Field>
         <Field label="Business name"><input required value={form.businessName} onChange={(event) => set("businessName", event.target.value)} /></Field>
         <Field label="Email"><input required type="email" value={form.email} onChange={(event) => set("email", event.target.value)} /></Field>
         <Field label="Phone"><input value={form.phone} onChange={(event) => set("phone", event.target.value)} /></Field>
