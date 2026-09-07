@@ -36,10 +36,9 @@ function readDemoCredentials() {
 }
 
 const accessTokenHash = () => createHash("sha256").update(randomBytes(32)).digest("hex");
-const activity = (type, message, actorName, actorRole, createdAt) => ({ type, message, actorName, actorRole, createdAt });
 
-function itemFrom(product, quantity, unitPrice) {
-  return {
+function demoQuote({ reference, customerUser, customer, product, quantity, unitPrice, priority, createdAt }) {
+  const item = {
     kind: "catalog",
     product: product._id,
     sku: product.sku,
@@ -49,10 +48,6 @@ function itemFrom(product, quantity, unitPrice) {
     unitPrice,
     lineTotal: quantity * unitPrice,
   };
-}
-
-function quoteBase({ reference, customerUser, customer, product, quantity, unitPrice, createdAt }) {
-  const item = itemFrom(product, quantity, unitPrice);
   return {
     reference,
     accessTokenHash: accessTokenHash(),
@@ -64,7 +59,19 @@ function quoteBase({ reference, customerUser, customer, product, quantity, unitP
     discount: 0,
     total: item.lineTotal,
     currency: "INR",
+    status: "submitted",
+    priority,
+    customerDecision: "pending",
+    paymentMethod: "pending",
+    paymentStatus: "unpaid",
     expiresAt: new Date(createdAt.getTime() + 30 * DAY),
+    activity: [{
+      type: "quote_submitted",
+      message: "Customer submitted a quote request.",
+      actorName: customer.name,
+      actorRole: "customer",
+      createdAt,
+    }],
     createdAt,
     updatedAt: createdAt,
   };
@@ -90,12 +97,8 @@ async function resetDemoWorkflow() {
   }
   if (customerUser.role !== "customer") throw new Error("Configured development login does not belong to a customer account");
 
-  const [products, salespeople] = await Promise.all([
-    Product.find({ isActive: true }).sort({ createdAt: 1 }).limit(4).lean(),
-    User.find({ role: { $in: ["sales", "sales_manager", "staff"] }, isActive: true }).sort({ role: 1, firstName: 1 }),
-  ]);
+  const products = await Product.find({ isActive: true }).sort({ createdAt: 1 }).limit(4).lean();
   if (products.length < 4) throw new Error("At least four active products are required before resetting demo workflow data");
-  if (!salespeople.length) throw new Error("At least one active sales team member is required before resetting demo workflow data");
 
   const customer = {
     name: `${customerUser.firstName} ${customerUser.lastName}`.trim(),
@@ -106,84 +109,18 @@ async function resetDemoWorkflow() {
     notes: "Development workflow sample",
   };
   const now = new Date();
-  const executive = salespeople.find((person) => person.role === "sales") || salespeople[0];
-  const manager = salespeople.find((person) => ["sales_manager", "staff"].includes(person.role)) || executive;
-
-  const submittedAt = new Date(now.getTime() - 4 * DAY);
-  const quotedAt = new Date(now.getTime() - 3 * DAY);
-  const acceptedAt = new Date(now.getTime() - 2 * DAY);
-  const paidAt = new Date(now.getTime() - DAY);
-
-  const quotes = [
-    {
-      ...quoteBase({ reference: "LAQ-DEMO-1001", customerUser, customer, product: products[0], quantity: Math.max(products[0].minOrder || 1, 10), unitPrice: 850, createdAt: submittedAt }),
-      status: "submitted",
-      priority: "normal",
-      customerDecision: "pending",
-      paymentMethod: "pending",
-      paymentStatus: "unpaid",
-      activity: [activity("quote_submitted", "Customer submitted a quote request.", customer.name, "customer", submittedAt)],
-    },
-    {
-      ...quoteBase({ reference: "LAQ-DEMO-1002", customerUser, customer, product: products[1], quantity: Math.max(products[1].minOrder || 1, 20), unitPrice: 925, createdAt: quotedAt }),
-      assignedTo: executive._id,
-      assignedBy: manager._id,
-      assignedAt: quotedAt,
-      status: "quoted",
-      priority: "high",
-      customerDecision: "pending",
-      paymentMethod: "pending",
-      paymentStatus: "unpaid",
-      customerNotes: "Your demo quotation is ready for review.",
-      activity: [
-        activity("quote_submitted", "Customer submitted a quote request.", customer.name, "customer", quotedAt),
-        activity("lead_assigned", `Assigned to ${executive.firstName} ${executive.lastName}.`, `${manager.firstName} ${manager.lastName}`, manager.role, quotedAt),
-        activity("quote_updated", "Quotation price and validity were shared with the customer.", `${executive.firstName} ${executive.lastName}`, executive.role, quotedAt),
-      ],
-    },
-    {
-      ...quoteBase({ reference: "LAQ-DEMO-1003", customerUser, customer, product: products[2], quantity: Math.max(products[2].minOrder || 1, 25), unitPrice: 980, createdAt: acceptedAt }),
-      assignedTo: executive._id,
-      assignedBy: manager._id,
-      assignedAt: acceptedAt,
-      status: "accepted",
-      priority: "urgent",
-      customerDecision: "accepted",
-      customerDecisionAt: acceptedAt,
-      paymentMethod: "pending",
-      paymentStatus: "unpaid",
-      customerNotes: "Quotation accepted. Payment method confirmation is pending.",
-      activity: [
-        activity("quote_submitted", "Customer submitted a quote request.", customer.name, "customer", acceptedAt),
-        activity("quote_accepted", "Customer accepted the quotation.", customer.name, "customer", acceptedAt),
-      ],
-    },
-    {
-      ...quoteBase({ reference: "LAQ-DEMO-1004", customerUser, customer, product: products[3], quantity: Math.max(products[3].minOrder || 1, 30), unitPrice: 1200, createdAt: paidAt }),
-      assignedTo: executive._id,
-      assignedBy: manager._id,
-      assignedAt: paidAt,
-      status: "accepted",
-      priority: "normal",
-      customerDecision: "accepted",
-      customerDecisionAt: paidAt,
-      paymentMethod: "whatsapp",
-      paymentMethodSelectedAt: paidAt,
-      paymentStatus: "paid",
-      paidAt,
-      orderReference: "LAO-DEMO-2001",
-      customerNotes: "Payment received. Order is confirmed.",
-      activity: [
-        activity("quote_submitted", "Customer submitted a quote request.", customer.name, "customer", paidAt),
-        activity("quote_accepted", "Customer accepted the quotation.", customer.name, "customer", paidAt),
-        activity("manual_payment_confirmed", "Sales team confirmed manual payment receipt.", `${manager.firstName} ${manager.lastName}`, manager.role, paidAt),
-      ],
-    },
-  ];
+  const quotes = products.map((product, index) => demoQuote({
+    reference: `LAQ-DEMO-100${index + 1}`,
+    customerUser,
+    customer,
+    product,
+    quantity: Math.max(product.minOrder || 1, 10 + index * 5),
+    unitPrice: 850 + index * 125,
+    priority: ["normal", "high", "urgent", "low"][index],
+    createdAt: new Date(now.getTime() - (4 - index) * DAY),
+  }));
 
   const session = await mongoose.startSession();
-  let insertedQuotes;
-  let insertedOrder;
   try {
     await session.withTransaction(async () => {
       await Promise.all([
@@ -191,41 +128,21 @@ async function resetDemoWorkflow() {
         Order.deleteMany({}, { session }),
         Quote.deleteMany({}, { session }),
       ]);
-      insertedQuotes = await Quote.create(quotes, { session, ordered: true });
-      const paidQuote = insertedQuotes.find((quote) => quote.reference === "LAQ-DEMO-1004");
-      [insertedOrder] = await Order.create([{
-        reference: "LAO-DEMO-2001",
-        quote: paidQuote._id,
-        user: customerUser._id,
-        assignedTo: executive._id,
-        assignedBy: manager._id,
-        assignedAt: paidAt,
-        customer,
-        items: paidQuote.items.map((item) => item.toObject()),
-        subtotal: paidQuote.subtotal,
-        discount: paidQuote.discount,
-        total: paidQuote.total,
-        currency: "INR",
-        paymentStatus: "paid",
-        paymentProvider: "manual",
-        paidAt,
-        fulfillmentStatus: "pending",
-        manualPaymentConfirmedBy: manager._id,
-        manualPaymentConfirmedAt: paidAt,
-        activity: [activity("order_created", "Paid order created from quotation LAQ-DEMO-1004.", `${manager.firstName} ${manager.lastName}`, manager.role, paidAt)],
-        createdAt: paidAt,
-        updatedAt: paidAt,
-      }], { session, ordered: true });
-      paidQuote.convertedOrder = insertedOrder._id;
-      await paidQuote.save({ session });
+      await Quote.create(quotes, { session, ordered: true });
 
-      const [transactionQuoteCount, transactionOrderCount, transactionPaymentCount, linkedOrder] = await Promise.all([
-        Quote.countDocuments({}, { session }),
+      const [storedQuotes, orderCount, paymentCount] = await Promise.all([
+        Quote.find({}).select("reference status assignedTo customerDecision paymentMethod paymentStatus").session(session).lean(),
         Order.countDocuments({}, { session }),
         Payment.countDocuments({}, { session }),
-        Order.findOne({ _id: insertedOrder._id, quote: paidQuote._id, user: customerUser._id }).session(session),
       ]);
-      if (transactionQuoteCount !== 4 || transactionOrderCount !== 1 || transactionPaymentCount !== 0 || !linkedOrder) {
+      const allAreFreshSubmissions = storedQuotes.length === 4 && storedQuotes.every((quote) => (
+        quote.status === "submitted"
+        && !quote.assignedTo
+        && quote.customerDecision === "pending"
+        && quote.paymentMethod === "pending"
+        && quote.paymentStatus === "unpaid"
+      ));
+      if (!allAreFreshSubmissions || orderCount !== 0 || paymentCount !== 0) {
         throw new Error("Demo workflow integrity verification failed");
       }
     });
@@ -233,12 +150,7 @@ async function resetDemoWorkflow() {
     await session.endSession();
   }
 
-  const [quoteCount, orderCount, paymentCount] = await Promise.all([
-    Quote.countDocuments(),
-    Order.countDocuments(),
-    Payment.countDocuments(),
-  ]);
-  logger.info({ quoteCount, orderCount, paymentCount, demoCustomer: customerUser.email }, "Demo quote and order workflow reset complete");
+  logger.info({ quoteCount: 4, orderCount: 0, paymentCount: 0, demoCustomer: customerUser.email }, "Submitted demo quotations reset complete");
 }
 
 resetDemoWorkflow()
