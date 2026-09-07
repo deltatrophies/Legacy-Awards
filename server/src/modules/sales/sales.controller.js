@@ -19,6 +19,19 @@ export async function summary(req, res) {
   return sendData(res, { assignedLeads, unassignedLeads, needsAttention, followUpsDue, openOrders, paidOrders });
 }
 
+export async function revision(req, res) {
+  const visibility = salesVisibilityFilter(req.auth, "all");
+  const [quoteCount, latestQuote, orderCount, latestOrder] = await Promise.all([
+    Quote.countDocuments(visibility),
+    Quote.findOne(visibility).sort({ updatedAt: -1 }).select("updatedAt").lean(),
+    Order.countDocuments(visibility),
+    Order.findOne(visibility).sort({ updatedAt: -1 }).select("updatedAt").lean(),
+  ]);
+  const quoteRevision = latestQuote?.updatedAt ? new Date(latestQuote.updatedAt).getTime() : 0;
+  const orderRevision = latestOrder?.updatedAt ? new Date(latestOrder.updatedAt).getTime() : 0;
+  return sendData(res, { revision: `${quoteCount}:${quoteRevision}:${orderCount}:${orderRevision}` });
+}
+
 export async function team(_req, res) {
   const users = await User.find({ role: { $in: ["sales", "sales_manager", "staff"] }, isActive: true })
     .select("firstName lastName email role jobTitle")

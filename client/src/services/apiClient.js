@@ -272,6 +272,7 @@ export const adminApi = {
 };
 
 export const salesApi = {
+  revision: () => apiRequest("/sales/revision"),
   summary: () => apiRequest("/sales/summary"),
   team: () => apiRequest("/sales/team"),
   listQuotes: (view = "all") => apiRequest(`/quotes?limit=100&pipeline=open&view=${encodeURIComponent(view)}`),

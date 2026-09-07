@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, Navigate, NavLink, useLocation, useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
 import { ORDER_STATUS_CHANGED_EVENT, ORDER_STATUS_CHANGED_STORAGE_KEY, paymentApi, salesApi } from "../services/apiClient.js";
@@ -47,18 +47,20 @@ export default function SalesPanelPage() {
   const [busy, setBusy] = useState("");
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
+  const revisionRef = useRef("");
 
   useEffect(() => {
     if (user?.role === "sales" && view !== "mine") setView("mine");
   }, [user?.role, view]);
 
-  const refresh = useCallback(async ({ quiet = false } = {}) => {
+  const refresh = useCallback(async ({ quiet = false, knownRevision = "" } = {}) => {
     if (!user || !salesRoles.includes(user.role)) {
       setLoading(false);
       return;
     }
     if (!quiet) setLoading(true);
     try {
+      const revisionState = knownRevision ? { revision: knownRevision } : await salesApi.revision();
       const detailRequest = detailId && ["leads", "orders"].includes(section)
         ? (section === "leads" ? salesApi.getQuote(detailId) : salesApi.getOrder(detailId))
           .then((data) => ({ data }))
@@ -75,6 +77,7 @@ export default function SalesPanelPage() {
       setQuotes(results[1] || []);
       setOrders(results[2] || []);
       setTeam(results[3] || []);
+      revisionRef.current = revisionState?.revision || "";
       const detailResult = results[4];
       if (detailResult?.error) {
         setDetailRecord(null);
@@ -93,24 +96,36 @@ export default function SalesPanelPage() {
   useEffect(() => { refresh(); }, [refresh]);
   useEffect(() => { document.title = `${section === "orders" ? "Paid Orders" : section === "leads" ? "Sales Leads" : "Sales Dashboard"} - Legacy Awards`; }, [section]);
   useEffect(() => {
-    let refreshing = false;
-    const poll = async () => {
-      if (document.hidden || refreshing) return;
-      refreshing = true;
-      try { await refresh({ quiet: true }); } finally { refreshing = false; }
+    let checking = false;
+    const refreshIfChanged = async ({ force = false } = {}) => {
+      if (document.hidden || checking) return;
+      checking = true;
+      try {
+        if (force) {
+          await refresh({ quiet: true });
+          return;
+        }
+        const current = await salesApi.revision();
+        if (current?.revision && current.revision !== revisionRef.current) await refresh({ quiet: true, knownRevision: current.revision });
+      } catch {
+        // Keep the current screen stable; the next change check or manual refresh can retry.
+      } finally {
+        checking = false;
+      }
     };
-    const timer = window.setInterval(poll, 5_000);
-    const storage = (event) => { if (event.key === ORDER_STATUS_CHANGED_STORAGE_KEY) void poll(); };
-    const visibility = () => { if (!document.hidden) void poll(); };
-    window.addEventListener("focus", poll);
+    const timer = window.setInterval(refreshIfChanged, 5_000);
+    const storage = (event) => { if (event.key === ORDER_STATUS_CHANGED_STORAGE_KEY) void refreshIfChanged({ force: true }); };
+    const changed = () => { void refreshIfChanged({ force: true }); };
+    const visibility = () => { if (!document.hidden) void refreshIfChanged(); };
+    window.addEventListener("focus", refreshIfChanged);
     window.addEventListener("storage", storage);
-    window.addEventListener(ORDER_STATUS_CHANGED_EVENT, poll);
+    window.addEventListener(ORDER_STATUS_CHANGED_EVENT, changed);
     document.addEventListener("visibilitychange", visibility);
     return () => {
       window.clearInterval(timer);
-      window.removeEventListener("focus", poll);
+      window.removeEventListener("focus", refreshIfChanged);
       window.removeEventListener("storage", storage);
-      window.removeEventListener(ORDER_STATUS_CHANGED_EVENT, poll);
+      window.removeEventListener(ORDER_STATUS_CHANGED_EVENT, changed);
       document.removeEventListener("visibilitychange", visibility);
     };
   }, [refresh]);

@@ -6,5 +6,6 @@ import * as controller from "./sales.controller.js";
 export const salesRouter = Router();
 
 salesRouter.use(authenticate, authorize("sales", "sales_manager", "staff", "admin"));
+salesRouter.get("/revision", asyncHandler(controller.revision));
 salesRouter.get("/summary", asyncHandler(controller.summary));
 salesRouter.get("/team", authorize("sales_manager", "staff", "admin"), asyncHandler(controller.team));

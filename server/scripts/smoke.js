@@ -97,6 +97,11 @@ try {
 
   // A round-robin setting may be enabled locally; isolate this smoke quote in the open queue.
   await Quote.updateOne({ _id: createdQuoteId }, { $unset: { assignedTo: 1, assignedBy: 1, assignedAt: 1 } });
+  const [managerRevisionBefore, executiveRevisionBefore] = await Promise.all([
+    request(app).get("/api/v1/sales/revision").set("authorization", `Bearer ${managerToken}`),
+    request(app).get("/api/v1/sales/revision").set("authorization", `Bearer ${salesAToken}`),
+  ]);
+  if (managerRevisionBefore.status !== 200 || executiveRevisionBefore.status !== 200) throw new Error("Sales revision check failed");
   const openQueue = await request(app).get("/api/v1/quotes?view=unassigned&pipeline=open").set("authorization", `Bearer ${managerToken}`);
   if (openQueue.status !== 200 || !openQueue.body.data.some((item) => item.id === createdQuoteId)) {
     throw new Error("Manager open-queue visibility check failed");
@@ -120,6 +125,14 @@ try {
     .send({ assigneeId: teamUsers[0]._id.toString() });
   if (assignment.status !== 200 || assignment.body.data.assignedTo?.id !== teamUsers[0]._id.toString()) {
     throw new Error("Manager reassignment check failed");
+  }
+  const [managerRevisionAfter, executiveRevisionAfter] = await Promise.all([
+    request(app).get("/api/v1/sales/revision").set("authorization", `Bearer ${managerToken}`),
+    request(app).get("/api/v1/sales/revision").set("authorization", `Bearer ${salesAToken}`),
+  ]);
+  if (managerRevisionAfter.body.data?.revision === managerRevisionBefore.body.data?.revision
+    || executiveRevisionAfter.body.data?.revision === executiveRevisionBefore.body.data?.revision) {
+    throw new Error("Sales revision did not change after assignment");
   }
   const crossOwnerRead = await request(app).get(`/api/v1/quotes/${createdQuoteId}`).set("authorization", `Bearer ${salesBToken}`);
   if (crossOwnerRead.status !== 403) throw new Error("Cross-owner access was not blocked");
