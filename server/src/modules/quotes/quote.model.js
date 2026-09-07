@@ -39,6 +39,7 @@ const quoteSchema = new mongoose.Schema({
   assignedTo: { type: mongoose.Schema.Types.ObjectId, ref: "User", index: true },
   assignedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
   assignedAt: Date,
+  assigneeViewedAt: Date,
   priority: { type: String, enum: ["low", "normal", "high", "urgent"], default: "normal", index: true },
   followUpAt: { type: Date, index: true },
   lostReason: { type: String, trim: true, maxlength: 500 },

@@ -8,10 +8,12 @@ import { connectDatabase, disconnectDatabase } from "../src/config/database.js";
 import { Quote } from "../src/modules/quotes/quote.model.js";
 import { User } from "../src/modules/auth/user.model.js";
 import { Order } from "../src/modules/orders/order.model.js";
+import { Inquiry } from "../src/modules/inquiries/inquiry.model.js";
 
 let createdQuoteId;
 let createdUserId;
 let createdOrderId;
+let createdInquiryId;
 const createdTeamUserIds = [];
 async function retry(task, attempts = 2) {
   let lastError;
@@ -77,6 +79,51 @@ try {
     return response.body.data.accessToken;
   };
   const [salesAToken, salesBToken, managerToken, adminToken] = await Promise.all(teamUsers.map(loginTeamUser));
+
+  const inquiryResponse = await request(app).post("/api/v1/inquiries").set("authorization", `Bearer ${accessToken}`).send({
+    name: "Smoke Test",
+    email: "smoke@example.com",
+    phone: "+91 9999999999",
+    organization: "Smoke Organisation",
+    type: "bulk",
+    quantity: 25,
+    event: "Annual awards",
+    message: "Please share available options.",
+  });
+  if (inquiryResponse.status !== 201) throw new Error(`Inquiry creation failed (${inquiryResponse.status}): ${JSON.stringify(inquiryResponse.body)}`);
+  const createdInquiry = await Inquiry.findOne({ reference: inquiryResponse.body.data.reference });
+  createdInquiryId = createdInquiry?._id;
+  if (!createdInquiryId) throw new Error("Created inquiry was not persisted");
+
+  const managerInquiryAssignment = await request(app)
+    .patch(`/api/v1/inquiries/${createdInquiryId}/assignment`)
+    .set("authorization", `Bearer ${managerToken}`)
+    .send({ assigneeId: teamUsers[0]._id.toString() });
+  if (managerInquiryAssignment.status !== 403) throw new Error("Sales manager was able to assign an inquiry");
+
+  const adminInquiryAssignment = await request(app)
+    .patch(`/api/v1/inquiries/${createdInquiryId}/assignment`)
+    .set("authorization", `Bearer ${adminToken}`)
+    .send({ assigneeId: teamUsers[0]._id.toString() });
+  if (adminInquiryAssignment.status !== 200 || String(adminInquiryAssignment.body.data.assignedTo?._id) !== String(teamUsers[0]._id)) {
+    throw new Error(`Admin inquiry assignment failed (${adminInquiryAssignment.status}): ${JSON.stringify(adminInquiryAssignment.body)}`);
+  }
+
+  const assignedInquiries = await request(app).get("/api/v1/inquiries?limit=100").set("authorization", `Bearer ${salesAToken}`);
+  if (assignedInquiries.status !== 200 || !assignedInquiries.body.data.some((item) => item.reference === inquiryResponse.body.data.reference)) {
+    throw new Error("Assigned inquiry was not visible to its owner");
+  }
+  const crossOwnerInquiry = await request(app).get(`/api/v1/inquiries/${createdInquiryId}`).set("authorization", `Bearer ${salesBToken}`);
+  if (crossOwnerInquiry.status !== 404) throw new Error("Inquiry leaked to a different salesperson");
+  const newLeadSummary = await request(app).get("/api/v1/sales/summary").set("authorization", `Bearer ${salesAToken}`);
+  const unreadBefore = newLeadSummary.body.data?.newAssignedLeads;
+  const markInquiryViewed = await request(app).post(`/api/v1/sales/leads/inquiry/${createdInquiryId}/viewed`).set("authorization", `Bearer ${salesAToken}`);
+  const viewedLeadSummary = await request(app).get("/api/v1/sales/summary").set("authorization", `Bearer ${salesAToken}`);
+  if (markInquiryViewed.status !== 200 || !Number.isInteger(unreadBefore) || viewedLeadSummary.body.data?.newAssignedLeads !== unreadBefore - 1) {
+    throw new Error("New-assignment badge did not clear after opening the inquiry");
+  }
+  const inquiryUpdate = await request(app).patch(`/api/v1/inquiries/${createdInquiryId}`).set("authorization", `Bearer ${salesAToken}`).send({ status: "contacted" });
+  if (inquiryUpdate.status !== 200 || inquiryUpdate.body.data.status !== "contacted") throw new Error("Assigned inquiry status update failed");
 
   const createdThroughAdmin = await request(app)
     .post("/api/v1/admin/team")
@@ -203,10 +250,11 @@ try {
   if (managerTeam.status !== 200 || managerTeam.body.data.length < 4) throw new Error("Sales manager team visibility check failed");
 
   if (cloudinaryEnabled) await retry(() => cloudinary.api.ping());
-  process.stdout.write("Smoke checks passed: health, auth, catalog, quote idempotency, manager-only assignment, executive queue isolation, ownership privacy, acceptance, manual payment, paid-order conversion, editor lock, fulfillment, audit trail, Cloudinary.\n");
+  process.stdout.write("Smoke checks passed: health, auth, catalog, quote idempotency, admin-only inquiry assignment, inquiry ownership/read badge, manager-only quote assignment, executive queue isolation, ownership privacy, acceptance, manual payment, paid-order conversion, editor lock, fulfillment, audit trail, Cloudinary.\n");
 } finally {
   if (createdOrderId) await Order.deleteOne({ _id: createdOrderId });
   if (createdQuoteId) await Quote.deleteOne({ _id: createdQuoteId });
+  if (createdInquiryId) await Inquiry.deleteOne({ _id: createdInquiryId });
   if (createdUserId) await User.deleteOne({ _id: createdUserId });
   if (createdTeamUserIds.length) await User.deleteMany({ _id: { $in: createdTeamUserIds } });
   await disconnectDatabase();

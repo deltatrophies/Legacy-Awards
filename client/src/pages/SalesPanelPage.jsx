@@ -8,6 +8,7 @@ const salesRoles = ["sales", "sales_manager", "staff", "admin"];
 const managerRoles = ["sales_manager", "staff", "admin"];
 const quoteStatuses = ["submitted", "reviewing", "quoted", "accepted", "expired", "cancelled"];
 const orderStatuses = ["pending", "artwork", "production", "ready", "shipped", "delivered", "cancelled"];
+const inquiryStatuses = ["new", "contacted", "qualified", "closed", "spam"];
 
 const getId = (item) => item?._id || item?.id || item?.reference;
 const money = (value) => Number(value || 0) > 0 ? `Rs. ${Number(value).toLocaleString("en-IN")}` : "Price on request";
@@ -33,12 +34,13 @@ function SalesGuard({ children }) {
 }
 
 export default function SalesPanelPage() {
-  const { section = "dashboard", detailId } = useParams();
+  const { section = "dashboard", detailType, detailId } = useParams();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const canManage = managerRoles.includes(user?.role);
   const [summary, setSummary] = useState({});
   const [quotes, setQuotes] = useState([]);
+  const [inquiries, setInquiries] = useState([]);
   const [orders, setOrders] = useState([]);
   const [team, setTeam] = useState([]);
   const [detailRecord, setDetailRecord] = useState(null);
@@ -61,29 +63,32 @@ export default function SalesPanelPage() {
     if (!quiet) setLoading(true);
     try {
       const revisionState = knownRevision ? { revision: knownRevision } : await salesApi.revision();
+      const inquiryDetail = section === "leads" && detailType === "inquiry";
       const detailRequest = detailId && ["leads", "orders"].includes(section)
-        ? (section === "leads" ? salesApi.getQuote(detailId) : salesApi.getOrder(detailId))
+        ? (section === "leads" ? (inquiryDetail ? salesApi.getInquiry(detailId) : salesApi.getQuote(detailId)) : salesApi.getOrder(detailId))
           .then((data) => ({ data }))
           .catch((detailError) => ({ error: detailError }))
         : Promise.resolve(null);
       const results = await Promise.all([
         salesApi.summary(),
         salesApi.listQuotes(view),
+        salesApi.listInquiries(),
         salesApi.listOrders(view),
         canManage ? salesApi.team() : Promise.resolve([]),
         detailRequest,
       ]);
       setSummary(results[0] || {});
       setQuotes(results[1] || []);
-      setOrders(results[2] || []);
-      setTeam(results[3] || []);
+      setInquiries(results[2] || []);
+      setOrders(results[3] || []);
+      setTeam(results[4] || []);
       revisionRef.current = revisionState?.revision || "";
-      const detailResult = results[4];
+      const detailResult = results[5];
       if (detailResult?.error) {
         setDetailRecord(null);
         if (!quiet) setError(detailResult.error.message || "This record could not be loaded.");
       } else {
-        setDetailRecord(detailResult?.data ? { kind: section, data: detailResult.data } : null);
+        setDetailRecord(detailResult?.data ? { kind: inquiryDetail ? "inquiry" : section, data: detailResult.data } : null);
         setError("");
       }
     } catch (requestError) {
@@ -91,9 +96,26 @@ export default function SalesPanelPage() {
     } finally {
       if (!quiet) setLoading(false);
     }
-  }, [canManage, detailId, section, user, view]);
+  }, [canManage, detailId, detailType, section, user, view]);
 
   useEffect(() => { refresh(); }, [refresh]);
+  useEffect(() => {
+    if (!detailId || section !== "leads" || !detailRecord?.data || detailRecord.data.assigneeViewedAt) return;
+    const record = detailRecord.data;
+    const ownerId = record.assignedTo?.id || record.assignedTo?._id || record.assignedTo;
+    if (String(ownerId || "") !== String(user?.id || "")) return;
+    const kind = detailRecord.kind === "inquiry" ? "inquiry" : "quote";
+    let active = true;
+    salesApi.markLeadViewed(kind, getId(record)).then(({ viewedAt }) => {
+      if (!active) return;
+      setDetailRecord((current) => current ? { ...current, data: { ...current.data, assigneeViewedAt: viewedAt } } : current);
+      setSummary((current) => ({ ...current, newAssignedLeads: Math.max(0, Number(current.newAssignedLeads || 0) - 1) }));
+      const update = (item) => String(getId(item)) === String(getId(record)) ? { ...item, assigneeViewedAt: viewedAt } : item;
+      if (kind === "inquiry") setInquiries((current) => current.map(update));
+      else setQuotes((current) => current.map(update));
+    }).catch(() => {});
+    return () => { active = false; };
+  }, [detailId, detailRecord, section, user?.id]);
   useEffect(() => { document.title = `${section === "orders" ? "Paid Orders" : section === "leads" ? "Sales Leads" : "Sales Dashboard"} - Legacy Awards`; }, [section]);
   useEffect(() => {
     let checking = false;
@@ -147,6 +169,7 @@ export default function SalesPanelPage() {
   const visibleSections = [["dashboard", "Dashboard"], ["leads", "Leads"], ["orders", "Paid Orders"]];
   const visibleViews = canManage ? ["all", "mine", "unassigned"] : ["mine"];
   const selectedQuote = section === "leads" && detailId ? (detailRecord?.kind === "leads" ? detailRecord.data : quotes.find((item) => String(getId(item)) === detailId || item.reference === detailId)) : null;
+  const selectedInquiry = section === "leads" && detailType === "inquiry" && detailId ? (detailRecord?.kind === "inquiry" ? detailRecord.data : inquiries.find((item) => String(getId(item)) === detailId || item.reference === detailId)) : null;
   const selectedOrder = section === "orders" && detailId ? (detailRecord?.kind === "orders" ? detailRecord.data : orders.find((item) => String(getId(item)) === detailId || item.reference === detailId)) : null;
 
   return (
@@ -155,7 +178,7 @@ export default function SalesPanelPage() {
         <aside className="admin-sidebar sales-sidebar">
           <Link className="admin-brand" to="/sales/dashboard">Legacy Sales</Link>
           <nav className="admin-nav" aria-label="Sales sections">
-            {visibleSections.map(([key, label]) => <NavLink key={key} to={`/sales/${key}`} className={() => section === key ? "active" : ""}>{label}</NavLink>)}
+            {visibleSections.map(([key, label]) => <NavLink key={key} to={`/sales/${key}`} className={() => section === key ? "active" : ""}><span>{label}</span>{key === "leads" && summary.newAssignedLeads > 0 ? <sup className="sales-nav-badge" aria-label={`${summary.newAssignedLeads} new assigned leads`}>{summary.newAssignedLeads > 99 ? "99+" : summary.newAssignedLeads}</sup> : null}</NavLink>)}
           </nav>
           <div className="admin-user-box"><span>{user?.firstName} {user?.lastName}</span><small>{user?.jobTitle || (canManage ? "Sales Manager" : "Sales Executive")}</small><small>{user?.email}</small><button type="button" onClick={logout}>Logout</button></div>
         </aside>
@@ -168,8 +191,10 @@ export default function SalesPanelPage() {
           {loading ? <p className="admin-empty">Loading your pipeline...</p> : null}
           {!loading && section === "dashboard" ? <SalesDashboard summary={summary} quotes={quotes} navigate={navigate} canManage={canManage} /> : null}
           {!loading && section === "leads" ? (detailId
-            ? <SalesQuoteDetail quote={selectedQuote} team={team} user={user} busy={busy} onBack={() => navigate("/sales/leads")} onPerform={perform} />
-            : <SalesLeadList quotes={quotes} team={team} user={user} busy={busy} navigate={navigate} onPerform={perform} />) : null}
+            ? (detailType === "inquiry"
+              ? <SalesInquiryDetail inquiry={selectedInquiry} user={user} busy={busy} onBack={() => navigate("/sales/leads")} onPerform={perform} />
+              : <SalesQuoteDetail quote={selectedQuote} team={team} user={user} busy={busy} onBack={() => navigate("/sales/leads")} onPerform={perform} />)
+            : <SalesLeadList quotes={quotes} inquiries={view === "unassigned" ? [] : inquiries} team={team} user={user} busy={busy} navigate={navigate} onPerform={perform} />) : null}
           {!loading && section === "orders" ? (detailId
             ? <SalesOrderDetail order={selectedOrder} team={team} user={user} busy={busy} onBack={() => navigate("/sales/orders")} onPerform={perform} />
             : <SalesOrderList orders={orders} team={team} user={user} busy={busy} navigate={navigate} onPerform={perform} />) : null}
@@ -180,7 +205,7 @@ export default function SalesPanelPage() {
 }
 
 function SalesDashboard({ summary, quotes, navigate, canManage }) {
-  const cards = [["Assigned leads", summary.assignedLeads || 0], ...(canManage ? [["Unassigned queue", summary.unassignedLeads || 0]] : []), ["Needs attention", summary.needsAttention || 0], ["Follow-ups due", summary.followUpsDue || 0], ["Open paid orders", summary.openOrders || 0], ["Total paid orders", summary.paidOrders || 0]];
+  const cards = [["Assigned quotes", summary.assignedLeads || 0], ["Assigned enquiries", summary.assignedInquiries || 0], ...(canManage ? [["Unassigned quotes", summary.unassignedLeads || 0]] : []), ["Needs attention", summary.needsAttention || 0], ["Follow-ups due", summary.followUpsDue || 0], ["Open paid orders", summary.openOrders || 0], ["Total paid orders", summary.paidOrders || 0]];
   const attention = quotes.filter((quote) => ["accepted", "sales_requested"].includes(quote.customerDecision) && !["paid", "refunded"].includes(quote.paymentStatus)).slice(0, 6);
   return <div className="admin-dashboard"><section className="admin-metric-grid">{cards.map(([label, value]) => <article className="admin-metric" key={label}><span>{label}</span><strong>{value}</strong></article>)}</section><section className="admin-panel"><div className="admin-section-heading"><div><p className="admin-eyebrow">Priority desk</p><h2>Customer actions requiring attention</h2></div></div>{attention.length ? <div className="admin-order-stack">{attention.map((quote) => <SalesCustomerActivity key={quote.reference} quote={quote} onOpen={() => navigate(`/sales/leads/${encodeURIComponent(getId(quote))}`)} />)}</div> : <p className="admin-empty">No urgent customer action right now.</p>}</section></div>;
 }
@@ -193,8 +218,15 @@ function OwnershipControl({ record, team, user, busy, kind, onPerform }) {
   return <span className={`sales-owner-badge ${isMine ? "is-mine" : ""}`}>{isMine ? "Assigned to you" : `Owned by ${assigneeName(record)}`}</span>;
 }
 
-function SalesLeadList({ quotes, team, user, busy, navigate, onPerform }) {
-  return <section className="admin-order-workspace"><div className="admin-section-heading"><div><p className="admin-eyebrow">Ownership-driven pipeline</p><h2>Quote requests</h2></div><span className="admin-status-pill is-active">{quotes.length} visible</span></div>{quotes.length ? <div className="sales-card-grid">{quotes.map((quote) => <article className={`sales-work-card priority-${quote.priority || "normal"}`} key={quote.reference}><button className="sales-card-open" type="button" onClick={() => navigate(`/sales/leads/${encodeURIComponent(getId(quote))}`)}><span className="sales-card-kicker">{quote.priority || "normal"} priority · {quote.status}</span><strong>{quote.reference}</strong><h3>{quote.customer?.name || "Customer"}</h3><small>{quote.customer?.phone} {quote.customer?.email ? `· ${quote.customer.email}` : ""}</small><div className="sales-card-meta"><span>{money(quote.total)}</span><span>{dateTime(quote.followUpAt || quote.createdAt)}</span></div>{quote.customerDecision !== "pending" ? <b>{quote.customerDecision === "accepted" ? "Customer accepted" : "Sales contact requested"}</b> : null}</button><OwnershipControl record={quote} team={team} user={user} busy={busy} kind="quote" onPerform={onPerform} /></article>)}</div> : <p className="admin-empty">No quote requests in this view.</p>}</section>;
+function SalesLeadList({ quotes, inquiries, team, user, busy, navigate, onPerform }) {
+  return <div className="sales-lead-sections"><section className="admin-order-workspace"><div className="admin-section-heading"><div><p className="admin-eyebrow">Pricing pipeline</p><h2>Quote requests</h2></div><span className="admin-status-pill is-active">{quotes.length} visible</span></div>{quotes.length ? <div className="sales-card-grid">{quotes.map((quote) => <article className={`sales-work-card priority-${quote.priority || "normal"} ${!quote.assigneeViewedAt && String(quote.assignedTo?.id || quote.assignedTo?._id || "") === String(user.id) ? "is-new" : ""}`} key={quote.reference}><button className="sales-card-open" type="button" onClick={() => navigate(`/sales/leads/${encodeURIComponent(getId(quote))}`)}><span className="sales-card-kicker">{quote.priority || "normal"} priority · {quote.status}</span><strong>{quote.reference}</strong><h3>{quote.customer?.name || "Customer"}</h3><small>{quote.customer?.phone} {quote.customer?.email ? `· ${quote.customer.email}` : ""}</small><div className="sales-card-meta"><span>{money(quote.total)}</span><span>{dateTime(quote.followUpAt || quote.createdAt)}</span></div>{quote.customerDecision !== "pending" ? <b>{quote.customerDecision === "accepted" ? "Customer accepted" : "Sales contact requested"}</b> : null}</button><OwnershipControl record={quote} team={team} user={user} busy={busy} kind="quote" onPerform={onPerform} /></article>)}</div> : <p className="admin-empty">No quote requests in this view.</p>}</section><section className="admin-order-workspace"><div className="admin-section-heading"><div><p className="admin-eyebrow">Direct customer requests</p><h2>Assigned enquiries</h2></div><span className="admin-status-pill is-active">{inquiries.length} visible</span></div>{inquiries.length ? <div className="sales-card-grid">{inquiries.map((inquiry) => { const isMine = String(inquiry.assignedTo?.id || inquiry.assignedTo?._id || inquiry.assignedTo || "") === String(user.id); return <article className={`sales-work-card sales-inquiry-card ${!inquiry.assigneeViewedAt && isMine ? "is-new" : ""}`} key={inquiry.reference}><button className="sales-card-open" type="button" onClick={() => navigate(`/sales/leads/inquiry/${encodeURIComponent(getId(inquiry))}`)}><span className="sales-card-kicker">Enquiry · {inquiry.status}</span><strong>{inquiry.reference}</strong><h3>{inquiry.name || "Customer"}</h3><small>{inquiry.phone} {inquiry.email ? `· ${inquiry.email}` : ""}</small><div className="sales-card-meta"><span>{inquiry.type || "general"}</span><span>{dateTime(inquiry.createdAt)}</span></div><b>{inquiry.organization}{inquiry.quantity ? ` · Qty ${inquiry.quantity}` : ""}</b></button><span className={`sales-owner-badge ${isMine ? "is-mine" : ""}`}>{isMine ? "Assigned to you" : `Assigned to ${assigneeName(inquiry)}`}</span></article>; })}</div> : <p className="admin-empty">No enquiries are assigned to you.</p>}</section></div>;
+}
+
+function SalesInquiryDetail({ inquiry, user, busy, onBack, onPerform }) {
+  if (!inquiry) return <EmptyDetail onBack={onBack} />;
+  const number = customerNumber(inquiry.phone);
+  const whatsapp = number ? `https://wa.me/${number}?text=${encodeURIComponent(`Hi ${inquiry.name || "there"}, this is Legacy Awards regarding enquiry ${inquiry.reference}.`)}` : "";
+  return <section className="admin-order-detail"><button className="admin-secondary-button admin-detail-back" type="button" onClick={onBack}>Back to leads</button><header className="admin-detail-hero"><div><p className="admin-eyebrow">Assigned customer enquiry</p><h2>{inquiry.reference}</h2><span>{dateTime(inquiry.createdAt)} · {assigneeName(inquiry)}</span></div><span className="sales-owner-badge is-mine">Assigned to {String(inquiry.assignedTo?.id || inquiry.assignedTo?._id || inquiry.assignedTo) === String(user.id) ? "you" : assigneeName(inquiry)}</span></header><div className="admin-detail-grid"><ContactCard customer={{ name: inquiry.name, email: inquiry.email, phone: inquiry.phone, organization: inquiry.organization }} whatsapp={whatsapp} number={number} /><section className="admin-detail-card"><h3>Requirement</h3><dl className="admin-detail-list"><div><dt>Type</dt><dd>{inquiry.type || "-"}</dd></div><div><dt>Quantity</dt><dd>{inquiry.quantity || "-"}</dd></div><div><dt>Event</dt><dd>{inquiry.event || "-"}</dd></div><div><dt>Status</dt><dd>{inquiry.status || "-"}</dd></div></dl></section></div><section className="admin-detail-card"><div className="admin-section-heading"><div><p className="admin-eyebrow">Lead progress</p><h3>Enquiry status</h3></div><select disabled={Boolean(busy)} value={inquiry.status} onChange={(event) => onPerform(`inquiry-${getId(inquiry)}`, () => salesApi.updateInquiry(getId(inquiry), { status: event.target.value }), "Enquiry status updated.")}>{inquiryStatuses.map((status) => <option key={status} value={status}>{status}</option>)}</select></div></section><section className="admin-detail-card"><h3>Customer message</h3><p className="admin-detail-note">{inquiry.message || "No message added."}</p></section>{inquiry.attachment?.url ? <section className="admin-detail-card"><h3>Attachment</h3><a className="admin-attachment-link" href={inquiry.attachment.url} target="_blank" rel="noreferrer">Open attached reference</a></section> : null}</section>;
 }
 
 function SalesOrderList({ orders, team, user, busy, navigate, onPerform }) {

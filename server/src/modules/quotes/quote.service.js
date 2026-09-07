@@ -188,6 +188,7 @@ export async function applyAutomaticAssignment(quote) {
     const assignee = await reserveNextSalesperson(salespeople);
     quote.assignedTo = assignee._id;
     quote.assignedAt = new Date();
+    quote.assigneeViewedAt = undefined;
     quote.activity = [...(quote.activity || []), {
       type: "lead_auto_assigned",
       message: `Automatically assigned to ${assignee.firstName} ${assignee.lastName}.`,

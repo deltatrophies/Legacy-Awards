@@ -846,7 +846,7 @@
 }
 
 .admin-inquiry-row {
-  grid-template-columns: minmax(170px, .85fr) minmax(220px, 1.2fr) minmax(220px, 1fr) minmax(150px, auto);
+  grid-template-columns: minmax(150px, .75fr) minmax(190px, 1.1fr) minmax(190px, 1fr) minmax(130px, auto) minmax(170px, auto);
 }
 
 .admin-order-row.is-clickable {
@@ -1177,6 +1177,29 @@
   background: linear-gradient(180deg, #4d1719 0%, #241011 100%);
 }
 
+.sales-sidebar .admin-nav a {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+}
+
+.sales-nav-badge {
+  align-items: center;
+  background: #f5c451;
+  border-radius: 999px;
+  color: #3d1715;
+  display: inline-flex;
+  font-size: 10px;
+  font-weight: 900;
+  justify-content: center;
+  line-height: 1;
+  min-height: 19px;
+  min-width: 19px;
+  padding: 3px 5px;
+}
+
+.sales-lead-sections { display: grid; gap: 20px; }
+
 .sales-view-filter {
   display: flex;
   flex-wrap: wrap;
@@ -1224,6 +1247,8 @@
 .sales-work-card.priority-high { border-top-color: #d48332; }
 .sales-work-card.priority-urgent { border-top-color: #a51f2d; }
 .sales-work-card.priority-low { border-top-color: #708d81; }
+.sales-work-card.is-new { border-top-color: #d59b20; box-shadow: 0 12px 30px rgba(171, 114, 11, .14); }
+.sales-inquiry-card { border-top-color: #466b62; }
 
 .sales-card-open {
   display: grid;
@@ -1530,6 +1555,7 @@
 @media (max-width: 900px) {
   .sales-card-grid { grid-template-columns: 1fr; }
   .sales-card-meta { align-items: flex-start; flex-direction: column; }
+  .admin-inquiry-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 @container sales-roster (max-width: 720px) {

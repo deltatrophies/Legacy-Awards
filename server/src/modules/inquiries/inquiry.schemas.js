@@ -18,7 +18,10 @@ export const createInquirySchema = z.object({
 
 export const updateInquirySchema = z.object({
   status: z.enum(["new", "contacted", "qualified", "closed", "spam"]),
-  assignedTo: z.string().optional(),
+}).strict();
+
+export const assignInquirySchema = z.object({
+  assigneeId: z.string().regex(/^[a-f0-9]{24}$/i).nullable(),
 }).strict();
 
 export const publicInquiryListSchema = z.object({

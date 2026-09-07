@@ -23,6 +23,7 @@ const teamMemberData = (user, workloads = {}) => ({
   lastLoginAt: user.lastLoginAt,
   createdAt: user.createdAt,
   assignedQuotes: workloads.quotes || 0,
+  assignedInquiries: workloads.inquiries || 0,
   openOrders: workloads.orders || 0,
 });
 
@@ -74,10 +75,14 @@ export async function summary(_req, res) {
 }
 
 export async function listTeam(_req, res) {
-  const [users, quoteWorkloads, orderWorkloads] = await Promise.all([
+  const [users, quoteWorkloads, inquiryWorkloads, orderWorkloads] = await Promise.all([
     User.find({ role: { $in: teamRoles } }).select("+developmentOnly").sort({ isActive: -1, firstName: 1, lastName: 1 }).lean(),
     Quote.aggregate([
       { $match: { assignedTo: { $ne: null }, status: { $nin: ["expired", "cancelled"] }, paymentStatus: { $nin: ["paid", "refunded"] } } },
+      { $group: { _id: "$assignedTo", count: { $sum: 1 } } },
+    ]),
+    Inquiry.aggregate([
+      { $match: { assignedTo: { $ne: null }, status: { $nin: ["closed", "spam"] } } },
       { $group: { _id: "$assignedTo", count: { $sum: 1 } } },
     ]),
     Order.aggregate([
@@ -86,9 +91,11 @@ export async function listTeam(_req, res) {
     ]),
   ]);
   const quoteCounts = new Map(quoteWorkloads.map((item) => [String(item._id), item.count]));
+  const inquiryCounts = new Map(inquiryWorkloads.map((item) => [String(item._id), item.count]));
   const orderCounts = new Map(orderWorkloads.map((item) => [String(item._id), item.count]));
   return sendData(res, users.map((user) => teamMemberData(user, {
     quotes: quoteCounts.get(String(user._id)) || 0,
+    inquiries: inquiryCounts.get(String(user._id)) || 0,
     orders: orderCounts.get(String(user._id)) || 0,
   })));
 }
@@ -112,22 +119,26 @@ export async function updateTeamMember(req, res) {
     throw new AppError(409, "EMAIL_IN_USE", "An account with this email already exists");
   }
   if (req.body.isActive === false && user.isActive) {
-    const [openLeads, openOrders] = await Promise.all([
+    const [openLeads, openInquiries, openOrders] = await Promise.all([
       Quote.countDocuments({
         assignedTo: user._id,
         status: { $nin: ["expired", "cancelled"] },
         paymentStatus: { $nin: ["paid", "refunded"] },
+      }),
+      Inquiry.countDocuments({
+        assignedTo: user._id,
+        status: { $nin: ["closed", "spam"] },
       }),
       Order.countDocuments({
         assignedTo: user._id,
         fulfillmentStatus: { $nin: ["delivered", "cancelled"] },
       }),
     ]);
-    if (openLeads || openOrders) {
+    if (openLeads || openInquiries || openOrders) {
       throw new AppError(
         409,
         "ACTIVE_ASSIGNMENTS",
-        `Reassign this account's active work before disabling it (${openLeads} lead${openLeads === 1 ? "" : "s"}, ${openOrders} order${openOrders === 1 ? "" : "s"})`,
+        `Reassign this account's active work before disabling it (${openLeads} quote${openLeads === 1 ? "" : "s"}, ${openInquiries} enquir${openInquiries === 1 ? "y" : "ies"}, ${openOrders} order${openOrders === 1 ? "" : "s"})`,
       );
     }
   }

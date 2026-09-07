@@ -105,6 +105,7 @@ function SalesRoutes({ location }) {
         <Routes location={location} key={location.pathname}>
           <Route path="/sales" element={<Navigate to="/sales/dashboard" replace />} />
           <Route path="/sales/login" element={<AdminPage><SalesLoginPage /></AdminPage>} />
+          <Route path="/sales/:section/:detailType/:detailId" element={<AdminPage><SalesPanelPage /></AdminPage>} />
           <Route path="/sales/:section/:detailId" element={<AdminPage><SalesPanelPage /></AdminPage>} />
           <Route path="/sales/:section" element={<AdminPage><SalesPanelPage /></AdminPage>} />
         </Routes>
@@ -121,4 +122,3 @@ export default function AppRoutes() {
   if (isSalesRoute) return <SalesRoutes location={location} />;
   return <PublicRoutes location={location} />;
 }
-

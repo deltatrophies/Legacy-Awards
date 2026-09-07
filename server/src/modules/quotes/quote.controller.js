@@ -51,6 +51,7 @@ const serialize = (quote, accessToken, { internal = false } = {}) => ({
     internalNotes: quote.internalNotes || "",
     assignedTo: serializePerson(quote.assignedTo),
     assignedAt: quote.assignedAt,
+    assigneeViewedAt: quote.assigneeViewedAt,
     priority: quote.priority || "normal",
     followUpAt: quote.followUpAt,
     lostReason: quote.lostReason || "",
@@ -206,6 +207,7 @@ export async function claimQuote(req, res) {
     { _id: existing._id, assignedTo: null },
     {
       $set: { assignedTo: req.auth.userId, assignedBy: req.auth.userId, assignedAt: new Date() },
+      $unset: { assigneeViewedAt: 1 },
       $push: { activity: { $each: [entry], $slice: -200 } },
     },
     { new: true, runValidators: true },
@@ -232,6 +234,7 @@ export async function assignQuote(req, res) {
   quote.assignedTo = assignee?._id || undefined;
   quote.assignedBy = req.auth.userId;
   quote.assignedAt = assignee ? new Date() : undefined;
+  quote.assigneeViewedAt = undefined;
   addDocumentActivity(
     quote,
     req.auth,

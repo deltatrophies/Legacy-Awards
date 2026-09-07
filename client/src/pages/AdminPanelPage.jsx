@@ -286,6 +286,7 @@ export default function AdminPanelPage() {
               detailId={detailId}
               detailType={detailType}
               inquiries={inquiries}
+              team={team}
               onError={fail}
               onUpdated={() => { announce("Inquiry updated."); refreshAll(); }}
             />
@@ -985,7 +986,7 @@ function CouponManager({ coupons, onSaved, onError }) {
   );
 }
 
-function InquiryManager({ inquiries, detailType, detailId, onUpdated, onError }) {
+function InquiryManager({ inquiries, team, detailType, detailId, onUpdated, onError }) {
   const navigate = useNavigate();
   const [detailInquiry, setDetailInquiry] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
@@ -1018,6 +1019,15 @@ function InquiryManager({ inquiries, detailType, detailId, onUpdated, onError })
     }
   };
 
+  const updateAssignment = async (inquiry, assigneeId) => {
+    try {
+      await adminApi.assignInquiry(getId(inquiry), assigneeId);
+      onUpdated();
+    } catch (requestError) {
+      onError(requestError);
+    }
+  };
+
   if (detailType) {
     if (detailLoading) {
       return (
@@ -1041,6 +1051,8 @@ function InquiryManager({ inquiries, detailType, detailId, onUpdated, onError })
         inquiry={selectedInquiry}
         onBack={() => navigate("/admin/inquiries")}
         onStatus={updateStatus}
+        onAssign={updateAssignment}
+        team={team}
       />
     );
   }
@@ -1078,6 +1090,10 @@ function InquiryManager({ inquiries, detailType, detailId, onUpdated, onError })
                 <select value={inquiry.status} onClick={(event) => event.stopPropagation()} onChange={(event) => updateStatus(inquiry, event.target.value)}>
                   {inquiryStatuses.map((status) => <option key={status} value={status}>{status}</option>)}
                 </select>
+                <select aria-label={`Assign ${inquiry.reference}`} value={inquiry.assignedTo?._id || inquiry.assignedTo?.id || ""} onClick={(event) => event.stopPropagation()} onChange={(event) => updateAssignment(inquiry, event.target.value)}>
+                  <option value="">Unassigned</option>
+                  {team.filter((member) => member.isActive).map((member) => <option key={member.id || member._id} value={member.id || member._id}>{member.firstName} {member.lastName}</option>)}
+                </select>
               </article>
             ))}
           </div>
@@ -1087,7 +1103,7 @@ function InquiryManager({ inquiries, detailType, detailId, onUpdated, onError })
   );
 }
 
-function InquiryDetail({ inquiry, onBack, onStatus }) {
+function InquiryDetail({ inquiry, team, onBack, onStatus, onAssign }) {
   return (
     <section className="admin-order-detail">
       <button className="admin-secondary-button admin-detail-back" type="button" onClick={onBack}>Back to inquiries</button>
@@ -1099,6 +1115,10 @@ function InquiryDetail({ inquiry, onBack, onStatus }) {
           <span>{formatDate(inquiry.createdAt)}</span>
         </div>
         <div className="admin-detail-actions">
+          <select aria-label="Assign inquiry" value={inquiry.assignedTo?._id || inquiry.assignedTo?.id || ""} onChange={(event) => onAssign(inquiry, event.target.value)}>
+            <option value="">Unassigned</option>
+            {team.filter((member) => member.isActive).map((member) => <option key={member.id || member._id} value={member.id || member._id}>{member.firstName} {member.lastName}</option>)}
+          </select>
           <select value={inquiry.status} onChange={(event) => onStatus(inquiry, event.target.value)}>
             {inquiryStatuses.map((status) => <option key={status} value={status}>{status}</option>)}
           </select>
@@ -1123,6 +1143,7 @@ function InquiryDetail({ inquiry, onBack, onStatus }) {
             <div><dt>Quantity</dt><dd>{inquiry.quantity || "-"}</dd></div>
             <div><dt>Event</dt><dd>{inquiry.event || "-"}</dd></div>
             <div><dt>Status</dt><dd>{inquiry.status || "-"}</dd></div>
+            <div><dt>Assigned to</dt><dd>{inquiry.assignedTo ? `${inquiry.assignedTo.firstName || ""} ${inquiry.assignedTo.lastName || ""}`.trim() || inquiry.assignedTo.email : "Unassigned"}</dd></div>
           </dl>
         </section>
       </div>
@@ -1729,7 +1750,7 @@ function TeamManager({ members, onSaved, onError }) {
                     <div className="sales-team-avatar">{member.firstName?.[0]}{member.lastName?.[0]}</div>
                     <div className="sales-team-copy"><h3>{member.firstName} {member.lastName}</h3><p>{member.jobTitle || "Sales Executive"}</p><small>{member.email}{member.phone ? ` · ${member.phone}` : ""}</small></div>
                   </div>
-                  <div className="sales-team-load"><span><strong>{member.assignedQuotes}</strong><small>Active leads</small></span><span><strong>{member.openOrders}</strong><small>Open orders</small></span></div>
+                  <div className="sales-team-load"><span><strong>{Number(member.assignedQuotes || 0) + Number(member.assignedInquiries || 0)}</strong><small>Active leads</small></span><span><strong>{member.openOrders}</strong><small>Open orders</small></span></div>
                   <label className="sales-team-role"><span>Access level</span><select disabled={saving} value={member.role} onChange={(event) => updateMember(member, { role: event.target.value })}><option value="sales">Sales Executive</option><option value="sales_manager">Sales Manager</option></select></label>
                   <div className="sales-team-account"><span className={`admin-status-pill ${member.isActive ? "is-active" : "is-inactive"}`}>{member.isActive ? "Active" : "Disabled"}</span><button className="admin-secondary-button" disabled={saving} type="button" onClick={() => updateMember(member, { isActive: !member.isActive })}>{member.isActive ? "Disable" : "Enable"}</button></div>
                   <details className="sales-team-security">

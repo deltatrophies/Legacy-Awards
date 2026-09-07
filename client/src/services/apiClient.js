@@ -239,7 +239,16 @@ export const adminApi = {
   updateTeamMember: (id, input) => apiRequest(`/admin/team/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify(input) }),
   listInquiries: () => apiRequest("/inquiries?limit=100"),
   getInquiry: (id) => apiRequest(`/inquiries/${encodeURIComponent(id)}`),
-  updateInquiry: (id, input) => apiRequest(`/inquiries/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify(input) }),
+  async updateInquiry(id, input) {
+    const inquiry = await apiRequest(`/inquiries/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify(input) });
+    notifyOrderStatusChanged();
+    return inquiry;
+  },
+  async assignInquiry(id, assigneeId) {
+    const inquiry = await apiRequest(`/inquiries/${encodeURIComponent(id)}/assignment`, { method: "PATCH", body: JSON.stringify({ assigneeId: assigneeId || null }) });
+    notifyOrderStatusChanged();
+    return inquiry;
+  },
   listQuotes: () => apiRequest("/quotes?limit=100"),
   getQuote: (id) => apiRequest(`/quotes/${encodeURIComponent(id)}`),
   async updateQuote(id, input) {
@@ -275,6 +284,16 @@ export const salesApi = {
   revision: () => apiRequest("/sales/revision"),
   summary: () => apiRequest("/sales/summary"),
   team: () => apiRequest("/sales/team"),
+  listInquiries: () => apiRequest("/inquiries?limit=100"),
+  getInquiry: (id) => apiRequest(`/inquiries/${encodeURIComponent(id)}`),
+  async updateInquiry(id, input) {
+    const inquiry = await apiRequest(`/inquiries/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify(input) });
+    notifyOrderStatusChanged();
+    return inquiry;
+  },
+  async markLeadViewed(kind, id) {
+    return apiRequest(`/sales/leads/${encodeURIComponent(kind)}/${encodeURIComponent(id)}/viewed`, { method: "POST" });
+  },
   listQuotes: (view = "all") => apiRequest(`/quotes?limit=100&pipeline=open&view=${encodeURIComponent(view)}`),
   getQuote: (id) => apiRequest(`/quotes/${encodeURIComponent(id)}`),
   async claimQuote(id) {

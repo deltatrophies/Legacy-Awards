@@ -18,7 +18,10 @@ const inquirySchema = new mongoose.Schema({
     resourceType: String,
   },
   status: { type: String, enum: ["new", "contacted", "qualified", "closed", "spam"], default: "new", index: true },
-  assignedTo: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+  assignedTo: { type: mongoose.Schema.Types.ObjectId, ref: "User", index: true },
+  assignedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+  assignedAt: Date,
+  assigneeViewedAt: Date,
 }, { timestamps: true, versionKey: false });
 
 export const Inquiry = mongoose.model("Inquiry", inquirySchema);

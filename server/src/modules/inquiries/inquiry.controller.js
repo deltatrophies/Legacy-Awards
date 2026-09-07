@@ -4,12 +4,18 @@ import { createReference } from "../../common/utils/identifiers.js";
 import { paginationFrom, paginationMeta } from "../../common/utils/pagination.js";
 import { sendData } from "../../common/utils/response.js";
 import { uploadBuffer } from "../uploads/upload.service.js";
+import { User } from "../auth/user.model.js";
 import { Inquiry } from "./inquiry.model.js";
 
 const createAccessToken = () => randomBytes(32).toString("base64url");
 const hashAccessToken = (accessToken) => createHash("sha256").update(accessToken).digest("hex");
 
 const publicInquiryProjection = "reference name email phone organization type quantity event message status createdAt updatedAt";
+const inquiryQuery = (id) => /^[a-f0-9]{24}$/i.test(id) ? { _id: id } : { reference: id };
+const visibilityFor = (auth) => auth.role === "admin" ? {} : { assignedTo: auth.userId };
+const populateOwners = (query) => query
+  .populate("assignedTo", "firstName lastName email role")
+  .populate("assignedBy", "firstName lastName email role");
 
 export async function create(req, res) {
   const attachment = req.file ? await uploadBuffer(req.file, "legacy-trophies/inquiry-attachments") : undefined;
@@ -46,23 +52,48 @@ export async function listPublic(req, res) {
 
 export async function list(req, res) {
   const { page, limit, skip } = paginationFrom(req.query);
-  const filter = req.query.status ? { status: req.query.status } : {};
+  const filter = { ...visibilityFor(req.auth), ...(req.query.status ? { status: req.query.status } : {}) };
   const [inquiries, total] = await Promise.all([
-    Inquiry.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit).lean(),
+    populateOwners(Inquiry.find(filter)).sort({ createdAt: -1 }).skip(skip).limit(limit).lean(),
     Inquiry.countDocuments(filter),
   ]);
   return sendData(res, inquiries, 200, paginationMeta(total, page, limit));
 }
 
 export async function getOne(req, res) {
-  const query = /^[a-f0-9]{24}$/i.test(req.params.id) ? { _id: req.params.id } : { reference: req.params.id };
-  const inquiry = await Inquiry.findOne(query).lean();
+  const inquiry = await populateOwners(Inquiry.findOne({ ...inquiryQuery(req.params.id), ...visibilityFor(req.auth) })).lean();
   if (!inquiry) throw new AppError(404, "INQUIRY_NOT_FOUND", "Inquiry was not found");
   return sendData(res, inquiry);
 }
 
 export async function update(req, res) {
-  const inquiry = await Inquiry.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+  const inquiry = await populateOwners(Inquiry.findOneAndUpdate(
+    { ...inquiryQuery(req.params.id), ...visibilityFor(req.auth) },
+    { $set: { status: req.body.status } },
+    { new: true, runValidators: true },
+  ));
   if (!inquiry) throw new AppError(404, "INQUIRY_NOT_FOUND", "Inquiry was not found");
+  return sendData(res, inquiry);
+}
+
+export async function assign(req, res) {
+  const inquiry = await Inquiry.findOne(inquiryQuery(req.params.id));
+  if (!inquiry) throw new AppError(404, "INQUIRY_NOT_FOUND", "Inquiry was not found");
+  let assignee = null;
+  if (req.body.assigneeId) {
+    assignee = await User.findOne({ _id: req.body.assigneeId, role: { $in: ["sales", "sales_manager", "staff"] }, isActive: true });
+    if (!assignee) throw new AppError(422, "INVALID_ASSIGNEE", "Choose an active sales team member");
+  }
+  if (String(inquiry.assignedTo || "") !== String(assignee?._id || "")) {
+    inquiry.assignedTo = assignee?._id || undefined;
+    inquiry.assignedBy = req.auth.userId;
+    inquiry.assignedAt = assignee ? new Date() : undefined;
+    inquiry.assigneeViewedAt = undefined;
+    await inquiry.save();
+  }
+  await inquiry.populate([
+    { path: "assignedTo", select: "firstName lastName email role" },
+    { path: "assignedBy", select: "firstName lastName email role" },
+  ]);
   return sendData(res, inquiry);
 }
