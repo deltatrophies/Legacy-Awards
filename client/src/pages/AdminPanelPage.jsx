@@ -1695,7 +1695,56 @@ function TeamManager({ members, onSaved, onError }) {
     catch (requestError) { onError(requestError); return false; }
     finally { setSaving(false); }
   };
-  return <section className="admin-workspace admin-team-workspace"><form className="admin-form-panel" onSubmit={createMember}><div className="admin-section-heading"><div><p className="admin-eyebrow">Individual secure access</p><h2>Add sales team member</h2></div></div><p className="admin-muted">Never share one login. Every quote, assignment and payment action is tied to this individual account.</p><div className="admin-form-grid"><Field label="First name"><input required value={form.firstName} onChange={(event) => set("firstName", event.target.value)} /></Field><Field label="Last name"><input required value={form.lastName} onChange={(event) => set("lastName", event.target.value)} /></Field><Field label="Email"><input autoComplete="off" required type="email" value={form.email} onChange={(event) => set("email", event.target.value)} /></Field><Field label="Phone"><input value={form.phone} onChange={(event) => set("phone", event.target.value)} /></Field><Field label="Job title"><input value={form.jobTitle} onChange={(event) => set("jobTitle", event.target.value)} /></Field><Field label="Access level"><select value={form.role} onChange={(event) => set("role", event.target.value)}><option value="sales">Sales Executive</option><option value="sales_manager">Sales Manager</option></select></Field><Field label="Temporary password"><input autoComplete="new-password" minLength="10" required type="password" value={form.password} onChange={(event) => set("password", event.target.value)} /><small>Minimum 10 characters with uppercase, lowercase and a number.</small></Field></div><button className="admin-primary-button" disabled={saving} type="submit">{saving ? "Creating..." : "Create sales account"}</button></form><section className="admin-table-panel"><div className="admin-section-heading"><div><p className="admin-eyebrow">Ownership and workload</p><h2>Sales team</h2></div><span>{members.filter((member) => member.isActive).length} active</span></div>{members.length ? <div className="sales-team-grid">{members.map((member) => { const resetPassword = passwords[member.id] || ""; const resetIssue = passwordIssue(resetPassword); return <article className={`sales-team-card ${member.isActive ? "" : "is-disabled"}`} key={member.id}><div className="sales-team-avatar">{member.firstName?.[0]}{member.lastName?.[0]}</div><div className="sales-team-copy"><h3>{member.firstName} {member.lastName}</h3><p>{member.jobTitle || "Sales Executive"}</p><small>{member.email}{member.phone ? ` · ${member.phone}` : ""}</small></div><div className="sales-team-load"><span><strong>{member.assignedQuotes}</strong> active leads</span><span><strong>{member.openOrders}</strong> open orders</span></div><div className="sales-team-actions"><select disabled={saving} value={member.role} onChange={(event) => updateMember(member, { role: event.target.value })}><option value="sales">Sales Executive</option><option value="sales_manager">Sales Manager</option></select><button className="admin-secondary-button" disabled={saving} type="button" onClick={() => updateMember(member, { isActive: !member.isActive })}>{member.isActive ? "Disable account" : "Enable account"}</button></div><div className="sales-password-reset"><input aria-label={`New password for ${member.firstName}`} minLength="10" placeholder="New password" type="password" value={resetPassword} onChange={(event) => setPasswords((current) => ({ ...current, [member.id]: event.target.value }))} /><button disabled={saving || Boolean(resetIssue)} type="button" onClick={async () => { if (await updateMember(member, { password: resetPassword })) setPasswords((current) => ({ ...current, [member.id]: "" })); }}>Reset password</button></div>{member.lastLoginAt ? <small>Last login: {formatDate(member.lastLoginAt)}</small> : <small>Not signed in yet</small>}</article>; })}</div> : <p className="admin-empty">No sales accounts yet.</p>}</section></section>;
+  return (
+    <section className="admin-workspace admin-team-workspace">
+      <form className="admin-form-panel" onSubmit={createMember}>
+        <div className="admin-section-heading"><div><p className="admin-eyebrow">Individual secure access</p><h2>Add sales team member</h2></div></div>
+        <p className="admin-muted">Never share one login. Every quote, assignment and payment action is tied to this individual account.</p>
+        <div className="admin-form-grid">
+          <Field label="First name"><input required value={form.firstName} onChange={(event) => set("firstName", event.target.value)} /></Field>
+          <Field label="Last name"><input required value={form.lastName} onChange={(event) => set("lastName", event.target.value)} /></Field>
+          <Field label="Email"><input autoComplete="off" required type="email" value={form.email} onChange={(event) => set("email", event.target.value)} /></Field>
+          <Field label="Phone"><input value={form.phone} onChange={(event) => set("phone", event.target.value)} /></Field>
+          <Field label="Job title"><input value={form.jobTitle} onChange={(event) => set("jobTitle", event.target.value)} /></Field>
+          <Field label="Access level"><select value={form.role} onChange={(event) => set("role", event.target.value)}><option value="sales">Sales Executive</option><option value="sales_manager">Sales Manager</option></select></Field>
+          <Field label="Temporary password"><input autoComplete="new-password" minLength="10" required type="password" value={form.password} onChange={(event) => set("password", event.target.value)} /><small>Minimum 10 characters with uppercase, lowercase and a number.</small></Field>
+        </div>
+        <button className="admin-primary-button" disabled={saving} type="submit">{saving ? "Creating..." : "Create sales account"}</button>
+      </form>
+
+      <section className="admin-table-panel sales-team-panel">
+        <div className="admin-section-heading sales-team-heading">
+          <div><p className="admin-eyebrow">Ownership and workload</p><h2>Sales team</h2></div>
+          <span className="admin-status-pill is-active">{members.filter((member) => member.isActive).length} active</span>
+        </div>
+        {members.length ? (
+          <div className="sales-team-roster">
+            <div className="sales-team-roster-head" aria-hidden="true"><span>Team member</span><span>Workload</span><span>Access</span><span>Account</span></div>
+            {members.map((member) => {
+              const resetPassword = passwords[member.id] || "";
+              const resetIssue = passwordIssue(resetPassword);
+              return (
+                <article className={`sales-team-card ${member.isActive ? "" : "is-disabled"}`} key={member.id}>
+                  <div className="sales-team-identity">
+                    <div className="sales-team-avatar">{member.firstName?.[0]}{member.lastName?.[0]}</div>
+                    <div className="sales-team-copy"><h3>{member.firstName} {member.lastName}</h3><p>{member.jobTitle || "Sales Executive"}</p><small>{member.email}{member.phone ? ` · ${member.phone}` : ""}</small></div>
+                  </div>
+                  <div className="sales-team-load"><span><strong>{member.assignedQuotes}</strong><small>Active leads</small></span><span><strong>{member.openOrders}</strong><small>Open orders</small></span></div>
+                  <label className="sales-team-role"><span>Access level</span><select disabled={saving} value={member.role} onChange={(event) => updateMember(member, { role: event.target.value })}><option value="sales">Sales Executive</option><option value="sales_manager">Sales Manager</option></select></label>
+                  <div className="sales-team-account"><span className={`admin-status-pill ${member.isActive ? "is-active" : "is-inactive"}`}>{member.isActive ? "Active" : "Disabled"}</span><button className="admin-secondary-button" disabled={saving} type="button" onClick={() => updateMember(member, { isActive: !member.isActive })}>{member.isActive ? "Disable" : "Enable"}</button></div>
+                  <details className="sales-team-security">
+                    <summary>Password &amp; login details</summary>
+                    <div className="sales-password-reset"><input aria-label={`New password for ${member.firstName}`} minLength="10" placeholder="Enter a secure new password" type="password" value={resetPassword} onChange={(event) => setPasswords((current) => ({ ...current, [member.id]: event.target.value }))} /><button disabled={saving || Boolean(resetIssue)} type="button" onClick={async () => { if (await updateMember(member, { password: resetPassword })) setPasswords((current) => ({ ...current, [member.id]: "" })); }}>Reset password</button></div>
+                    <small>{member.lastLoginAt ? `Last login: ${formatDate(member.lastLoginAt)}` : "Not signed in yet"}</small>
+                  </details>
+                </article>
+              );
+            })}
+          </div>
+        ) : <p className="admin-empty">No sales accounts yet.</p>}
+      </section>
+    </section>
+  );
 }
 
 function SettingsManager({ settings, onSaved, onError }) {
