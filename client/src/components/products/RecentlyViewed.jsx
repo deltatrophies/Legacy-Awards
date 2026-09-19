@@ -1,10 +1,24 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { products } from "../../data/products.js";
-import { readStorage } from "../../utils/storage.js";
+import { catalogApi } from "../../services/apiClient.js";
+import { readStorage, writeStorage } from "../../utils/storage.js";
 
 export default function RecentlyViewed({ exclude }) {
-  const viewed = useMemo(() => readStorage("recentlyViewed", []).filter((id) => id !== exclude).map((id) => products.find((item) => item.id === id)).filter(Boolean).slice(0, 4), [exclude]);
+  const [catalog, setCatalog] = useState([]);
+  const viewedIds = useMemo(() => readStorage("recentlyViewed", []).filter((id) => id !== exclude), [exclude]);
+  const viewed = useMemo(() => viewedIds.map((id) => catalog.find((item) => item.id === id)).filter(Boolean).slice(0, 4), [catalog, viewedIds]);
+  useEffect(() => {
+    let active = true;
+    catalogApi.list().then((items) => {
+      if (!active) return;
+      setCatalog(items || []);
+      const validIds = new Set((items || []).map((item) => item.id));
+      const stored = readStorage("recentlyViewed", []);
+      const next = stored.filter((id) => validIds.has(id));
+      if (next.length !== stored.length) writeStorage("recentlyViewed", next);
+    }).catch(() => {});
+    return () => { active = false; };
+  }, []);
   if (!viewed.length) return null;
   return (
     <section className="recent-section">

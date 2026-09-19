@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { formatPrice, products as fallbackProducts } from "../data/products.js";
 import { catalogApi } from "../services/apiClient.js";
 import { readStorage, writeStorage } from "../utils/storage.js";
+import { formatPrice } from "../utils/formatPrice.js";
 import "../styles/pages/commerce.css";
 
 const COMPARE_STORAGE_KEY = "compareProducts";
@@ -28,7 +28,7 @@ export default function ComparePage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const compareParam = searchParams.get("items") || "";
   const queryIds = useMemo(() => parseCompareIds(compareParam), [compareParam]);
-  const [catalog, setCatalog] = useState(fallbackProducts);
+  const [catalog, setCatalog] = useState([]);
   const [selectedIds, setSelectedIds] = useState(() => {
     const stored = readStorage(COMPARE_STORAGE_KEY, []);
     return queryIds.length ? queryIds : stored.slice(0, MAX_COMPARE_ITEMS);
@@ -40,9 +40,7 @@ export default function ComparePage() {
 
   useEffect(() => {
     let active = true;
-    catalogApi.list().then((items) => {
-      if (active && items.length) setCatalog(items);
-    }).catch(() => {});
+    catalogApi.list().then((items) => { if (active) setCatalog(items); }).catch(() => {});
     return () => { active = false; };
   }, []);
 

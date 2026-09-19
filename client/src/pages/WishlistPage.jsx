@@ -1,16 +1,30 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { products, formatPrice } from "../data/products.js";
+import { catalogApi } from "../services/apiClient.js";
+import { formatPrice } from "../utils/formatPrice.js";
 import { readStorage, writeStorage } from "../utils/storage.js";
 import "../styles/pages/account.css";
 
 export default function WishlistPage() {
   const [wishlist, setWishlist] = useState(() => readStorage("wishlist", []));
-  const savedProducts = useMemo(() => products.filter((product) => wishlist.includes(product.id)), [wishlist]);
+  const [catalog, setCatalog] = useState([]);
+  const savedProducts = useMemo(() => catalog.filter((product) => wishlist.includes(product.id)), [catalog, wishlist]);
   const categoryCount = useMemo(() => new Set(savedProducts.map((product) => product.category).filter(Boolean)).size, [savedProducts]);
 
   useEffect(() => {
     document.title = "Wishlist - Legacy Awards";
+    let active = true;
+    catalogApi.list().then((items) => {
+      if (!active) return;
+      setCatalog(items || []);
+      const validIds = new Set((items || []).map((item) => item.id));
+      setWishlist((current) => {
+        const next = current.filter((id) => validIds.has(id));
+        if (next.length !== current.length) writeStorage("wishlist", next);
+        return next;
+      });
+    }).catch(() => {});
+    return () => { active = false; };
   }, []);
 
   const removeItem = (id) => {
@@ -25,7 +39,7 @@ export default function WishlistPage() {
         <div>
           <p className="account-label">Wishlist</p>
           <h1>Saved awards</h1>
-          <span>Keep your shortlisted trophies, plaques, medals, and crystal awards in one focused workspace.</span>
+          <span>Keep your shortlisted awards in one focused workspace.</span>
         </div>
         <div className="wishlist-summary" aria-label="Wishlist summary">
           <div><strong>{savedProducts.length}</strong><span>Saved</span></div>

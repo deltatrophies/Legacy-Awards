@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
 import RecentlyViewed from "../components/products/RecentlyViewed.jsx";
-import { formatPrice, getProductBySlug } from "../data/products.js";
 import { CATALOG_CHANGED_EVENT, CATALOG_CHANGED_STORAGE_KEY, catalogApi } from "../services/apiClient.js";
+import { formatPrice } from "../utils/formatPrice.js";
 import { readStorage, writeStorage } from "../utils/storage.js";
 import { optimizedImage, responsiveImageProps } from "../utils/cloudinaryImage.js";
 import "../styles/pages/commerce.css";
@@ -18,22 +18,20 @@ function normalizeQuantity(value, minimum = 1) {
 export default function ProductDetailPage() {
   const { slug } = useParams();
   const navigate = useNavigate();
-  const [product, setProduct] = useState(() => getProductBySlug(slug));
+  const [product, setProduct] = useState(null);
   const [notFound, setNotFound] = useState(false);
   const [qty, setQty] = useState(product?.minOrder || 1);
   const [selectedImage, setSelectedImage] = useState(product?.image || "");
   const [quantityNotice, setQuantityNotice] = useState("");
 
   const loadProduct = () => {
-    catalogApi.get(slug).then((item) => { setProduct(item); setQty(item.minOrder || 1); }).catch(() => {
-      if (!getProductBySlug(slug)) setNotFound(true);
-    });
+    catalogApi.get(slug).then((item) => { setProduct(item); setQty(item.minOrder || 1); setNotFound(false); }).catch(() => setNotFound(true));
   };
 
   useEffect(() => {
     let active = true;
-    setProduct(getProductBySlug(slug)); setNotFound(false);
-    catalogApi.get(slug).then((item) => { if (active) { setProduct(item); setQty(item.minOrder || 1); } }).catch(() => { if (active && !getProductBySlug(slug)) setNotFound(true); });
+    setProduct(null); setNotFound(false);
+    catalogApi.get(slug).then((item) => { if (active) { setProduct(item); setQty(item.minOrder || 1); } }).catch(() => { if (active) setNotFound(true); });
     return () => { active = false; };
   }, [slug]);
 

@@ -2,13 +2,6 @@ import { AppError } from "../../common/errors/AppError.js";
 import { sendData } from "../../common/utils/response.js";
 import { Category } from "./category.model.js";
 
-const defaultCategories = [
-  { slug: "trophies", name: "Trophies", sortOrder: 10 },
-  { slug: "plaques", name: "Plaques", sortOrder: 20 },
-  { slug: "medals", name: "Medals", sortOrder: 30 },
-  { slug: "crystal", name: "Crystal", sortOrder: 40 },
-];
-
 const serialize = (category) => ({
   id: category.slug,
   databaseId: category._id?.toString(),
@@ -21,13 +14,7 @@ const serialize = (category) => ({
   createdAt: category.createdAt,
 });
 
-async function ensureDefaultCategories() {
-  if (await Category.exists({})) return;
-  await Category.insertMany(defaultCategories);
-}
-
 export async function list(req, res) {
-  await ensureDefaultCategories();
   const filter = req.auth?.role === "admin" && req.query.includeInactive === "true" ? {} : { isActive: true };
   const categories = await Category.find(filter).sort({ sortOrder: 1, name: 1 }).lean();
   return sendData(res, categories.map(serialize));

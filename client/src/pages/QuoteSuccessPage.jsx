@@ -1,6 +1,6 @@
 import { Link, Navigate } from "react-router-dom";
 import { BUSINESS_NAME, createWhatsAppUrl } from "../config/business.js";
-import { formatPrice } from "../data/products.js";
+import { formatPrice } from "../utils/formatPrice.js";
 import { readStorage } from "../utils/storage.js";
 import "../styles/pages/quote.css";
 import "../styles/pages/quote-success.css";

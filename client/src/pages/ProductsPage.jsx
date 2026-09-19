@@ -2,32 +2,17 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import ProductCard from "../components/products/ProductCard.jsx";
 import RecentlyViewed from "../components/products/RecentlyViewed.jsx";
-import { categories, formatPrice, products as fallbackProducts } from "../data/products.js";
 import { CATALOG_CHANGED_EVENT, CATALOG_CHANGED_STORAGE_KEY, catalogApi, categoryApi } from "../services/apiClient.js";
+import { formatPrice } from "../utils/formatPrice.js";
 import { readStorage, writeStorage } from "../utils/storage.js";
 import "../styles/pages/commerce.css";
 
 const COMPARE_STORAGE_KEY = "compareProducts";
 const PAGE_SIZE = 24;
 
-const categoryCopy = {
-  all: "All Products",
-  trophies: "Trophies",
-  plaques: "Plaques",
-  medals: "Medals",
-  crystal: "Crystal Awards",
-};
-
-const categoryDescriptions = {
-  all: "Browse the complete award catalogue.",
-  trophies: "Classic and premium trophies for every stage.",
-  plaques: "Formal recognition pieces for offices and institutions.",
-  medals: "Bulk-friendly medals for schools, sports and events.",
-  crystal: "Polished crystal awards for premium recognition.",
-};
-
 function formatCategory(value) {
-  return categoryCopy[value] || String(value).replaceAll("-", " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
+  if (value === "all") return "All Products";
+  return String(value).replaceAll("-", " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
 export default function ProductsPage() {
@@ -40,24 +25,45 @@ export default function ProductsPage() {
   const [compare, setCompare] = useState(() => readStorage(COMPARE_STORAGE_KEY, []).slice(0, 3));
   const [searchFocused, setSearchFocused] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const [catalog, setCatalog] = useState(fallbackProducts);
-  const [catalogCategories, setCatalogCategories] = useState(categories);
+  const [catalog, setCatalog] = useState([]);
+  const [catalogCategories, setCatalogCategories] = useState([]);
+  const [categoriesLoaded, setCategoriesLoaded] = useState(false);
 
   useEffect(() => {
     document.title = "Products - Legacy Awards";
   }, []);
 
-  const loadCatalog = () => {
-    catalogApi.list().then((items) => { if (items.length) setCatalog(items); }).catch(() => {});
+  const applyCatalog = (products, categoryItems) => {
+    const nextProducts = products || [];
+    const validIds = new Set(nextProducts.map((item) => item.id));
+    setCatalog(nextProducts);
+    setCatalogCategories(categoryItems || []);
+    setCategoriesLoaded(true);
+    setWishlist((current) => {
+      const next = current.filter((id) => validIds.has(id));
+      if (next.length !== current.length) writeStorage("wishlist", next);
+      return next;
+    });
+    setCompare((current) => {
+      const next = current.filter((id) => validIds.has(id));
+      if (next.length !== current.length) writeStorage(COMPARE_STORAGE_KEY, next);
+      return next;
+    });
+    const recent = readStorage("recentlyViewed", []);
+    const validRecent = recent.filter((id) => validIds.has(id));
+    if (validRecent.length !== recent.length) writeStorage("recentlyViewed", validRecent);
   };
+
+  const loadCatalog = () => Promise.all([catalogApi.list(), categoryApi.list()])
+    .then(([products, categoryItems]) => applyCatalog(products, categoryItems))
+    .catch(() => {});
 
   useEffect(() => {
     let active = true;
-    catalogApi.list().then((items) => { if (active && items.length) setCatalog(items); }).catch(() => {});
-    categoryApi.list()
-      .then((items) => {
-        if (!active || !items.length) return;
-        setCatalogCategories(["all", ...items.map((item) => item.slug || item.id)]);
+    Promise.all([catalogApi.list(), categoryApi.list()])
+      .then(([products, categoryItems]) => {
+        if (!active) return;
+        applyCatalog(products, categoryItems);
       })
       .catch(() => {});
     return () => { active = false; };
@@ -109,6 +115,11 @@ export default function ProductsPage() {
     else nextParams.set("category", nextCategory);
     setSearchParams(nextParams);
   };
+  useEffect(() => {
+    if (!categoriesLoaded || category === "all") return;
+    const exists = catalogCategories.some((item) => (item.slug || item.id) === category);
+    if (!exists) selectCategory("all");
+  }, [catalogCategories, categoriesLoaded, category]);
   const compareProducts = compare.map((id) => catalog.find((item) => item.id === id)).filter(Boolean);
   const compareHref = `/compare?items=${compareProducts.map((item) => encodeURIComponent(item.id)).join(",")}`;
   const clearFilters = () => { setQuery(""); selectCategory("all"); setPrice("all"); setSort("featured"); };
@@ -118,7 +129,8 @@ export default function ProductsPage() {
     return counts;
   }, [catalog]);
   const hasActiveFilters = query || category !== "all" || price !== "all" || sort !== "featured";
-  const activeCategoryName = formatCategory(category);
+  const activeCategory = catalogCategories.find((item) => (item.slug || item.id) === category);
+  const activeCategoryName = category === "all" ? "All Products" : activeCategory?.name || formatCategory(category);
 
   return (
     <main className="commerce-page">
@@ -144,7 +156,7 @@ export default function ProductsPage() {
           <div>
             <span>Find the right award</span>
             <h2>{activeCategoryName}</h2>
-            <p>{categoryDescriptions[category] || "Filtered catalogue results."}</p>
+            <p>{category === "all" ? "Browse the complete award catalogue." : activeCategory?.description || "Filtered catalogue results."}</p>
           </div>
           {hasActiveFilters ? <button type="button" onClick={clearFilters}>Clear filters</button> : null}
         </div>
@@ -159,12 +171,14 @@ export default function ProductsPage() {
         </section>
 
         <nav className="category-tabs" aria-label="Categories">
-          {catalogCategories.map((item) => (
-            <button type="button" className={category === item ? "active" : ""} onClick={() => selectCategory(item)} key={item}>
-              <span>{formatCategory(item)}</span>
-              <strong>{categoryCounts.get(item) || 0}</strong>
+          {[{ slug: "all", name: "All Products" }, ...catalogCategories].map((item) => {
+            const key = item.slug || item.id;
+            return (
+            <button type="button" className={category === key ? "active" : ""} onClick={() => selectCategory(key)} key={key}>
+              <span>{item.name || formatCategory(key)}</span>
+              <strong>{categoryCounts.get(key) || 0}</strong>
             </button>
-          ))}
+          ); })}
         </nav>
       </section>
 
@@ -172,7 +186,7 @@ export default function ProductsPage() {
         <span>{filtered.length} products found</span>
         <span>{wishlist.length} saved</span>
       </div>
-      {filtered.length ? <section className="catalog-grid">{visibleProducts.map((product) => <ProductCard key={product.id} product={product} wishlisted={wishlist.includes(product.id)} compared={compare.includes(product.id)} onWishlist={toggleWishlist} onCompare={toggleCompare} />)}</section> : <div className="catalog-empty"><h2>No matching awards</h2><p>Try a broader search or clear the current filters.</p><button onClick={clearFilters}>Clear filters</button></div>}
+      {filtered.length ? <section className="catalog-grid">{visibleProducts.map((product) => <ProductCard key={product.id} product={product} wishlisted={wishlist.includes(product.id)} compared={compare.includes(product.id)} onWishlist={toggleWishlist} onCompare={toggleCompare} />)}</section> : <div className="catalog-empty"><h2>{catalog.length ? "No matching awards" : "Catalogue is currently empty"}</h2><p>{catalog.length ? "Try a broader search or clear the current filters." : "New products added from the admin panel will appear here automatically."}</p>{catalog.length ? <button onClick={clearFilters}>Clear filters</button> : null}</div>}
       {pageCount > 1 ? <nav className="catalog-pagination" aria-label="Product pages">
         <button type="button" disabled={currentPage === 1} onClick={() => changePage(Math.max(1, currentPage - 1))}>Previous</button>
         <span>Page {currentPage} of {pageCount}</span>

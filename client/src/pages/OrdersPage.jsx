@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
 import { createWhatsAppUrl } from "../config/business.js";
 import { readStorage, writeStorage } from "../utils/storage.js";
-import { formatPrice } from "../data/products.js";
+import { formatPrice } from "../utils/formatPrice.js";
 import { ORDER_STATUS_CHANGED_EVENT, ORDER_STATUS_CHANGED_STORAGE_KEY, orderApi, paymentApi, quoteApi, settingsApi } from "../services/apiClient.js";
 import "../styles/pages/account.css";
 

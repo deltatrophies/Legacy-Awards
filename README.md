@@ -15,7 +15,7 @@ Production-oriented React storefront and Node.js API. The API owns authenticatio
 
 1. Copy `server/.env.example` to `server/.env` and fill in secrets. Never commit `.env`.
 2. Install packages with `npm install`.
-3. Seed the initial catalog with `npm run seed`.
+3. Optionally create the default coupon with `npm run seed`.
 4. Run both applications with `npm run dev`.
 
 The storefront runs on `http://localhost:5173`; `client/vite.config.js` proxies `/api` to the API on `http://localhost:5000`.
@@ -28,7 +28,7 @@ npm run dev:client   # frontend only
 npm run dev:server   # API only
 npm run build        # production frontend bundle
 npm start            # production API and built frontend
-npm run seed         # idempotent catalog and coupon seed
+npm run seed         # idempotent default coupon seed
 npm test             # automated tests
 npm run smoke        # live database, catalog, quote, and Cloudinary checks
 ```

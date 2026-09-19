@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { formatPrice } from "../../data/products.js";
+import { formatPrice } from "../../utils/formatPrice.js";
 import { responsiveImageProps } from "../../utils/cloudinaryImage.js";
 
 function HeartIcon({ filled }) {

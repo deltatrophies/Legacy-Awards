@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { formatPrice } from "../data/products.js";
+import { formatPrice } from "../utils/formatPrice.js";
 import { readStorage, writeStorage } from "../utils/storage.js";
-import { quoteApi } from "../services/apiClient.js";
+import { catalogApi, quoteApi } from "../services/apiClient.js";
 import { useAuth } from "../context/AuthContext.jsx";
 import "../styles/pages/quote.css";
 import "../styles/pages/cart-modern.css";
@@ -42,6 +42,17 @@ export default function CartPage() {
   const [customer, setCustomer] = useState({ name: "", phone: "", email: "", organization: "", notes: "", preference: "WhatsApp" });
   useEffect(() => {
     document.title = "Quote Cart - Legacy Awards";
+    let active = true;
+    catalogApi.list().then((products) => {
+      if (!active) return;
+      const validIds = new Set((products || []).map((product) => product.id));
+      setItems((current) => {
+        const next = current.filter((item) => item.design || validIds.has(item.id));
+        if (next.length !== current.length) writeStorage("cart", next);
+        return next;
+      });
+    }).catch(() => {});
+    return () => { active = false; };
   }, []);
   useEffect(() => {
     if (!user) return;
