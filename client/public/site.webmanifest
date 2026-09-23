@@ -1,0 +1,21 @@
+{
+  "name": "Award Arts",
+  "short_name": "Award Arts",
+  "description": "Premium trophies, medals, plaques and custom awards across India.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f7f4ee",
+  "theme_color": "#741c1c",
+  "icons": [
+    {
+      "src": "/images/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/images/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

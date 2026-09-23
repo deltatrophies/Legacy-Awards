@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { BUSINESS_NAME } from "../config/business.js";
 import "../styles/pages/blogs.css";
+import Seo, { breadcrumbSchema } from "../components/common/Seo.jsx";
 
 const topics = [
   "All",
@@ -86,10 +87,6 @@ export default function BlogsPage() {
   const [newsletterEmail, setNewsletterEmail] = useState("");
   const [newsletterStatus, setNewsletterStatus] = useState("");
 
-  useEffect(() => {
-    document.title = `Blogs - ${BUSINESS_NAME}`;
-  }, []);
-
   const filteredArticles = useMemo(() => {
     if (activeTopic === "All") return articles;
     if (activeTopic === "Bulk Orders") return articles.filter((article) => article.category === "Corporate");
@@ -104,6 +101,18 @@ export default function BlogsPage() {
 
   return (
     <main className="blogs-page">
+      <Seo
+        title={`Award Buying Guides & Trophy Ideas - ${BUSINESS_NAME}`}
+        description="Practical guides on choosing trophies, engraving, award materials, event planning and bulk recognition orders from Award Arts."
+        path="/blogs"
+        schemas={[{
+          "@context": "https://schema.org",
+          "@type": "CollectionPage",
+          name: "Award Arts Guides",
+          description: "Guides for trophy selection, engraving, events and bulk award planning.",
+          url: "https://www.awardarts.in/blogs",
+        }, breadcrumbSchema([{ name: "Home", path: "/" }, { name: "Guides", path: "/blogs" }])]}
+      />
       <section className="blogs-hero" aria-labelledby="blogs-title">
         <div className="blogs-hero__copy">
           <span className="blogs-eyebrow">Award insights</span>

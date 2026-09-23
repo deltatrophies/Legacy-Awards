@@ -6,6 +6,7 @@ import { blankDesign, customOptions, defaultCustomPricing, designPresets, mergeC
 import { readStorage, writeStorage } from "../utils/storage.js";
 import { quoteApi, uploadArtwork } from "../services/apiClient.js";
 import "../styles/pages/custom-react.css";
+import Seo, { breadcrumbSchema } from "../components/common/Seo.jsx";
 
 const steps = ["Choose Parts", "Size & Finish", "Text & Logo", "Quantity & Packaging", "Review"];
 const MAX_QUANTITY = 10000;
@@ -31,9 +32,6 @@ export default function CustomPage() {
   const [saved, setSaved] = useState(() => storedArray("savedDesigns"));
   const [pricingConfig, setPricingConfig] = useState(defaultCustomPricing);
   const [notice, setNotice] = useState("");
-  useEffect(() => {
-    document.title = "Custom Trophy Studio - Award Arts";
-  }, []);
   useEffect(() => {
     let mounted = true;
     quoteApi.customPricing()
@@ -97,6 +95,12 @@ export default function CustomPage() {
 
   return (
     <main className="customizer-page">
+      <Seo
+        title="Design a Custom Trophy Online - Award Arts"
+        description="Create a custom trophy with your preferred style, finish, size, engraving and logo. Save a design and request production pricing from Award Arts."
+        path="/custom"
+        schemas={[breadcrumbSchema([{ name: "Home", path: "/" }, { name: "Custom Trophy Studio", path: "/custom" }])]}
+      />
       <header className="customizer-head"><span>Build it your way</span><h1>Custom Trophy Studio</h1><p>Configure every component, place your artwork and save a production-ready design brief.</p></header>
       <nav className="wizard-steps">{steps.map((label,index) => <button type="button" key={label} className={index === step ? "active" : index < step ? "done" : ""} onClick={() => setStep(index)}><span>{index + 1}</span>{label}</button>)}</nav>
       <div className="customizer-layout"><section className="wizard-panel">

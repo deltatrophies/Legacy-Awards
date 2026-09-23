@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import PageSkeleton from "../components/common/PageSkeleton.jsx";
 import SiteLayout from "../layouts/SiteLayout.jsx";
+import { NoIndexSeo } from "../components/common/Seo.jsx";
 
 const HomePage = lazy(() => import("../pages/HomePage.jsx"));
 const AboutPage = lazy(() => import("../pages/AboutPage.jsx"));
@@ -26,6 +27,7 @@ const AdminLoginPage = lazy(() => import("../pages/AdminLoginPage.jsx"));
 const AdminPanelPage = lazy(() => import("../pages/AdminPanelPage.jsx"));
 const SalesLoginPage = lazy(() => import("../pages/SalesLoginPage.jsx"));
 const SalesPanelPage = lazy(() => import("../pages/SalesPanelPage.jsx"));
+const NotFoundPage = lazy(() => import("../pages/NotFoundPage.jsx"));
 
 const pageTransition = {
   duration: 0.2,
@@ -59,6 +61,7 @@ function PublicRoutes({ location }) {
             <Route path="/" element={<PageMotion><HomePage /></PageMotion>} />
             <Route path="/about" element={<PageMotion><AboutPage /></PageMotion>} />
             <Route path="/products" element={<PageMotion><ProductsPage /></PageMotion>} />
+            <Route path="/products/category/:categorySlug" element={<PageMotion><ProductsPage /></PageMotion>} />
             <Route path="/compare" element={<PageMotion><ComparePage /></PageMotion>} />
             <Route path="/products/:slug" element={<PageMotion><ProductDetailPage /></PageMotion>} />
             <Route path="/product-detail" element={<Navigate to="/products/gold-prestige-trophy" replace />} />
@@ -75,7 +78,7 @@ function PublicRoutes({ location }) {
             <Route path="/account/orders" element={<PageMotion><OrdersPage /></PageMotion>} />
             <Route path="/account/enquiries" element={<PageMotion><EnquiriesPage /></PageMotion>} />
             <Route path="/account/wishlist" element={<PageMotion><WishlistPage /></PageMotion>} />
-            <Route path="*" element={<Navigate to="/" replace />} />
+            <Route path="*" element={<PageMotion><NotFoundPage /></PageMotion>} />
           </Routes>
         </AnimatePresence>
       </Suspense>
@@ -119,7 +122,8 @@ export default function AppRoutes() {
   const location = useLocation();
   const isAdminRoute = location.pathname.startsWith("/admin");
   const isSalesRoute = location.pathname.startsWith("/sales");
-  if (isAdminRoute) return <AdminRoutes location={location} />;
-  if (isSalesRoute) return <SalesRoutes location={location} />;
-  return <PublicRoutes location={location} />;
+  const isPrivateRoute = isAdminRoute || isSalesRoute || ["/login", "/cart", "/compare", "/quote-success", "/account"].some((path) => location.pathname.startsWith(path));
+  if (isAdminRoute) return <><NoIndexSeo title="Award Arts Admin" /><AdminRoutes location={location} /></>;
+  if (isSalesRoute) return <><NoIndexSeo title="Award Arts Sales" /><SalesRoutes location={location} /></>;
+  return <>{isPrivateRoute ? <NoIndexSeo /> : null}<PublicRoutes location={location} /></>;
 }

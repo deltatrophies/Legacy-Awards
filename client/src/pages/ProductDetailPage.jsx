@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
-import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import RecentlyViewed from "../components/products/RecentlyViewed.jsx";
+import NotFoundPage from "./NotFoundPage.jsx";
 import { CATALOG_CHANGED_EVENT, CATALOG_CHANGED_STORAGE_KEY, catalogApi } from "../services/apiClient.js";
 import { formatPrice } from "../utils/formatPrice.js";
 import { readStorage, writeStorage } from "../utils/storage.js";
 import { optimizedImage, responsiveImageProps } from "../utils/cloudinaryImage.js";
 import "../styles/pages/commerce.css";
+import Seo, { absoluteUrl, breadcrumbSchema } from "../components/common/Seo.jsx";
 
 const MAX_QUANTITY = 10000;
 
@@ -49,7 +51,6 @@ export default function ProductDetailPage() {
 
   useEffect(() => {
     if (!product) return;
-    document.title = `${product.name} - Award Arts`;
     setSelectedImage(product.images?.[0]?.url || product.image || "");
     const recent = readStorage("recentlyViewed", []).filter((id) => id !== product.id);
     writeStorage("recentlyViewed", [product.id, ...recent].slice(0, 8));
@@ -61,10 +62,37 @@ export default function ProductDetailPage() {
     return () => window.clearTimeout(timer);
   }, [quantityNotice]);
 
-  if (notFound) return <Navigate to="/products" replace />;
+  if (notFound) return <NotFoundPage />;
   if (!product) return <main className="commerce-page detail-page"><p>Loading product...</p></main>;
   const galleryImages = (product.images?.length ? product.images.map((image) => image.url) : [product.image]).filter(Boolean).slice(0, 4);
   const activeImage = selectedImage || galleryImages[0] || product.image;
+  const seoPath = `/products/${product.id}`;
+  const seoDescription = `${product.description}`.slice(0, 300);
+  const productSchema = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: product.name,
+    description: product.description,
+    sku: product.sku,
+    image: galleryImages,
+    category: product.category,
+    brand: { "@type": "Brand", name: "Award Arts" },
+    url: absoluteUrl(seoPath),
+    ...(Number(product.price) > 0 ? {
+      offers: {
+        "@type": "Offer",
+        priceCurrency: "INR",
+        price: Number(product.price).toFixed(2),
+        availability: "https://schema.org/InStock",
+        url: absoluteUrl(seoPath),
+      },
+    } : {}),
+  };
+  const seoSchemas = [productSchema, breadcrumbSchema([
+    { name: "Home", path: "/" },
+    { name: "Products", path: "/products" },
+    { name: product.name, path: seoPath },
+  ])];
   const addToQuote = () => {
     if (qty < product.minOrder) {
       setQuantityNotice(`Minimum order is ${product.minOrder} unit${product.minOrder > 1 ? "s" : ""} for this product.`);
@@ -93,6 +121,14 @@ export default function ProductDetailPage() {
 
   return (
     <main className="commerce-page detail-page">
+      <Seo
+        title={`${product.name} | Award Arts`}
+        description={seoDescription}
+        path={seoPath}
+        image={product.image || undefined}
+        type="product"
+        schemas={seoSchemas}
+      />
       {quantityNotice ? (
         <div className="detail-toast" role="status" aria-live="polite">
           <strong>Minimum quantity required</strong>

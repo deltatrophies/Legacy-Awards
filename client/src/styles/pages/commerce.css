@@ -12,8 +12,8 @@
 .search-suggestions img { width: 48px; height: 48px; object-fit: contain; background: var(--paper); }
 .search-suggestions span,.search-suggestions small { display: block; }.search-suggestions small { margin-top: 3px; color: var(--muted); }
 .category-tabs { display: flex; gap: 8px; padding: 22px 0 12px; overflow-x: auto; }
-.category-tabs button { flex: 0 0 auto; border: 1px solid var(--line); background: transparent; color: var(--muted); padding: 11px 16px; cursor: pointer; text-transform: capitalize; }
-.category-tabs button.active { background: var(--ink); color: white; border-color: var(--ink); }
+.category-tabs :is(button, a) { flex: 0 0 auto; border: 1px solid var(--line); background: transparent; color: var(--muted); padding: 11px 16px; cursor: pointer; text-transform: capitalize; text-decoration: none; }
+.category-tabs :is(button, a).active { background: var(--ink); color: white; border-color: var(--ink); }
 .result-line { display: flex; justify-content: space-between; padding: 10px 2px 20px; color: var(--muted); font-size: 13px; scroll-margin-top: 110px; }
 .catalog-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 20px; }
 .catalog-pagination { display: flex; align-items: center; justify-content: center; gap: 16px; margin: 34px 0 0; }
@@ -1355,7 +1355,7 @@
   padding: 16px 0 2px;
 }
 
-.category-tabs button {
+.category-tabs :is(button, a) {
   display: inline-flex;
   align-items: center;
   gap: 10px;
@@ -1370,7 +1370,7 @@
   text-transform: none;
 }
 
-.category-tabs button strong {
+.category-tabs :is(button, a) strong {
   display: grid;
   place-items: center;
   min-width: 28px;
@@ -1382,13 +1382,13 @@
   font-size: 11px;
 }
 
-.category-tabs button.active {
+.category-tabs :is(button, a).active {
   border-color: #28251f;
   background: #28251f;
   color: #fffaf0;
 }
 
-.category-tabs button.active strong {
+.category-tabs :is(button, a).active strong {
   background: rgba(255, 255, 255, .14);
   color: #e8c96a;
 }

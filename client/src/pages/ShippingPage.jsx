@@ -13,6 +13,8 @@ export default function ShippingPage() {
       pageKey="shipping"
       script={script}
       title="Shipping Policy - Award Arts"
+      description="Learn about Award Arts production timelines, dispatch, delivery and shipping for trophies and custom awards across India."
+      canonicalPath="/shipping"
     />
   );
 }

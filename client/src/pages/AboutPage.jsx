@@ -13,6 +13,8 @@ export default function AboutPage() {
       pageKey="about"
       script={script}
       title="About Us - Award Arts"
+      description="Meet Award Arts, a New Delhi awards specialist creating trophies, medals, plaques and personalized recognition products for organizations across India."
+      canonicalPath="/about"
     />
   );
 }

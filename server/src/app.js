@@ -16,6 +16,7 @@ import { logger } from "./config/logger.js";
 import { webhook } from "./modules/payments/payment.controller.js";
 import { asyncHandler } from "./common/middleware/asyncHandler.js";
 import { apiRouter } from "./routes/index.js";
+import { sitemap } from "./modules/seo/sitemap.controller.js";
 
 const app = express();
 app.disable("x-powered-by");
@@ -85,6 +86,7 @@ app.get("/api/health", (_req, res) => {
     data: { status: healthy ? "ok" : "degraded", database, timestamp: new Date().toISOString() },
   });
 });
+app.get("/sitemap.xml", databaseAvailability, asyncHandler(sitemap));
 app.use("/api/v1/auth/login", sensitiveLimiter);
 app.use("/api/v1/auth/register", sensitiveLimiter);
 app.use("/api/v1/uploads", sensitiveLimiter);

@@ -13,6 +13,8 @@ export default function ReturnsPage() {
       pageKey="returns"
       script={script}
       title="Returns Policy - Award Arts"
+      description="Review the Award Arts return, replacement and issue-resolution policy for customized and standard award products."
+      canonicalPath="/returns"
     />
   );
 }

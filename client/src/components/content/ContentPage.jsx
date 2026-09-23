@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useExternalAssets } from "../../hooks/useExternalAssets.js";
 import { usePageStyle } from "../../hooks/usePageStyle.js";
+import Seo from "../common/Seo.jsx";
 
 export default function ContentPage({
   css,
@@ -11,6 +12,9 @@ export default function ContentPage({
   pageKey,
   script,
   title,
+  description,
+  canonicalPath,
+  schemas,
 }) {
   const containerRef = useRef(null);
   const navigate = useNavigate();
@@ -20,10 +24,6 @@ export default function ContentPage({
   });
 
   usePageStyle(pageKey, css);
-
-  useEffect(() => {
-    document.title = title;
-  }, [title]);
 
   useEffect(() => {
     if (!externalReady || !script?.trim()) return undefined;
@@ -65,11 +65,12 @@ export default function ContentPage({
     return () => container.removeEventListener("click", onClick);
   }, [navigate]);
 
-  return (
+  return <>
+    <Seo title={title} description={description} path={canonicalPath} schemas={schemas} />
     <main
       ref={containerRef}
       className={`legacy-page legacy-page-${pageKey}`}
       dangerouslySetInnerHTML={{ __html: html }}
     />
-  );
+  </>;
 }

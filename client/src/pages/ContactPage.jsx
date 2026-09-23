@@ -10,6 +10,7 @@ import {
 import { ApiError, settingsApi, submitInquiry } from "../services/apiClient.js";
 import { readStorage, writeStorage } from "../utils/storage.js";
 import "../styles/pages/contact.css";
+import Seo, { breadcrumbSchema } from "../components/common/Seo.jsx";
 
 const initialForm = {
   name: "",
@@ -50,10 +51,6 @@ export default function ContactPage() {
     timings: "",
     mapUrl: "",
   });
-
-  useEffect(() => {
-    document.title = `Contact Us - ${business.businessName}`;
-  }, [business.businessName]);
 
   useEffect(() => {
     let active = true;
@@ -225,6 +222,17 @@ export default function ContactPage() {
 
   return (
     <>
+    <Seo
+      title={`Contact ${business.businessName} - Trophy & Bulk Award Enquiries`}
+      description="Contact Award Arts for custom trophies, medals, plaques, engraving, bulk pricing and delivery support across India."
+      path="/contact"
+      schemas={[{
+        "@context": "https://schema.org",
+        "@type": "ContactPage",
+        name: `Contact ${business.businessName}`,
+        url: "https://www.awardarts.in/contact",
+      }, breadcrumbSchema([{ name: "Home", path: "/" }, { name: "Contact", path: "/contact" }])]}
+    />
     <main className="contact-page">
       <section className="contact-hero" aria-labelledby="contact-title">
         <div className="contact-hero__content">

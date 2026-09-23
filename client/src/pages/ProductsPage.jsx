@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import Seo, { breadcrumbSchema } from "../components/common/Seo.jsx";
 import ProductCard from "../components/products/ProductCard.jsx";
 import RecentlyViewed from "../components/products/RecentlyViewed.jsx";
 import { CATALOG_CHANGED_EVENT, CATALOG_CHANGED_STORAGE_KEY, catalogApi, categoryApi } from "../services/apiClient.js";
@@ -16,9 +17,11 @@ function formatCategory(value) {
 }
 
 export default function ProductsPage() {
-  const [searchParams, setSearchParams] = useSearchParams();
+  const { categorySlug } = useParams();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [query, setQuery] = useState("");
-  const category = searchParams.get("category") || "all";
+  const category = categorySlug || searchParams.get("category") || "all";
   const [price, setPrice] = useState("all");
   const [sort, setSort] = useState("featured");
   const [wishlist, setWishlist] = useState(() => readStorage("wishlist", []));
@@ -28,10 +31,6 @@ export default function ProductsPage() {
   const [catalog, setCatalog] = useState([]);
   const [catalogCategories, setCatalogCategories] = useState([]);
   const [categoriesLoaded, setCategoriesLoaded] = useState(false);
-
-  useEffect(() => {
-    document.title = "Products - Award Arts";
-  }, []);
 
   const applyCatalog = (products, categoryItems) => {
     const nextProducts = products || [];
@@ -110,10 +109,7 @@ export default function ProductsPage() {
     });
   };
   const selectCategory = (nextCategory) => {
-    const nextParams = new URLSearchParams(searchParams);
-    if (nextCategory === "all") nextParams.delete("category");
-    else nextParams.set("category", nextCategory);
-    setSearchParams(nextParams);
+    navigate(nextCategory === "all" ? "/products" : `/products/category/${nextCategory}`);
   };
   useEffect(() => {
     if (!categoriesLoaded || category === "all") return;
@@ -131,9 +127,26 @@ export default function ProductsPage() {
   const hasActiveFilters = query || category !== "all" || price !== "all" || sort !== "featured";
   const activeCategory = catalogCategories.find((item) => (item.slug || item.id) === category);
   const activeCategoryName = category === "all" ? "All Products" : activeCategory?.name || formatCategory(category);
+  const seoPath = category === "all" ? "/products" : `/products/category/${category}`;
+  const seoTitle = category === "all"
+    ? "Trophies, Medals, Plaques & Custom Awards - Award Arts"
+    : `${activeCategoryName} - Custom Awards | Award Arts`;
+  const seoDescription = category === "all"
+    ? "Browse premium trophies, medals, plaques, crystal awards and customizable recognition products. Request bulk pricing and engraving from Award Arts."
+    : activeCategory?.description || `Browse customizable ${activeCategoryName.toLowerCase()} from Award Arts for corporate, school, sports and recognition events.`;
+  const seoSchemas = useMemo(() => [{
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    name: activeCategoryName,
+    description: seoDescription,
+    url: `https://www.awardarts.in${seoPath}`,
+  }, breadcrumbSchema(category === "all"
+    ? [{ name: "Home", path: "/" }, { name: "Products", path: "/products" }]
+    : [{ name: "Home", path: "/" }, { name: "Products", path: "/products" }, { name: activeCategoryName, path: seoPath }])], [activeCategoryName, category, seoDescription, seoPath]);
 
   return (
     <main className="commerce-page">
+      <Seo title={seoTitle} description={seoDescription} path={seoPath} schemas={seoSchemas} />
       <header className="catalog-hero">
         <div className="catalog-hero-copy">
           <span>Made for meaningful moments</span>
@@ -174,10 +187,10 @@ export default function ProductsPage() {
           {[{ slug: "all", name: "All Products" }, ...catalogCategories].map((item) => {
             const key = item.slug || item.id;
             return (
-            <button type="button" className={category === key ? "active" : ""} onClick={() => selectCategory(key)} key={key}>
+            <Link className={category === key ? "active" : ""} to={key === "all" ? "/products" : `/products/category/${key}`} key={key}>
               <span>{item.name || formatCategory(key)}</span>
               <strong>{categoryCounts.get(key) || 0}</strong>
-            </button>
+            </Link>
           ); })}
         </nav>
       </section>

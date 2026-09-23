@@ -13,6 +13,8 @@ export default function PrivacyPage() {
       pageKey="privacy"
       script={script}
       title="Privacy Policy - Award Arts"
+      description="Read how Award Arts collects, uses, protects and manages personal information submitted through our website."
+      canonicalPath="/privacy"
     />
   );
 }
