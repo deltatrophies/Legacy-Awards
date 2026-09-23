@@ -1,4 +1,4 @@
-# Legacy Awards
+# Awards Arts
 
 Production-oriented React storefront and Node.js API. The API owns authentication, catalog data, quote pricing, inquiries, file uploads, payments, and orders.
 

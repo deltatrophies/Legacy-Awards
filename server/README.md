@@ -1,6 +1,6 @@
 # Server
 
-Express and MongoDB API for Legacy Trophies.
+Express and MongoDB API for Awards Arts.
 
 ## Structure
 

@@ -30,7 +30,7 @@ export default function ProductsPage() {
   const [categoriesLoaded, setCategoriesLoaded] = useState(false);
 
   useEffect(() => {
-    document.title = "Products - Legacy Awards";
+    document.title = "Products - Awards Arts";
   }, []);
 
   const applyCatalog = (products, categoryItems) => {

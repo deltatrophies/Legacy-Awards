@@ -1,6 +1,6 @@
 # Client
 
-React and Vite storefront for Legacy Trophies.
+React and Vite storefront for Awards Arts.
 
 ## Structure
 

@@ -20,7 +20,7 @@ function togglePassword() {
         form.classList.toggle("auth-login", nextIsLogin);
         title.textContent = nextIsLogin ? "Welcome Back" : "Create an Account";
         subtitle.innerHTML = nextIsLogin
-          ? 'New to Legacy Awards? <a href="#" onclick="toggleForm(event)">Create account</a>'
+          ? 'New to Awards Arts? <a href="#" onclick="toggleForm(event)">Create account</a>'
           : 'Already have an account? <a href="#" onclick="toggleForm(event)">Log in</a>';
         btn.textContent = nextIsLogin ? "Log In" : "Create Account";
         password.autocomplete = nextIsLogin ? "current-password" : "new-password";
@@ -35,5 +35,5 @@ function togglePassword() {
           alert("Please accept the Terms & Conditions to continue.");
           return;
         }
-        alert(isLogin ? "Welcome back to Legacy Awards." : "Account created successfully. Welcome to Legacy Awards.");
+        alert(isLogin ? "Welcome back to Awards Arts." : "Account created successfully. Welcome to Awards Arts.");
       }

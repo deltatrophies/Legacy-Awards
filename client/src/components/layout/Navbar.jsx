@@ -94,7 +94,7 @@ export default function Navbar() {
     <nav className="site-nav" data-menu-open={menuOpen ? "true" : "false"}>
       <NavLink to="/" className="logo" aria-label={`${BUSINESS_NAME} home`}>
         <img src="/images/brand-logo.png" alt="" />
-        <span className="logo-text">Legacy <em>Awards</em></span>
+        <span className="logo-text">Awards <em>Arts</em></span>
       </NavLink>
 
       <ul className="nav-links">

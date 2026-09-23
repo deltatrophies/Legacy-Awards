@@ -17,7 +17,7 @@ export default function SalesLoginPage() {
   const [form, setForm] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  useEffect(() => { document.title = "Sales Login - Legacy Awards"; }, []);
+  useEffect(() => { document.title = "Sales Login - Awards Arts"; }, []);
 
   if (!loading && user && allowedRoles.includes(user.role)) {
     return <Navigate to={location.state?.from || "/sales/dashboard"} replace />;
@@ -41,7 +41,7 @@ export default function SalesLoginPage() {
     <main className="admin-login-page sales-login-page">
       <section className="admin-login-panel" aria-labelledby="sales-login-title">
         <div className="admin-login-media">
-          <Link to="/" className="admin-login-brand">Legacy Awards</Link>
+          <Link to="/" className="admin-login-brand">Awards Arts</Link>
           <img src="/images/hero.png" alt="Premium award display" />
         </div>
         <div className="admin-login-form-wrap">

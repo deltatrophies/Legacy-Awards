@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 
 const settingsSchema = new mongoose.Schema({
   key: { type: String, required: true, unique: true, default: "site" },
-  businessName: { type: String, trim: true, maxlength: 120, default: "Legacy Awards" },
+  businessName: { type: String, trim: true, maxlength: 120, default: "Awards Arts" },
   email: { type: String, trim: true, lowercase: true, maxlength: 254, default: "orders@legacyawards.in" },
   phone: { type: String, trim: true, maxlength: 30, default: "" },
   whatsapp: { type: String, trim: true, maxlength: 15, default: "" },

@@ -3,7 +3,7 @@ import { Settings } from "./settings.model.js";
 
 const defaultSettings = {
   key: "site",
-  businessName: "Legacy Awards",
+  businessName: "Awards Arts",
   email: "orders@legacyawards.in",
   phone: "",
   whatsapp: "",

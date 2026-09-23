@@ -49,7 +49,7 @@ export default function ProductDetailPage() {
 
   useEffect(() => {
     if (!product) return;
-    document.title = `${product.name} - Legacy Awards`;
+    document.title = `${product.name} - Awards Arts`;
     setSelectedImage(product.images?.[0]?.url || product.image || "");
     const recent = readStorage("recentlyViewed", []).filter((id) => id !== product.id);
     writeStorage("recentlyViewed", [product.id, ...recent].slice(0, 8));

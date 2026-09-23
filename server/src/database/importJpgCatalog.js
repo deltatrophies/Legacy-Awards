@@ -212,7 +212,7 @@ async function main() {
         category: item.category.slug,
         price: 0,
         tag: `${item.category.name} / Customizable`,
-        description: `${displayName} is available for customized awards and recognition requirements. Contact Legacy Awards for size, finish, quantity, and pricing options.`,
+        description: `${displayName} is available for customized awards and recognition requirements. Contact Awards Arts for size, finish, quantity, and pricing options.`,
         badge: "Price on request",
         images: [{ url: item.image.url, publicId: item.image.publicId, alt: `${displayName} – ${item.category.name}` }],
         material: "Multiple options available",

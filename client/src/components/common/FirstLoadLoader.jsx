@@ -37,12 +37,12 @@ export default function FirstLoadLoader() {
   if (!visible) return null;
 
   return (
-    <div className={`first-load-loader${leaving ? " is-leaving" : ""}`} role="status" aria-live="polite" aria-label="Loading Legacy Awards">
+    <div className={`first-load-loader${leaving ? " is-leaving" : ""}`} role="status" aria-live="polite" aria-label="Loading Awards Arts">
       <div className="first-load-loader__panel">
         <div className="first-load-loader__mark" aria-hidden="true">
           <img className="first-load-loader__logo" src="/images/brand-logo.png" alt="" />
         </div>
-        <p className="first-load-loader__eyebrow">Legacy Awards</p>
+        <p className="first-load-loader__eyebrow">Awards Arts</p>
         <div className="first-load-loader__bar" aria-hidden="true">
           <span />
         </div>

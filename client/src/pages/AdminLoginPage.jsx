@@ -17,7 +17,7 @@ export default function AdminLoginPage() {
   const canFillDevLogin = Boolean(devCredentials?.email && devCredentials?.password);
 
   useEffect(() => {
-    document.title = "Admin Login - Legacy Awards";
+    document.title = "Admin Login - Awards Arts";
   }, []);
 
   if (!loading && user?.role === "admin") {
@@ -48,7 +48,7 @@ export default function AdminLoginPage() {
     <main className="admin-login-page">
       <section className="admin-login-panel" aria-labelledby="admin-login-title">
         <div className="admin-login-media">
-          <Link to="/" className="admin-login-brand">Legacy Awards</Link>
+          <Link to="/" className="admin-login-brand">Awards Arts</Link>
           <img src="/images/hero.png" alt="Premium award display" />
         </div>
         <div className="admin-login-form-wrap">

@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useExternalAssets } from "../../hooks/useExternalAssets.js";
 import { usePageStyle } from "../../hooks/usePageStyle.js";
 
-export default function LegacyPage({
+export default function ContentPage({
   css,
   externalScripts,
   externalStyles,
@@ -32,7 +32,7 @@ export default function LegacyPage({
       window.__DELTA_CURRENT_PAGE__ = pageKey;
       new Function(script)();
     } catch (error) {
-      console.error(`Legacy script failed on ${pageKey}`, error);
+      console.error(`Page script failed on ${pageKey}`, error);
     }
 
     return undefined;

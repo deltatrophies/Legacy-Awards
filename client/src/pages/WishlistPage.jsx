@@ -12,7 +12,7 @@ export default function WishlistPage() {
   const categoryCount = useMemo(() => new Set(savedProducts.map((product) => product.category).filter(Boolean)).size, [savedProducts]);
 
   useEffect(() => {
-    document.title = "Wishlist - Legacy Awards";
+    document.title = "Wishlist - Awards Arts";
     let active = true;
     catalogApi.list().then((items) => {
       if (!active) return;

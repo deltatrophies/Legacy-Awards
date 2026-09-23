@@ -104,7 +104,7 @@ async function resetDemoWorkflow() {
     name: `${customerUser.firstName} ${customerUser.lastName}`.trim(),
     phone: customerUser.phone || "9876543210",
     email: customerUser.email,
-    organization: "Legacy Demo Company",
+    organization: "Awards Arts Demo Company",
     preference: "WhatsApp",
     notes: "Development workflow sample",
   };
