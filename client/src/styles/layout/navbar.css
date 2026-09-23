@@ -59,13 +59,15 @@ nav.site-nav .logo img {
 }
 
 nav.site-nav .logo .logo-text {
+  font-weight: 700;
+  font-size: 2.8rem;
   display: inline-flex;
   align-items: baseline;
-  gap: 7px;
+  gap: 9px;
 }
 
 nav.site-nav .logo em {
-  font-size: 0.82em;
+  font-size: 2.35rem;
   font-style: italic !important;
   letter-spacing: 0.02em;
   -webkit-text-fill-color: transparent !important;
