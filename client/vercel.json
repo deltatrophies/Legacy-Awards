@@ -24,7 +24,43 @@
       "destination": "https://award-arts-api.onrender.com/api/:path*"
     },
     {
-      "source": "/(.*)",
+      "source": "/products/category/:slug",
+      "destination": "/"
+    },
+    {
+      "source": "/products/:slug",
+      "destination": "/"
+    },
+    {
+      "source": "/product-detail",
+      "destination": "/"
+    },
+    {
+      "source": "/compare",
+      "destination": "/"
+    },
+    {
+      "source": "/cart",
+      "destination": "/"
+    },
+    {
+      "source": "/quote-success",
+      "destination": "/"
+    },
+    {
+      "source": "/login",
+      "destination": "/"
+    },
+    {
+      "source": "/account/:path*",
+      "destination": "/"
+    },
+    {
+      "source": "/admin/:path*",
+      "destination": "/"
+    },
+    {
+      "source": "/sales/:path*",
       "destination": "/"
     }
   ],
