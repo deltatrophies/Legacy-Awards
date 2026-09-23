@@ -11,7 +11,7 @@ services:
       - key: NODE_ENV
         value: production
       - key: APP_ORIGIN
-        value: https://award-arts.vercel.app
+        value: https://award-arts.vercel.app,https://awardarts.in,https://www.awardarts.in,https://awardsarts.com,https://www.awardsarts.com
       - key: COOKIE_SECURE
         value: "true"
       - key: JWT_ACCESS_TTL

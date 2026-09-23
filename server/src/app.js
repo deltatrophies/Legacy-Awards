@@ -77,7 +77,14 @@ const sensitiveLimiter = rateLimit({
   message: { success: false, error: { code: "RATE_LIMITED", message: "Too many attempts; please try again later" } },
 });
 
-app.get("/api/health", (_req, res) => res.json({ success: true, data: { status: "ok", database: getDatabaseStatus(), timestamp: new Date().toISOString() } }));
+app.get("/api/health", (_req, res) => {
+  const database = getDatabaseStatus();
+  const healthy = env.NODE_ENV === "test" || database.connected;
+  return res.status(healthy ? 200 : 503).json({
+    success: healthy,
+    data: { status: healthy ? "ok" : "degraded", database, timestamp: new Date().toISOString() },
+  });
+});
 app.use("/api/v1/auth/login", sensitiveLimiter);
 app.use("/api/v1/auth/register", sensitiveLimiter);
 app.use("/api/v1/uploads", sensitiveLimiter);
