@@ -92,6 +92,6 @@ Subscribe to `payment.authorized`, `payment.captured`, `payment.failed`, and `pa
 
 ## Production
 
-Set `NODE_ENV=production`, `COOKIE_SECURE=true`, a precise HTTPS `APP_ORIGIN`, and production secrets in the server environment. Run `npm run build` before `npm start`; the server serves `client/dist` in production. The included multi-stage Dockerfile runs as the unprivileged `node` user.
+Set `NODE_ENV=production`, `COOKIE_SECURE=true`, a precise HTTPS `APP_ORIGIN`, and production secrets in the server environment. Deploy the frontend on Vercel and run the Node API on Render with the commands defined in `render.yaml`.
 
 Rotate any credential shared through chat or another non-secret channel before launch.

@@ -354,5 +354,3 @@ export async function uploadProductImage(file) {
 export async function submitInquiry(formData) {
   return apiRequest("/inquiries", { method: "POST", body: formData }, false);
 }
-
-export const legacyApi = { submitInquiry };

@@ -1,16 +1,17 @@
 services:
   - type: web
     name: award-arts-api
-    env: docker
+    runtime: node
     plan: free
-    autoDeploy: true
-    dockerfilePath: ./Dockerfile
+    autoDeployTrigger: commit
+    buildCommand: npm ci --omit=dev --workspace server
+    startCommand: npm start
     healthCheckPath: /api/health
     envVars:
       - key: NODE_ENV
         value: production
       - key: APP_ORIGIN
-        value: https://award-arts.vercel.app,https://award-arts-api.onrender.com
+        value: https://award-arts.vercel.app
       - key: COOKIE_SECURE
         value: "true"
       - key: JWT_ACCESS_TTL

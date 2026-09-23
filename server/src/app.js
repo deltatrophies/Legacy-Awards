@@ -1,6 +1,4 @@
 import { randomUUID } from "node:crypto";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
 import compression from "compression";
 import cookieParser from "cookie-parser";
 import cors from "cors";
@@ -13,7 +11,7 @@ import { getDatabaseStatus } from "./config/database.js";
 import { errorHandler, notFoundHandler } from "./common/middleware/errorHandler.js";
 import { databaseAvailability } from "./common/middleware/databaseAvailability.js";
 import { rejectUnsafeMongoKeys } from "./common/middleware/security.js";
-import { env, isProduction } from "./config/env.js";
+import { env } from "./config/env.js";
 import { logger } from "./config/logger.js";
 import { webhook } from "./modules/payments/payment.controller.js";
 import { asyncHandler } from "./common/middleware/asyncHandler.js";
@@ -22,11 +20,6 @@ import { apiRouter } from "./routes/index.js";
 const app = express();
 app.disable("x-powered-by");
 app.set("trust proxy", 1);
-
-const productionOrigins = new Set([
-  "https://award-arts.vercel.app",
-  "https://award-arts-api.onrender.com",
-]);
 
 app.use(pinoHttp({
   logger,
@@ -54,7 +47,6 @@ app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
 app.use(cors({
   origin(origin, callback) {
     const allowed = new Set(env.APP_ORIGIN.split(",").map((item) => item.trim()).filter(Boolean));
-    for (const productionOrigin of productionOrigins) allowed.add(productionOrigin);
     if (!origin || allowed.has(origin)) return callback(null, true);
     return callback(null, false);
   },
@@ -92,12 +84,6 @@ app.use("/api/v1/uploads", sensitiveLimiter);
 app.use("/api/v1/payments/orders", sensitiveLimiter);
 app.use("/api/v1/payments/verify", sensitiveLimiter);
 app.use("/api/v1", apiLimiter, databaseAvailability, apiRouter);
-
-if (isProduction) {
-  const directory = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../client/dist");
-  app.use(express.static(directory, { maxAge: "1y", immutable: true }));
-  app.get("/*splat", (_req, res) => res.sendFile(path.join(directory, "index.html")));
-}
 
 app.use(notFoundHandler);
 app.use(errorHandler);
