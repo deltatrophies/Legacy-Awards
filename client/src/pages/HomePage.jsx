@@ -14,7 +14,7 @@ export default function HomePage() {
         html={html}
         pageKey="home"
         script={script}
-        title="Awards Arts - Trophies, Medals and Custom Awards"
+        title="Award Arts - Trophies, Medals and Custom Awards"
       />
       <HomeExperience />
     </>

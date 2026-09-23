@@ -68,7 +68,8 @@ function mapUpload(result) {
 
 export function cloudinaryPublicId(image) {
   const storedPublicId = typeof image?.publicId === "string" ? image.publicId.trim() : "";
-  if (storedPublicId.startsWith("legacy-trophies/")) return storedPublicId;
+  const managedFolders = ["award-arts/", "legacy-trophies/"];
+  if (managedFolders.some((folder) => storedPublicId.startsWith(folder))) return storedPublicId;
 
   const rawUrl = typeof image === "string" ? image : image?.url;
   if (!rawUrl) return "";
@@ -76,7 +77,9 @@ export function cloudinaryPublicId(image) {
     const url = new URL(rawUrl);
     if (url.hostname !== "res.cloudinary.com") return "";
     const decodedPath = decodeURIComponent(url.pathname);
-    const folderIndex = decodedPath.indexOf("legacy-trophies/");
+    const folderIndex = managedFolders
+      .map((folder) => decodedPath.indexOf(folder))
+      .find((index) => index >= 0) ?? -1;
     if (folderIndex < 0) return "";
     return decodedPath.slice(folderIndex).replace(/\.[a-z0-9]{1,8}$/i, "");
   } catch {
@@ -293,7 +296,7 @@ export async function deleteCloudinaryImages(images) {
   }, { deleted: [], failed: [] });
 }
 
-export async function uploadBuffer(file, folder = "legacy-trophies/uploads") {
+export async function uploadBuffer(file, folder = "award-arts/uploads") {
   if (!cloudinaryEnabled) {
     throw new AppError(503, "UPLOADS_NOT_CONFIGURED", "Cloud uploads are not configured");
   }

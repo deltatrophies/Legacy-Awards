@@ -63,7 +63,7 @@ test("main screens do not overflow and the mobile navigation stays usable", asyn
     await page.setViewportSize(viewport);
     for (const route of routes) {
       await page.goto(route);
-      await expect(page.locator("body")).not.toContainText("Loading Awards Arts");
+      await expect(page.locator("body")).not.toContainText("Loading Award Arts");
       const dimensions = await page.evaluate(() => ({
         viewportWidth: document.documentElement.clientWidth,
         contentWidth: document.documentElement.scrollWidth,
@@ -84,7 +84,7 @@ test("main screens do not overflow and the mobile navigation stays usable", asyn
 
 test("sales workspace remains usable at mobile and desktop widths", async ({ page }) => {
   await page.goto("/sales/login");
-  await page.getByLabel("Email").fill("sales3@legacyawards.dev");
+  await page.getByLabel("Email").fill("sales3@awardarts.dev");
   await page.getByLabel("Password").fill("SalesThree@123");
   await page.getByRole("button", { name: "Open Sales Workspace" }).click();
   await expect(page).toHaveURL(/\/sales\/dashboard$/);

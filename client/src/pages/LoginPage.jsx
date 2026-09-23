@@ -24,7 +24,7 @@ export default function LoginPage() {
   const passwordMeetsPolicy = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,128}$/.test(form.password);
 
   useEffect(() => {
-    document.title = `${isLogin ? "Login" : "Create Account"} - Awards Arts`;
+    document.title = `${isLogin ? "Login" : "Create Account"} - Award Arts`;
   }, [isLogin]);
 
   const getErrorMessage = (requestError) => {
@@ -65,7 +65,7 @@ export default function LoginPage() {
       <div className="backdrop-blur-overlay" />
       <div className="card">
         <div className="left-panel">
-          <Link className="auth-brand" to="/">Awards Arts</Link>
+          <Link className="auth-brand" to="/">Award Arts</Link>
           <div className="award-photo"><img src="/images/hero.png" alt="Gold trophy and crystal awards" /></div>
           <div className="auth-proof"><span>Premium awards</span><strong>Since 2001</strong></div>
         </div>
@@ -73,7 +73,7 @@ export default function LoginPage() {
           <button className="back-btn" type="button" onClick={() => navigate(-1)} aria-label="Go back">←</button>
           <h1 className="form-title">{isLogin ? "Welcome Back" : "Create an Account"}</h1>
           <p className="form-subtitle">
-            {isLogin ? "New to Awards Arts? " : "Already have an account? "}
+            {isLogin ? "New to Award Arts? " : "Already have an account? "}
             <button type="button" className="auth-switch" onClick={() => { setIsLogin(!isLogin); setError(""); }}>{isLogin ? "Create account" : "Log in"}</button>
           </p>
           {import.meta.env.DEV && canFillDevLogin ? (

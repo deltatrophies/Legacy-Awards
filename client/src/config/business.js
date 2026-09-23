@@ -1,6 +1,6 @@
-export const BUSINESS_NAME = "Awards Arts";
+export const BUSINESS_NAME = "Award Arts";
 export const BUSINESS_WHATSAPP = "91XXXXXXXXXX";
-export const BUSINESS_EMAIL = "orders@legacyawards.in";
+export const BUSINESS_EMAIL = "orders@awardarts.in";
 export const BUSINESS_ADDRESS = "B-14, Okhla Phase II, New Delhi - 110020";
 
 export function createWhatsAppUrl(message, number = BUSINESS_WHATSAPP) {

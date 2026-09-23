@@ -15,7 +15,7 @@ const cliArgs = process.argv.slice(2);
 const dryRun = cliArgs.includes("--dry-run");
 const sourceRoot = cliArgs.find((argument) => argument !== "--dry-run") || process.env.CATALOG_SOURCE;
 const manifestPath = path.resolve(__dirname, "../../../.catalog-import-manifest.json");
-const cloudFolder = "legacy-trophies/catalog-2026";
+const cloudFolder = "award-arts/catalog-2026";
 // Keep enough parallelism for a large catalog without overwhelming the local
 // DNS resolver. Every completed upload is persisted, so an interrupted import
 // resumes instead of uploading successful assets again.
@@ -212,7 +212,7 @@ async function main() {
         category: item.category.slug,
         price: 0,
         tag: `${item.category.name} / Customizable`,
-        description: `${displayName} is available for customized awards and recognition requirements. Contact Awards Arts for size, finish, quantity, and pricing options.`,
+        description: `${displayName} is available for customized awards and recognition requirements. Contact Award Arts for size, finish, quantity, and pricing options.`,
         badge: "Price on request",
         images: [{ url: item.image.url, publicId: item.image.publicId, alt: `${displayName} – ${item.category.name}` }],
         material: "Multiple options available",

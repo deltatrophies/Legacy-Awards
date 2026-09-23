@@ -44,8 +44,8 @@ const couponTemplate = {
 };
 
 const settingsTemplate = {
-  businessName: "Awards Arts",
-  email: "orders@legacyawards.in",
+  businessName: "Award Arts",
+  email: "orders@awardarts.in",
   phone: "",
   whatsapp: "91XXXXXXXXXX",
   address: "B-14, Okhla Phase II, New Delhi - 110020",
@@ -106,7 +106,7 @@ function customerContactNumber(value, defaultCountryCode = "91") {
 function customerWhatsAppUrl(customer, reference) {
   const number = customerContactNumber(customer?.phone);
   if (!number) return "";
-  const message = `Hi ${customer?.name || "there"}, this is Awards Arts regarding quotation ${reference}. We are ready to help with your payment and next steps.`;
+  const message = `Hi ${customer?.name || "there"}, this is Award Arts regarding quotation ${reference}. We are ready to help with your payment and next steps.`;
   return `https://wa.me/${number}?text=${encodeURIComponent(message)}`;
 }
 
@@ -172,7 +172,7 @@ export default function AdminPanelPage() {
   }, []);
 
   useEffect(() => {
-    document.title = `Admin ${sections.find(([key]) => key === activeSection)?.[1]} - Awards Arts`;
+    document.title = `Admin ${sections.find(([key]) => key === activeSection)?.[1]} - Award Arts`;
   }, [activeSection]);
 
   useEffect(() => {
@@ -227,7 +227,7 @@ export default function AdminPanelPage() {
     <AdminGuard>
       <main className="admin-shell">
         <aside className="admin-sidebar">
-          <Link className="admin-brand" to="/admin/dashboard">Awards Arts Admin</Link>
+          <Link className="admin-brand" to="/admin/dashboard">Award Arts Admin</Link>
           <nav className="admin-nav" aria-label="Admin sections">
             {sections.map(([key, label]) => (
               <NavLink key={key} to={`/admin/${key}`} className={({ isActive }) => isActive || activeSection === key ? "active" : ""}>

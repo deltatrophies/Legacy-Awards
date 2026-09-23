@@ -45,7 +45,7 @@ export async function updateAvatar(req, res) {
   if (!["image/jpeg", "image/png", "image/webp"].includes(req.file.mimetype)) {
     throw new AppError(415, "UNSUPPORTED_FILE", "Only JPG, PNG, and WebP profile photos are supported");
   }
-  const uploaded = await uploadBuffer(req.file, "legacy-trophies/profile-photos");
+  const uploaded = await uploadBuffer(req.file, "award-arts/profile-photos");
   const user = await authService.updateAvatar(req.auth.userId, uploaded);
   return sendData(res, user.toSafeObject());
 }

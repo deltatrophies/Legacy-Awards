@@ -106,13 +106,13 @@ export default function ProfilePage() {
   };
 
   return (
-    <AccountShell eyebrow="My Profile" title="Account details" subtitle="Manage your Awards Arts account information.">
+    <AccountShell eyebrow="My Profile" title="Account details" subtitle="Manage your Award Arts account information.">
       <section className="account-grid">
         <article className="profile-card account-card">
           <div className="profile-avatar">{user.avatarUrl ? <img src={user.avatarUrl} alt="" /> : (user.firstName?.[0] || "U")}</div>
           <div>
             <span className="account-label">Signed in as</span>
-            <h2>{fullName || "Awards Arts Customer"}</h2>
+            <h2>{fullName || "Award Arts Customer"}</h2>
             <p>{user.email}</p>
           </div>
         </article>

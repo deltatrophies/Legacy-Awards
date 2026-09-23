@@ -10,12 +10,12 @@ export const uploadRouter = Router();
 
 uploadRouter.post("/image", upload.single("file"), asyncHandler(async (req, res) => {
   if (!req.file) throw new AppError(400, "FILE_REQUIRED", "Choose a file to upload");
-  const uploaded = await uploadBuffer(req.file, "legacy-trophies/customer-artwork");
+  const uploaded = await uploadBuffer(req.file, "award-arts/customer-artwork");
   return sendData(res, uploaded, 201);
 }));
 
 uploadRouter.post("/product-image", authenticate, authorize("admin"), upload.single("file"), asyncHandler(async (req, res) => {
   if (!req.file) throw new AppError(400, "FILE_REQUIRED", "Choose a file to upload");
-  const uploaded = await uploadBuffer(req.file, "legacy-trophies/product-images");
+  const uploaded = await uploadBuffer(req.file, "award-arts/product-images");
   return sendData(res, uploaded, 201);
 }));

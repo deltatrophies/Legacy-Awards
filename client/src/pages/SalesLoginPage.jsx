@@ -5,9 +5,9 @@ import "../styles/pages/admin.css";
 
 const allowedRoles = ["sales", "sales_manager", "staff", "admin"];
 const demoSalesAccounts = import.meta.env.DEV ? [
-  { label: "Sales 1", name: "Arjun", email: import.meta.env.VITE_DEV_SALES_1_EMAIL || "sales1@legacyawards.dev", password: import.meta.env.VITE_DEV_SALES_1_PASSWORD || "SalesOne@123" },
-  { label: "Sales 2", name: "Neha", email: import.meta.env.VITE_DEV_SALES_2_EMAIL || "sales2@legacyawards.dev", password: import.meta.env.VITE_DEV_SALES_2_PASSWORD || "SalesTwo@123" },
-  { label: "Sales 3", name: "Kabir", email: import.meta.env.VITE_DEV_SALES_3_EMAIL || "sales3@legacyawards.dev", password: import.meta.env.VITE_DEV_SALES_3_PASSWORD || "SalesThree@123" },
+  { label: "Sales 1", name: "Arjun", email: import.meta.env.VITE_DEV_SALES_1_EMAIL || "sales1@awardarts.dev", password: import.meta.env.VITE_DEV_SALES_1_PASSWORD || "SalesOne@123" },
+  { label: "Sales 2", name: "Neha", email: import.meta.env.VITE_DEV_SALES_2_EMAIL || "sales2@awardarts.dev", password: import.meta.env.VITE_DEV_SALES_2_PASSWORD || "SalesTwo@123" },
+  { label: "Sales 3", name: "Kabir", email: import.meta.env.VITE_DEV_SALES_3_EMAIL || "sales3@awardarts.dev", password: import.meta.env.VITE_DEV_SALES_3_PASSWORD || "SalesThree@123" },
 ] : [];
 
 export default function SalesLoginPage() {
@@ -17,7 +17,7 @@ export default function SalesLoginPage() {
   const [form, setForm] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  useEffect(() => { document.title = "Sales Login - Awards Arts"; }, []);
+  useEffect(() => { document.title = "Sales Login - Award Arts"; }, []);
 
   if (!loading && user && allowedRoles.includes(user.role)) {
     return <Navigate to={location.state?.from || "/sales/dashboard"} replace />;
@@ -41,7 +41,7 @@ export default function SalesLoginPage() {
     <main className="admin-login-page sales-login-page">
       <section className="admin-login-panel" aria-labelledby="sales-login-title">
         <div className="admin-login-media">
-          <Link to="/" className="admin-login-brand">Awards Arts</Link>
+          <Link to="/" className="admin-login-brand">Award Arts</Link>
           <img src="/images/hero.png" alt="Premium award display" />
         </div>
         <div className="admin-login-form-wrap">

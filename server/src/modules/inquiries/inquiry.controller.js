@@ -18,7 +18,7 @@ const populateOwners = (query) => query
   .populate("assignedBy", "firstName lastName email role");
 
 export async function create(req, res) {
-  const attachment = req.file ? await uploadBuffer(req.file, "legacy-trophies/inquiry-attachments") : undefined;
+  const attachment = req.file ? await uploadBuffer(req.file, "award-arts/inquiry-attachments") : undefined;
   const accessToken = createAccessToken();
   const inquiry = await Inquiry.create({
     ...req.body,

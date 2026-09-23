@@ -12,7 +12,7 @@ export default function ReturnsPage() {
       html={html}
       pageKey="returns"
       script={script}
-      title="Returns Policy - Awards Arts"
+      title="Returns Policy - Award Arts"
     />
   );
 }

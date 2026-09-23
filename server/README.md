@@ -1,6 +1,6 @@
 # Server
 
-Express and MongoDB API for Awards Arts.
+Express and MongoDB API for Award Arts.
 
 ## Structure
 

@@ -5,9 +5,9 @@ import { logger } from "../config/logger.js";
 import { User } from "../modules/auth/user.model.js";
 
 const demoSales = [
-  { firstName: "Arjun", lastName: "Sales Demo", email: "sales1@legacyawards.dev", password: "SalesOne@123" },
-  { firstName: "Neha", lastName: "Sales Demo", email: "sales2@legacyawards.dev", password: "SalesTwo@123" },
-  { firstName: "Kabir", lastName: "Sales Demo", email: "sales3@legacyawards.dev", password: "SalesThree@123" },
+  { firstName: "Arjun", lastName: "Sales Demo", email: "sales1@awardarts.dev", password: "SalesOne@123" },
+  { firstName: "Neha", lastName: "Sales Demo", email: "sales2@awardarts.dev", password: "SalesTwo@123" },
+  { firstName: "Kabir", lastName: "Sales Demo", email: "sales3@awardarts.dev", password: "SalesThree@123" },
 ];
 
 async function seedDemoSales() {

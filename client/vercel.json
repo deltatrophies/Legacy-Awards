@@ -2,7 +2,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://legacy-awards-delta-trophies.onrender.com/api/:path*"
+      "destination": "https://award-arts-api.onrender.com/api/:path*"
     },
     {
       "source": "/(.*)",

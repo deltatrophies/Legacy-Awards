@@ -1,6 +1,6 @@
 # Client
 
-React and Vite storefront for Awards Arts.
+React and Vite storefront for Award Arts.
 
 ## Structure
 

@@ -12,7 +12,7 @@ export default function AboutPage() {
       html={html}
       pageKey="about"
       script={script}
-      title="About Us - Awards Arts"
+      title="About Us - Award Arts"
     />
   );
 }

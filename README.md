@@ -1,4 +1,4 @@
-# Awards Arts
+# Award Arts
 
 Production-oriented React storefront and Node.js API. The API owns authentication, catalog data, quote pricing, inquiries, file uploads, payments, and orders.
 
@@ -85,7 +85,7 @@ https://your-domain.example/api/v1/payments/webhook
 For the current Render API, the webhook URL is:
 
 ```text
-https://legacy-awards-delta-trophies.onrender.com/api/v1/payments/webhook
+https://award-arts-api.onrender.com/api/v1/payments/webhook
 ```
 
 Subscribe to `payment.authorized`, `payment.captured`, `payment.failed`, and `payment.refunded`, and enable automatic capture in Razorpay. Payments remain unavailable until the key pair is present. Checkout becomes available only after the customer accepts the final quote and an admin selects online payment. Use Test Mode keys and a Test Mode webhook while validating; replace all three values together for Live Mode.

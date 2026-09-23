@@ -12,7 +12,7 @@ export default function PrivacyPage() {
       html={html}
       pageKey="privacy"
       script={script}
-      title="Privacy Policy - Awards Arts"
+      title="Privacy Policy - Award Arts"
     />
   );
 }

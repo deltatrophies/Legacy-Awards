@@ -86,11 +86,11 @@ export default function OrdersPage() {
   const [historyNotice, setHistoryNotice] = useState("");
   const [busyQuote, setBusyQuote] = useState("");
   const [activeTab, setActiveTab] = useState("quotes");
-  const [businessContact, setBusinessContact] = useState({ businessName: "Awards Arts", phone: "", whatsapp: "" });
+  const [businessContact, setBusinessContact] = useState({ businessName: "Award Arts", phone: "", whatsapp: "" });
   const reconciliationTimes = useRef(new Map());
 
   useEffect(() => {
-    document.title = "My Orders - Awards Arts";
+    document.title = "My Orders - Award Arts";
     settingsApi.get().then((settings) => {
       if (settings) setBusinessContact((current) => ({ ...current, ...settings }));
     }).catch(() => {});
@@ -217,7 +217,7 @@ export default function OrdersPage() {
       const token = quote.accessToken || (lastQuote?.reference === quote.reference ? lastQuote.accessToken : "");
       if (quote.id && !quote.accessToken) await quoteApi.acceptMine(quote.id);
       else await quoteApi.accept(quote.reference, token);
-      setHistoryNotice("Quotation accepted. Awards Arts has been notified and will now select the payment method.");
+      setHistoryNotice("Quotation accepted. Award Arts has been notified and will now select the payment method.");
       await loadHistory();
     } catch (requestError) {
       setHistoryError(requestError.message || "Could not accept this quote.");
@@ -289,7 +289,7 @@ export default function OrdersPage() {
           key: checkoutOrder.keyId,
           amount: checkoutOrder.amountMinor,
           currency: checkoutOrder.currency,
-          name: businessContact.businessName || "Awards Arts",
+          name: businessContact.businessName || "Award Arts",
           description: `Payment for quotation ${quoteReference}`,
           order_id: checkoutOrder.gatewayOrderId,
           prefill: {
@@ -380,7 +380,7 @@ export default function OrdersPage() {
               <div className="order-section-head">
                 <div>
                   <span className="account-label">Quote requests</span>
-                  <h2>Requests sent to Awards Arts</h2>
+                  <h2>Requests sent to Award Arts</h2>
                 </div>
                 <button type="button" onClick={loadHistory}>Refresh</button>
               </div>
@@ -492,10 +492,10 @@ function HistoryCard({ busy = false, onAccept, onContactSales, onOpenPaymentWhat
       {hasAdminQuote || customerAccepted ? (
         <div className={`quote-detail-grid ${customerAccepted ? "has-payment" : ""}`}>
           {hasAdminQuote ? (
-            <section className="admin-quote-response" aria-label="Quote from Awards Arts">
+            <section className="admin-quote-response" aria-label="Quote from Award Arts">
               <div className="admin-quote-response__head">
                 <div>
-                  <span>Quote from Awards Arts</span>
+                  <span>Quote from Award Arts</span>
                   <strong>Admin response</strong>
                 </div>
                 <div className="admin-quote-response__price">

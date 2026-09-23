@@ -2,6 +2,11 @@ import { describe, expect, it } from "vitest";
 import { cloudinaryPublicId } from "../src/modules/uploads/upload.service.js";
 
 describe("cloudinaryPublicId", () => {
+  it("uses a current Award Arts public id", () => {
+    expect(cloudinaryPublicId({ publicId: "award-arts/product-images/award_123" }))
+      .toBe("award-arts/product-images/award_123");
+  });
+
   it("uses a stored pre-rename public id", () => {
     expect(cloudinaryPublicId({ publicId: "legacy-trophies/product-images/award_123" }))
       .toBe("legacy-trophies/product-images/award_123");

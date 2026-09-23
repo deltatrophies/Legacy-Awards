@@ -12,7 +12,7 @@ export default function ShippingPage() {
       html={html}
       pageKey="shipping"
       script={script}
-      title="Shipping Policy - Awards Arts"
+      title="Shipping Policy - Award Arts"
     />
   );
 }

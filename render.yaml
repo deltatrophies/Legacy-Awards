@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: legacy-awards
+    name: award-arts-api
     env: docker
     plan: free
     autoDeploy: true
@@ -10,7 +10,7 @@ services:
       - key: NODE_ENV
         value: production
       - key: APP_ORIGIN
-        value: https://legacy-awards.vercel.app,https://legacy-awards-delta-trophies.onrender.com
+        value: https://award-arts.vercel.app,https://award-arts-api.onrender.com
       - key: COOKIE_SECURE
         value: "true"
       - key: JWT_ACCESS_TTL

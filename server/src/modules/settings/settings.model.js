@@ -2,8 +2,8 @@ import mongoose from "mongoose";
 
 const settingsSchema = new mongoose.Schema({
   key: { type: String, required: true, unique: true, default: "site" },
-  businessName: { type: String, trim: true, maxlength: 120, default: "Awards Arts" },
-  email: { type: String, trim: true, lowercase: true, maxlength: 254, default: "orders@legacyawards.in" },
+  businessName: { type: String, trim: true, maxlength: 120, default: "Award Arts" },
+  email: { type: String, trim: true, lowercase: true, maxlength: 254, default: "orders@awardarts.in" },
   phone: { type: String, trim: true, maxlength: 30, default: "" },
   whatsapp: { type: String, trim: true, maxlength: 15, default: "" },
   address: { type: String, trim: true, maxlength: 500, default: "B-14, Okhla Phase II, New Delhi - 110020" },

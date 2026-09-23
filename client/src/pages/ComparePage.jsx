@@ -35,7 +35,7 @@ export default function ComparePage() {
   });
 
   useEffect(() => {
-    document.title = "Compare Awards - Awards Arts";
+    document.title = "Compare Awards - Award Arts";
   }, []);
 
   useEffect(() => {

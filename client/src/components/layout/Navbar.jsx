@@ -1,4 +1,4 @@
-﻿import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { navigationLinks } from "../../data/navigation.js";
 import { BUSINESS_NAME } from "../../config/business.js";
@@ -94,7 +94,7 @@ export default function Navbar() {
     <nav className="site-nav" data-menu-open={menuOpen ? "true" : "false"}>
       <NavLink to="/" className="logo" aria-label={`${BUSINESS_NAME} home`}>
         <img src="/images/brand-logo.png" alt="" />
-        <span className="logo-text">Awards <em>Arts</em></span>
+        <span className="logo-text">Award <em>Arts</em></span>
       </NavLink>
 
       <ul className="nav-links">

@@ -32,7 +32,7 @@ export default function CustomPage() {
   const [pricingConfig, setPricingConfig] = useState(defaultCustomPricing);
   const [notice, setNotice] = useState("");
   useEffect(() => {
-    document.title = "Custom Trophy Studio - Awards Arts";
+    document.title = "Custom Trophy Studio - Award Arts";
   }, []);
   useEffect(() => {
     let mounted = true;
@@ -83,7 +83,7 @@ export default function CustomPage() {
   const downloadPreview = async () => {
     const load = (src) => new Promise((resolve, reject) => { const image = new Image(); image.onload = () => resolve(image); image.onerror = reject; image.src = src; });
     const canvas = document.createElement("canvas"); canvas.width = 900; canvas.height = 1000; const ctx = canvas.getContext("2d");
-    ctx.fillStyle = "#f7f4ee"; ctx.fillRect(0, 0, 900, 1000); ctx.fillStyle = "#28251f"; ctx.textAlign = "center"; ctx.font = "44px Georgia"; ctx.fillText("Awards Arts Custom Preview", 450, 70);
+    ctx.fillStyle = "#f7f4ee"; ctx.fillRect(0, 0, 900, 1000); ctx.fillStyle = "#28251f"; ctx.textAlign = "center"; ctx.font = "44px Georgia"; ctx.fillText("Award Arts Custom Preview", 450, 70);
     try {
       const [tip, body, base] = await Promise.all([load(selected.tip.image), load(selected.body.image), load(selected.base.image)]);
       ctx.drawImage(tip, 300, 110, 300, 250); ctx.drawImage(body, 315, 320, 270, 330); ctx.drawImage(base, 260, 600, 380, 220);
@@ -91,7 +91,7 @@ export default function CustomPage() {
     } catch { ctx.fillStyle = "#ded8cc"; ctx.fillRect(280, 130, 340, 650); }
     ctx.fillStyle = design.textColor; ctx.font = "bold 24px Arial"; design.text.split("\n").forEach((line, index) => ctx.fillText(line, 450, 740 + index * 30));
     ctx.fillStyle = "#28251f"; ctx.font = "20px Arial"; ctx.fillText(`${selected.tip.name} / ${selected.body.name} / ${selected.base.name}`, 450, 890); ctx.fillText(`${selected.finish.name} / ${selected.size.name} / Qty ${design.quantity}`, 450, 930);
-    const link = document.createElement("a"); link.download = "awards-arts-preview.png"; link.href = canvas.toDataURL("image/png"); link.click();
+    const link = document.createElement("a"); link.download = "award-arts-preview.png"; link.href = canvas.toDataURL("image/png"); link.click();
   };
   const cards = (key, items) => <div className="visual-options">{items.map((item) => <button key={item.id} type="button" className={design[key] === item.id ? "active" : ""} onClick={() => set(key,item.id)}><img src={item.image} alt="" /><strong>{item.name}</strong><span>Rs. {pricingConfig[key]?.[item.id] ?? item.price}</span></button>)}</div>;
 

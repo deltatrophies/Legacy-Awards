@@ -49,7 +49,7 @@ const API_KEY = "9674b0ca033b4f2993529b9c0166f60b";
         button.textContent = "Sending inquiry...";
         contactStatus.textContent = "Uploading your brief securely...";
         try {
-          const result = await window.AwardsArtsAPI.submitInquiry(new FormData(contactForm));
+          const result = await window.AwardArtsAPI.submitInquiry(new FormData(contactForm));
           contactForm.reset();
           toggleQuantity();
           contactStatus.textContent = `Inquiry received. Your reference is ${result.reference}.`;

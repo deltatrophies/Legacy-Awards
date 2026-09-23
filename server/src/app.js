@@ -24,8 +24,8 @@ app.disable("x-powered-by");
 app.set("trust proxy", 1);
 
 const productionOrigins = new Set([
-  "https://legacy-awards.vercel.app",
-  "https://legacy-awards-delta-trophies.onrender.com",
+  "https://award-arts.vercel.app",
+  "https://award-arts-api.onrender.com",
 ]);
 
 app.use(pinoHttp({

@@ -3,8 +3,8 @@ import { Settings } from "./settings.model.js";
 
 const defaultSettings = {
   key: "site",
-  businessName: "Awards Arts",
-  email: "orders@legacyawards.in",
+  businessName: "Award Arts",
+  email: "orders@awardarts.in",
   phone: "",
   whatsapp: "",
   address: "B-14, Okhla Phase II, New Delhi - 110020",

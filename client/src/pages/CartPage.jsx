@@ -41,7 +41,7 @@ export default function CartPage() {
   const submissionRef = useRef(null);
   const [customer, setCustomer] = useState({ name: "", phone: "", email: "", organization: "", notes: "", preference: "WhatsApp" });
   useEffect(() => {
-    document.title = "Quote Cart - Awards Arts";
+    document.title = "Quote Cart - Award Arts";
     let active = true;
     catalogApi.list().then((products) => {
       if (!active) return;
