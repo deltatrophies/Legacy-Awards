@@ -1,18 +1,25 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import PageSkeleton from "../components/common/PageSkeleton.jsx";
 import SiteLayout from "../layouts/SiteLayout.jsx";
 import { NoIndexSeo } from "../components/common/Seo.jsx";
 
-const HomePage = lazy(() => import("../pages/HomePage.jsx"));
-const AboutPage = lazy(() => import("../pages/AboutPage.jsx"));
-const ProductsPage = lazy(() => import("../pages/ProductsPage.jsx"));
+const loadHomePage = () => import("../pages/HomePage.jsx");
+const loadAboutPage = () => import("../pages/AboutPage.jsx");
+const loadProductsPage = () => import("../pages/ProductsPage.jsx");
+const loadCustomPage = () => import("../pages/CustomPage.jsx");
+const loadBlogsPage = () => import("../pages/BlogsPage.jsx");
+const loadContactPage = () => import("../pages/ContactPage.jsx");
+
+const HomePage = lazy(loadHomePage);
+const AboutPage = lazy(loadAboutPage);
+const ProductsPage = lazy(loadProductsPage);
 const ComparePage = lazy(() => import("../pages/ComparePage.jsx"));
 const ProductDetailPage = lazy(() => import("../pages/ProductDetailPage.jsx"));
-const CustomPage = lazy(() => import("../pages/CustomPage.jsx"));
-const BlogsPage = lazy(() => import("../pages/BlogsPage.jsx"));
-const ContactPage = lazy(() => import("../pages/ContactPage.jsx"));
+const CustomPage = lazy(loadCustomPage);
+const BlogsPage = lazy(loadBlogsPage);
+const ContactPage = lazy(loadContactPage);
 const CartPage = lazy(() => import("../pages/CartPage.jsx"));
 const PrivacyPage = lazy(() => import("../pages/PrivacyPage.jsx"));
 const ReturnsPage = lazy(() => import("../pages/ReturnsPage.jsx"));
@@ -30,9 +37,17 @@ const SalesPanelPage = lazy(() => import("../pages/SalesPanelPage.jsx"));
 const NotFoundPage = lazy(() => import("../pages/NotFoundPage.jsx"));
 
 const pageTransition = {
-  duration: 0.32,
-  ease: [0.22, 1, 0.36, 1],
+  duration: 0.2,
+  ease: [0.16, 1, 0.3, 1],
 };
+
+const primaryPublicPageLoaders = [
+  loadAboutPage,
+  loadProductsPage,
+  loadCustomPage,
+  loadBlogsPage,
+  loadContactPage,
+];
 
 function PageMotion({ children }) {
   const reduceMotion = useReducedMotion();
@@ -40,7 +55,7 @@ function PageMotion({ children }) {
   return (
     <motion.div
       className="page-motion-shell"
-      initial={reduceMotion ? false : { opacity: 0.985, y: 10 }}
+      initial={reduceMotion ? false : { opacity: 0.995, y: 4 }}
       animate={{ opacity: 1, y: 0 }}
       transition={reduceMotion ? { duration: 0 } : pageTransition}
     >
@@ -121,6 +136,18 @@ function SalesRoutes({ location }) {
 
 export default function AppRoutes() {
   const location = useLocation();
+
+  useEffect(() => {
+    const preloadPrimaryPages = () => {
+      primaryPublicPageLoaders.forEach((loadPage) => {
+        loadPage().catch(() => undefined);
+      });
+    };
+
+    const timeoutId = window.setTimeout(preloadPrimaryPages, 120);
+    return () => window.clearTimeout(timeoutId);
+  }, []);
+
   const isAdminRoute = location.pathname.startsWith("/admin");
   const isSalesRoute = location.pathname.startsWith("/sales");
   const isPrivateRoute = isAdminRoute || isSalesRoute || ["/login", "/cart", "/compare", "/quote-success", "/account"].some((path) => location.pathname.startsWith(path));
