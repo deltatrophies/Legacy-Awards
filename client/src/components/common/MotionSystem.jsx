@@ -144,10 +144,13 @@ export default function MotionSystem() {
         const links = visibleElements(".site-nav .nav-links li");
         const actions = visibleElements(".site-nav .nav-actions > *");
 
-        if (nav.length) navTimeline.fromTo(nav, { y: -18, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: 0.44 });
-        if (logo.length) navTimeline.fromTo(logo, { x: -10, autoAlpha: 0 }, { x: 0, autoAlpha: 1, duration: 0.32 }, "-=0.25");
-        if (links.length) navTimeline.fromTo(links, { y: -6, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: 0.28, stagger: 0.03 }, "-=0.2");
-        if (actions.length) navTimeline.fromTo(actions, { x: 8, autoAlpha: 0 }, { x: 0, autoAlpha: 1, duration: 0.28, stagger: 0.03 }, "-=0.2");
+        // Keep navigation visible even if GSAP or the browser's animation frame is
+        // interrupted while a lazy route is being loaded. Movement still gives us
+        // the reveal effect without making essential UI depend on animation state.
+        if (nav.length) navTimeline.fromTo(nav, { y: -18 }, { y: 0, duration: 0.44 });
+        if (logo.length) navTimeline.fromTo(logo, { x: -10 }, { x: 0, duration: 0.32 }, "-=0.25");
+        if (links.length) navTimeline.fromTo(links, { y: -6 }, { y: 0, duration: 0.28, stagger: 0.03 }, "-=0.2");
+        if (actions.length) navTimeline.fromTo(actions, { x: 8 }, { x: 0, duration: 0.28, stagger: 0.03 }, "-=0.2");
 
         gsap.utils.toArray(".site-nav .nav-links a, .site-nav .nav-btn, .site-nav .nav-icon-link").forEach((item) => {
           const enter = () => gsap.to(item, { y: -2, scale: 1.035, duration: 0.22, ease: "power2.out" });
@@ -189,16 +192,16 @@ export default function MotionSystem() {
         if (homeHeroLeft.length) {
           gsap.fromTo(
             homeHeroLeft,
-            { y: 26, autoAlpha: 0 },
-            { y: 0, autoAlpha: 1, duration: 0.62, stagger: 0.06, ease: "power3.out", delay: 0.04 },
+            { y: 26 },
+            { y: 0, duration: 0.62, stagger: 0.06, ease: "power3.out", delay: 0.04 },
           );
         }
 
         if (homeHeroMedia.length) {
           gsap.fromTo(
             homeHeroMedia,
-            { x: 24, autoAlpha: 0, scale: 0.985 },
-            { x: 0, autoAlpha: 1, scale: 1, duration: 0.72, ease: "power3.out", delay: 0.08 },
+            { x: 24, scale: 0.985 },
+            { x: 0, scale: 1, duration: 0.72, ease: "power3.out", delay: 0.08 },
           );
         }
 
@@ -213,9 +216,12 @@ export default function MotionSystem() {
         elements.forEach((element, index) => {
           gsap.fromTo(
             element,
-            { autoAlpha: 0, y: 34, scale: 0.985 },
+            // Never hide route content before ScrollTrigger fires. On client-side
+            // navigation a lazy page can mount between refresh cycles; previously
+            // that race could leave every section at visibility:hidden until a hard
+            // refresh. Translating/scaling is safe and preserves the same motion.
+            { y: 34, scale: 0.985 },
             {
-              autoAlpha: 1,
               y: 0,
               scale: 1,
               duration: 0.82,

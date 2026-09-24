@@ -20,6 +20,29 @@ test("public catalogue flow loads without console errors", async ({ page }) => {
   await expect(errors).toEqual([]);
 });
 
+test("client-side navigation never leaves public page content hidden", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.getByRole("navigation")).toBeVisible();
+
+  const routes = [
+    { link: "Our Story", page: ".legacy-page-about", content: ".legacy-page-about section" },
+    { link: "Awards", page: ".commerce-page", content: ".commerce-page > section" },
+    { link: "Custom Studio", page: ".customizer-page", content: ".customizer-head" },
+    { link: "Journal", page: ".blogs-page", content: ".blogs-page section" },
+    { link: "Talk to Us", page: ".contact-page", content: ".contact-page section" },
+  ];
+
+  for (const route of routes) {
+    await page.getByRole("navigation").getByRole("link", { name: route.link, exact: true }).click();
+    await expect(page.locator(route.page)).toBeVisible();
+    await expect(page.locator(route.content).first()).toBeVisible();
+    await expect.poll(() => page.locator(route.content).first().evaluate((element) => ({
+      opacity: getComputedStyle(element).opacity,
+      visibility: getComputedStyle(element).visibility,
+    }))).toEqual({ opacity: "1", visibility: "visible" });
+  }
+});
+
 test("account and admin entry points are reachable", async ({ page }) => {
   await page.goto("/account/orders");
   await expect(page.getByRole("heading", { name: /Quote & order history/i })).toBeVisible();
