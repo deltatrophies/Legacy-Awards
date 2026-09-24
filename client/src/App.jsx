@@ -1,3 +1,4 @@
+import { Analytics } from "@vercel/analytics/react";
 import AppRoutes from "./routes/AppRoutes.jsx";
 import FirstLoadLoader from "./components/common/FirstLoadLoader.jsx";
 import MotionSystem from "./components/common/MotionSystem.jsx";
@@ -10,6 +11,7 @@ export default function App() {
       <MotionSystem />
       <ScrollToTop />
       <AppRoutes />
+      <Analytics />
     </>
   );
 }
