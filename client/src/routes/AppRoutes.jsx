@@ -1,5 +1,5 @@
 import { lazy, Suspense } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import PageSkeleton from "../components/common/PageSkeleton.jsx";
 import SiteLayout from "../layouts/SiteLayout.jsx";
@@ -30,18 +30,19 @@ const SalesPanelPage = lazy(() => import("../pages/SalesPanelPage.jsx"));
 const NotFoundPage = lazy(() => import("../pages/NotFoundPage.jsx"));
 
 const pageTransition = {
-  duration: 0.2,
+  duration: 0.32,
   ease: [0.22, 1, 0.36, 1],
 };
 
 function PageMotion({ children }) {
+  const reduceMotion = useReducedMotion();
+
   return (
     <motion.div
       className="page-motion-shell"
-      initial={false}
+      initial={reduceMotion ? false : { opacity: 0.985, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 1, y: 0 }}
-      transition={pageTransition}
+      transition={reduceMotion ? { duration: 0 } : pageTransition}
     >
       {children}
     </motion.div>
