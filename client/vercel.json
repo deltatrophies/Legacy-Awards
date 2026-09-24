@@ -2,6 +2,18 @@
   "cleanUrls": true,
   "redirects": [
     {
+      "source": "/",
+      "has": [{ "type": "host", "value": "awardsarts.com" }],
+      "destination": "https://www.awardarts.in/",
+      "permanent": true
+    },
+    {
+      "source": "/",
+      "has": [{ "type": "host", "value": "www.awardsarts.com" }],
+      "destination": "https://www.awardarts.in/",
+      "permanent": true
+    },
+    {
       "source": "/:path*",
       "has": [{ "type": "host", "value": "awardsarts.com" }],
       "destination": "https://www.awardarts.in/:path*",
