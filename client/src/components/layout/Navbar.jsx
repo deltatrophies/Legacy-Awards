@@ -25,11 +25,13 @@ function MenuIcon({ type }) {
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
+  const [customStudioNoticeOpen, setCustomStudioNoticeOpen] = useState(false);
   const menuId = useId();
   const accountMenuId = useId();
   const location = useLocation();
   const navigate = useNavigate();
   const accountRef = useRef(null);
+  const customStudioCloseRef = useRef(null);
   const { user, logout } = useAuth();
   const [cartQuantity, setCartQuantity] = useState(0);
   const enquiryHref = "/contact#enquiry-form";
@@ -83,6 +85,42 @@ export default function Navbar() {
     return () => document.removeEventListener("keydown", onKeyDown);
   }, [menuOpen]);
 
+  useEffect(() => {
+    if (!customStudioNoticeOpen) return undefined;
+
+    const previouslyFocused = document.activeElement;
+    const onKeyDown = (event) => {
+      if (event.key === "Escape") setCustomStudioNoticeOpen(false);
+    };
+
+    document.addEventListener("keydown", onKeyDown);
+    document.body.classList.add("custom-studio-notice-active");
+    customStudioCloseRef.current?.focus();
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      document.body.classList.remove("custom-studio-notice-active");
+      previouslyFocused?.focus?.();
+    };
+  }, [customStudioNoticeOpen]);
+
+  const handleNavigationClick = (event, path) => {
+    if (path !== "/custom") return;
+
+    const liveHosts = new Set([
+      "awardarts.in",
+      "www.awardarts.in",
+      "awardsarts.com",
+      "www.awardsarts.com",
+      "award-arts.vercel.app",
+    ]);
+
+    if (!liveHosts.has(window.location.hostname.toLowerCase())) return;
+
+    event.preventDefault();
+    setMenuOpen(false);
+    setCustomStudioNoticeOpen(true);
+  };
+
   const handleLogout = async () => {
     await logout();
     setAccountOpen(false);
@@ -91,6 +129,7 @@ export default function Navbar() {
   };
 
   return (
+    <>
     <nav className="site-nav" data-menu-open={menuOpen ? "true" : "false"}>
       <NavLink to="/" className="logo" aria-label={`${BUSINESS_NAME} home`}>
         <img src="/images/brand-logo.png" alt="logo" />
@@ -100,7 +139,7 @@ export default function Navbar() {
       <ul className="nav-links">
         {navigationLinks.map((item) => (
           <li key={item.path}>
-            <NavLink to={item.path} end={item.path === "/"}>
+            <NavLink to={item.path} end={item.path === "/"} onClick={(event) => handleNavigationClick(event, item.path)}>
               {item.label}
             </NavLink>
           </li>
@@ -185,7 +224,7 @@ export default function Navbar() {
         <ul>
           {navigationLinks.map((item) => (
             <li key={item.path}>
-              <NavLink to={item.path} end={item.path === "/"}>
+              <NavLink to={item.path} end={item.path === "/"} onClick={(event) => handleNavigationClick(event, item.path)}>
                 {item.label}
               </NavLink>
             </li>
@@ -203,6 +242,49 @@ export default function Navbar() {
         </div>
       </div>
     </nav>
+    {customStudioNoticeOpen ? (
+      <div
+        className="custom-studio-notice"
+        role="presentation"
+        onMouseDown={(event) => {
+          if (event.target === event.currentTarget) setCustomStudioNoticeOpen(false);
+        }}
+      >
+        <section
+          aria-describedby="custom-studio-notice-description"
+          aria-labelledby="custom-studio-notice-title"
+          aria-modal="true"
+          className="custom-studio-notice__panel"
+          role="dialog"
+        >
+          <button
+            aria-label="Close Custom Studio notice"
+            className="custom-studio-notice__close"
+            onClick={() => setCustomStudioNoticeOpen(false)}
+            ref={customStudioCloseRef}
+            type="button"
+          >
+            ×
+          </button>
+          <span className="custom-studio-notice__eyebrow">Something special is coming</span>
+          <div className="custom-studio-notice__mark" aria-hidden="true">✦</div>
+          <h2 id="custom-studio-notice-title">Our Custom Studio is being crafted.</h2>
+          <p id="custom-studio-notice-description">
+            We are building a better way to design your award online. The studio will be available soon.
+            Until then, share your idea with our team and we will create it with you.
+          </p>
+          <div className="custom-studio-notice__actions">
+            <button type="button" onClick={() => { setCustomStudioNoticeOpen(false); navigate("/contact#enquiry-form"); }}>
+              Discuss your design
+            </button>
+            <button type="button" onClick={() => { setCustomStudioNoticeOpen(false); navigate("/products"); }}>
+              Explore awards
+            </button>
+          </div>
+        </section>
+      </div>
+    ) : null}
+    </>
   );
 }
 
