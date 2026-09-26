@@ -1716,6 +1716,17 @@ function TeamManager({ members, onSaved, onError }) {
     catch (requestError) { onError(requestError); return false; }
     finally { setSaving(false); }
   };
+  const deleteMember = async (member) => {
+    if (member.isActive) {
+      onError(new Error("Disable this sales account before deleting it."));
+      return;
+    }
+    if (!window.confirm(`Permanently delete the login for ${member.firstName} ${member.lastName}? Historical activity will remain available for audit.`)) return;
+    setSaving(true);
+    try { await adminApi.deleteTeamMember(member.id); onSaved(); }
+    catch (requestError) { onError(requestError); }
+    finally { setSaving(false); }
+  };
   return (
     <section className="admin-workspace admin-team-workspace">
       <form className="admin-form-panel" onSubmit={createMember}>
@@ -1752,7 +1763,11 @@ function TeamManager({ members, onSaved, onError }) {
                   </div>
                   <div className="sales-team-load"><span><strong>{Number(member.assignedQuotes || 0) + Number(member.assignedInquiries || 0)}</strong><small>Active leads</small></span><span><strong>{member.openOrders}</strong><small>Open orders</small></span></div>
                   <label className="sales-team-role"><span>Access level</span><select disabled={saving} value={member.role} onChange={(event) => updateMember(member, { role: event.target.value })}><option value="sales">Sales Executive</option><option value="sales_manager">Sales Manager</option></select></label>
-                  <div className="sales-team-account"><span className={`admin-status-pill ${member.isActive ? "is-active" : "is-inactive"}`}>{member.isActive ? "Active" : "Disabled"}</span><button className="admin-secondary-button" disabled={saving} type="button" onClick={() => updateMember(member, { isActive: !member.isActive })}>{member.isActive ? "Disable" : "Enable"}</button></div>
+                  <div className="sales-team-account">
+                    <span className={`admin-status-pill ${member.isActive ? "is-active" : "is-inactive"}`}>{member.isActive ? "Active" : "Disabled"}</span>
+                    <button className="admin-secondary-button" disabled={saving} type="button" onClick={() => updateMember(member, { isActive: !member.isActive })}>{member.isActive ? "Disable" : "Enable"}</button>
+                    {!member.isActive ? <button className="admin-danger-button" disabled={saving} type="button" onClick={() => deleteMember(member)}>Delete</button> : null}
+                  </div>
                   <details className="sales-team-security">
                     <summary>Password &amp; login details</summary>
                     <div className="sales-password-reset"><input aria-label={`New password for ${member.firstName}`} minLength="10" placeholder="Enter a secure new password" type="password" value={resetPassword} onChange={(event) => setPasswords((current) => ({ ...current, [member.id]: event.target.value }))} /><button disabled={saving || Boolean(resetIssue)} type="button" onClick={async () => { if (await updateMember(member, { password: resetPassword })) setPasswords((current) => ({ ...current, [member.id]: "" })); }}>Reset password</button></div>

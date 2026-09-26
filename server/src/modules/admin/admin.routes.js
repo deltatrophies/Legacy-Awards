@@ -12,3 +12,4 @@ adminRouter.get("/summary", asyncHandler(controller.summary));
 adminRouter.get("/team", asyncHandler(controller.listTeam));
 adminRouter.post("/team", validate(createSalesUserSchema), asyncHandler(controller.createTeamMember));
 adminRouter.patch("/team/:id", validate(updateSalesUserSchema), asyncHandler(controller.updateTeamMember));
+adminRouter.delete("/team/:id", asyncHandler(controller.deleteTeamMember));

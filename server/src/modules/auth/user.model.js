@@ -22,6 +22,7 @@ const userSchema = new mongoose.Schema({
   sessions: { type: [sessionSchema], default: [], select: false },
   sessionVersion: { type: Number, default: 0, select: false },
   lastLoginAt: Date,
+  deletedAt: { type: Date, index: true },
 }, { timestamps: true, versionKey: false });
 
 userSchema.methods.toSafeObject = function toSafeObject() {

@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import bcrypt from "bcryptjs";
 import { AppError } from "../../common/errors/AppError.js";
 import { sendData } from "../../common/utils/response.js";
@@ -9,6 +10,34 @@ import { Quote } from "../quotes/quote.model.js";
 import { User } from "../auth/user.model.js";
 
 const teamRoles = ["sales", "sales_manager", "staff"];
+
+async function activeAssignmentCounts(userId) {
+  const [quotes, inquiries, orders] = await Promise.all([
+    Quote.countDocuments({
+      assignedTo: userId,
+      status: { $nin: ["expired", "cancelled"] },
+      paymentStatus: { $nin: ["paid", "refunded"] },
+    }),
+    Inquiry.countDocuments({
+      assignedTo: userId,
+      status: { $nin: ["closed", "spam"] },
+    }),
+    Order.countDocuments({
+      assignedTo: userId,
+      fulfillmentStatus: { $nin: ["delivered", "cancelled"] },
+    }),
+  ]);
+  return { quotes, inquiries, orders };
+}
+
+function assertNoActiveAssignments({ quotes, inquiries, orders }) {
+  if (!quotes && !inquiries && !orders) return;
+  throw new AppError(
+    409,
+    "ACTIVE_ASSIGNMENTS",
+    `Reassign this account's active work first (${quotes} quote${quotes === 1 ? "" : "s"}, ${inquiries} enquir${inquiries === 1 ? "y" : "ies"}, ${orders} order${orders === 1 ? "" : "s"})`,
+  );
+}
 
 const teamMemberData = (user, workloads = {}) => ({
   id: user._id.toString(),
@@ -76,7 +105,7 @@ export async function summary(_req, res) {
 
 export async function listTeam(_req, res) {
   const [users, quoteWorkloads, inquiryWorkloads, orderWorkloads] = await Promise.all([
-    User.find({ role: { $in: teamRoles } }).select("+developmentOnly").sort({ isActive: -1, firstName: 1, lastName: 1 }).lean(),
+    User.find({ role: { $in: teamRoles }, deletedAt: null }).select("+developmentOnly").sort({ isActive: -1, firstName: 1, lastName: 1 }).lean(),
     Quote.aggregate([
       { $match: { assignedTo: { $ne: null }, status: { $nin: ["expired", "cancelled"] }, paymentStatus: { $nin: ["paid", "refunded"] } } },
       { $group: { _id: "$assignedTo", count: { $sum: 1 } } },
@@ -113,34 +142,13 @@ export async function createTeamMember(req, res) {
 }
 
 export async function updateTeamMember(req, res) {
-  const user = await User.findOne({ _id: req.params.id, role: { $in: teamRoles } }).select("+sessions +sessionVersion");
+  const user = await User.findOne({ _id: req.params.id, role: { $in: teamRoles }, deletedAt: null }).select("+sessions +sessionVersion");
   if (!user) throw new AppError(404, "TEAM_MEMBER_NOT_FOUND", "Sales team member was not found");
   if (req.body.email && req.body.email !== user.email && await User.exists({ email: req.body.email, _id: { $ne: user._id } })) {
     throw new AppError(409, "EMAIL_IN_USE", "An account with this email already exists");
   }
   if (req.body.isActive === false && user.isActive) {
-    const [openLeads, openInquiries, openOrders] = await Promise.all([
-      Quote.countDocuments({
-        assignedTo: user._id,
-        status: { $nin: ["expired", "cancelled"] },
-        paymentStatus: { $nin: ["paid", "refunded"] },
-      }),
-      Inquiry.countDocuments({
-        assignedTo: user._id,
-        status: { $nin: ["closed", "spam"] },
-      }),
-      Order.countDocuments({
-        assignedTo: user._id,
-        fulfillmentStatus: { $nin: ["delivered", "cancelled"] },
-      }),
-    ]);
-    if (openLeads || openInquiries || openOrders) {
-      throw new AppError(
-        409,
-        "ACTIVE_ASSIGNMENTS",
-        `Reassign this account's active work before disabling it (${openLeads} quote${openLeads === 1 ? "" : "s"}, ${openInquiries} enquir${openInquiries === 1 ? "y" : "ies"}, ${openOrders} order${openOrders === 1 ? "" : "s"})`,
-      );
-    }
+    assertNoActiveAssignments(await activeAssignmentCounts(user._id));
   }
 
   const sensitiveChange = req.body.password || req.body.role || req.body.isActive === false;
@@ -154,4 +162,34 @@ export async function updateTeamMember(req, res) {
   }
   await user.save();
   return sendData(res, teamMemberData(user));
+}
+
+export async function deleteTeamMember(req, res) {
+  const user = await User.findOne({
+    _id: req.params.id,
+    role: { $in: teamRoles },
+    deletedAt: null,
+  }).select("+passwordHash +sessions +sessionVersion");
+  if (!user) throw new AppError(404, "TEAM_MEMBER_NOT_FOUND", "Sales team member was not found");
+  if (user.isActive) {
+    throw new AppError(409, "ACCOUNT_MUST_BE_DISABLED", "Disable this sales account before deleting it");
+  }
+
+  assertNoActiveAssignments(await activeAssignmentCounts(user._id));
+
+  const deletedId = user._id.toString();
+  user.firstName = "Deleted";
+  user.lastName = "Sales Account";
+  user.email = `deleted-${deletedId}@deleted.awardarts.invalid`;
+  user.phone = undefined;
+  user.jobTitle = "Deleted account";
+  user.avatarUrl = undefined;
+  user.avatarPublicId = undefined;
+  user.passwordHash = await bcrypt.hash(randomUUID(), 12);
+  user.sessions = [];
+  user.sessionVersion = Number(user.sessionVersion || 0) + 1;
+  user.deletedAt = new Date();
+  await user.save();
+
+  return sendData(res, { id: deletedId, deleted: true });
 }

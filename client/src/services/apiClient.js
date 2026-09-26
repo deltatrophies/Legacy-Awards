@@ -237,6 +237,7 @@ export const adminApi = {
   listTeam: () => apiRequest("/admin/team"),
   createTeamMember: (input) => apiRequest("/admin/team", { method: "POST", body: JSON.stringify(input) }),
   updateTeamMember: (id, input) => apiRequest(`/admin/team/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify(input) }),
+  deleteTeamMember: (id) => apiRequest(`/admin/team/${encodeURIComponent(id)}`, { method: "DELETE" }),
   listInquiries: () => apiRequest("/inquiries?limit=100"),
   getInquiry: (id) => apiRequest(`/inquiries/${encodeURIComponent(id)}`),
   async updateInquiry(id, input) {
