@@ -11,6 +11,9 @@ export function AuthProvider({ children }) {
   const isAdminRoute = location.pathname.startsWith("/admin");
   const isSalesRoute = location.pathname.startsWith("/sales");
 
+
+  // Restore session on mount
+
   useEffect(() => {
     if (!hasStoredAuthSession()) {
       setLoading(false);
